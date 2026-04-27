@@ -1,0 +1,46 @@
+{
+  "name": "workout-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:types": "supabase gen types typescript --linked > src/lib/supabase/database.types.ts"
+  },
+  "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@hookform/resolvers": "^3.9.1",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.46.1",
+    "@tanstack/query-async-storage-persister": "^5.59.20",
+    "@tanstack/react-query": "^5.59.20",
+    "@tanstack/react-query-persist-client": "^5.59.20",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "idb-keyval": "^6.2.1",
+    "lucide-react": "^0.454.0",
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.53.2",
+    "recharts": "^2.13.3",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.23.8",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "supabase": "^1.219.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,331 @@
+import "server-only";
+import { createClient } from "@/lib/supabase/server";
+
+export type ProgramExercise = {
+  id: string;
+  order_index: number;
+  name: string;
+  sets: number;
+  base_reps: number | null;
+  start_weight: number | null;
+  increment: number;
+  tracked: boolean;
+  note: string | null;
+  image_url: string | null;
+  archived_at: string | null;
+};
+
+export type ProgramDay = {
+  id: string;
+  day_number: number;
+  label: string;
+  title: string;
+  exercises: ProgramExercise[];
+};
+
+export type Program = {
+  id: string;
+  name: string;
+  weeks: number;
+  deload_weeks: number[];
+  days: ProgramDay[];
+};
+
+export async function getCurrentProgram(
+  opts: { includeArchived?: boolean } = {}
+): Promise<Program | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("programs")
+    .select(
+      `
+      id, name, weeks, deload_weeks,
+      days:program_days (
+        id, day_number, label, title,
+        exercises:program_exercises (
+          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at
+        )
+      )
+    `
+    )
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const days = (data.days ?? [])
+    .map((d) => ({
+      ...d,
+      exercises: (d.exercises ?? [])
+        .filter((ex) => opts.includeArchived || ex.archived_at === null)
+        .slice()
+        .sort((a, b) => a.order_index - b.order_index),
+    }))
+    .sort((a, b) => a.day_number - b.day_number);
+
+  return {
+    id: data.id,
+    name: data.name,
+    weeks: data.weeks,
+    deload_weeks: data.deload_weeks,
+    days,
+  };
+}
+
+export type NextWorkout =
+  | { kind: "in-progress"; sessionId: string; weekNumber: number; day: ProgramDay }
+  | { kind: "next"; weekNumber: number; day: ProgramDay }
+  | { kind: "complete" };
+
+export async function getNextWorkout(
+  program: Program
+): Promise<NextWorkout | null> {
+  if (program.days.length === 0) return null;
+  const supabase = await createClient();
+
+  const { data: inProgress } = await supabase
+    .from("workout_sessions")
+    .select("id, week_number, program_day_id")
+    .is("ended_at", null)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (inProgress) {
+    const day = program.days.find((d) => d.id === inProgress.program_day_id);
+    if (day) {
+      return {
+        kind: "in-progress",
+        sessionId: inProgress.id,
+        weekNumber: inProgress.week_number,
+        day,
+      };
+    }
+  }
+
+  const { data: lastFinished } = await supabase
+    .from("workout_sessions")
+    .select("week_number, program_day_id")
+    .not("ended_at", "is", null)
+    .order("ended_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!lastFinished) {
+    return { kind: "next", weekNumber: 1, day: program.days[0] };
+  }
+
+  const lastDay = program.days.find((d) => d.id === lastFinished.program_day_id);
+  const lastDayNumber = lastDay?.day_number ?? program.days.length;
+
+  let nextWeek = lastFinished.week_number;
+  let nextDayNumber = lastDayNumber + 1;
+  if (nextDayNumber > program.days.length) {
+    nextDayNumber = 1;
+    nextWeek += 1;
+  }
+
+  if (nextWeek > program.weeks) return { kind: "complete" };
+
+  const day =
+    program.days.find((d) => d.day_number === nextDayNumber) ?? program.days[0];
+
+  return { kind: "next", weekNumber: nextWeek, day };
+}
+
+export type SetLog = {
+  id: string;
+  program_exercise_id: string;
+  set_number: number;
+  planned_weight: number | null;
+  planned_reps: number | null;
+  actual_weight: number | null;
+  actual_reps: number | null;
+  completed: boolean;
+};
+
+export async function getSessionLogs(sessionId: string): Promise<SetLog[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("set_logs")
+    .select(
+      "id, program_exercise_id, set_number, planned_weight, planned_reps, actual_weight, actual_reps, completed"
+    )
+    .eq("session_id", sessionId)
+    .order("set_number", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export type LastSessionHint = {
+  program_exercise_id: string;
+  actual_weight: number | null;
+  actual_reps: number | null;
+  logged_at: string;
+};
+
+export async function getLastSessionHints(
+  exerciseIds: string[],
+  excludeSessionId: string
+): Promise<Record<string, LastSessionHint>> {
+  if (exerciseIds.length === 0) return {};
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("set_logs")
+    .select(
+      "program_exercise_id, actual_weight, actual_reps, logged_at, session_id, completed"
+    )
+    .in("program_exercise_id", exerciseIds)
+    .eq("completed", true)
+    .neq("session_id", excludeSessionId)
+    .order("logged_at", { ascending: false });
+
+  if (error) throw error;
+
+  const out: Record<string, LastSessionHint> = {};
+  for (const row of data ?? []) {
+    if (out[row.program_exercise_id]) continue;
+    out[row.program_exercise_id] = {
+      program_exercise_id: row.program_exercise_id,
+      actual_weight: row.actual_weight,
+      actual_reps: row.actual_reps,
+      logged_at: row.logged_at,
+    };
+  }
+  return out;
+}
+
+export type SessionSummary = {
+  id: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  week_number: number;
+  notes: string | null;
+  day: { id: string; day_number: number; label: string; title: string } | null;
+};
+
+export async function getSession(sessionId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select(
+      `
+      id, started_at, ended_at, duration_seconds, week_number, notes, program_day_id
+    `
+    )
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export type HistoryRow = {
+  id: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  week_number: number;
+  day_label: string;
+  day_title: string;
+  set_count: number;
+  total_volume: number;
+};
+
+export async function getSessionHistory(): Promise<HistoryRow[]> {
+  const supabase = await createClient();
+
+  const { data: sessions, error } = await supabase
+    .from("workout_sessions")
+    .select(
+      `
+      id, started_at, ended_at, duration_seconds, week_number,
+      program_days ( label, title )
+    `
+    )
+    .not("ended_at", "is", null)
+    .order("started_at", { ascending: false });
+  if (error) throw error;
+  if (!sessions || sessions.length === 0) return [];
+
+  const sessionIds = sessions.map((s) => s.id);
+  const { data: logs, error: logsErr } = await supabase
+    .from("set_logs")
+    .select("session_id, actual_weight, actual_reps, completed")
+    .in("session_id", sessionIds)
+    .eq("completed", true);
+  if (logsErr) throw logsErr;
+
+  const agg = new Map<string, { sets: number; volume: number }>();
+  for (const row of logs ?? []) {
+    const slot = agg.get(row.session_id) ?? { sets: 0, volume: 0 };
+    slot.sets += 1;
+    if (row.actual_weight !== null && row.actual_reps !== null) {
+      slot.volume += row.actual_weight * row.actual_reps;
+    }
+    agg.set(row.session_id, slot);
+  }
+
+  return sessions.map((s) => ({
+    id: s.id,
+    started_at: s.started_at,
+    ended_at: s.ended_at,
+    duration_seconds: s.duration_seconds,
+    week_number: s.week_number,
+    day_label: s.program_days?.label ?? "—",
+    day_title: s.program_days?.title ?? "—",
+    set_count: agg.get(s.id)?.sets ?? 0,
+    total_volume: Math.round(agg.get(s.id)?.volume ?? 0),
+  }));
+}
+
+export type ExerciseHistoryPoint = {
+  session_id: string;
+  logged_at: string;
+  set_number: number;
+  actual_weight: number | null;
+  actual_reps: number | null;
+  planned_weight: number | null;
+  planned_reps: number | null;
+};
+
+export async function getExerciseHistory(
+  programExerciseId: string
+): Promise<{ name: string; points: ExerciseHistoryPoint[] } | null> {
+  const supabase = await createClient();
+
+  const { data: ex, error: exErr } = await supabase
+    .from("program_exercises")
+    .select("id, name")
+    .eq("id", programExerciseId)
+    .maybeSingle();
+  if (exErr) throw exErr;
+  if (!ex) return null;
+
+  const { data: rows, error } = await supabase
+    .from("set_logs")
+    .select(
+      "session_id, set_number, actual_weight, actual_reps, planned_weight, planned_reps, logged_at, completed"
+    )
+    .eq("program_exercise_id", programExerciseId)
+    .eq("completed", true)
+    .order("logged_at", { ascending: true });
+  if (error) throw error;
+
+  return {
+    name: ex.name,
+    points: (rows ?? []).map((r) => ({
+      session_id: r.session_id,
+      logged_at: r.logged_at,
+      set_number: r.set_number,
+      actual_weight: r.actual_weight,
+      actual_reps: r.actual_reps,
+      planned_weight: r.planned_weight,
+      planned_reps: r.planned_reps,
+    })),
+  };
+}
