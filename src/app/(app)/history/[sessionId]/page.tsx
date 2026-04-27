@@ -2,7 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { ChevronRight, ArrowLeft } from "lucide-react";
-import { getCurrentProgram, getSession, getSessionLogs } from "@/lib/queries";
+import {
+  getCurrentProgram,
+  getSession,
+  getSessionLogs,
+  getSessionPhotos,
+} from "@/lib/queries";
+import { SessionPhotos } from "./session-photos";
 import { formatDuration, formatWeight } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +27,10 @@ export default async function SessionDetailPage({
   const day = program?.days.find((d) => d.id === session.program_day_id);
   if (!day) notFound();
 
-  const logs = await getSessionLogs(sessionId);
+  const [logs, photos] = await Promise.all([
+    getSessionLogs(sessionId),
+    getSessionPhotos(sessionId),
+  ]);
 
   const totalVolume = logs.reduce(
     (acc, l) =>
@@ -61,6 +70,8 @@ export default async function SessionDetailPage({
           {session.notes}
         </p>
       ) : null}
+
+      {photos.length > 0 ? <SessionPhotos photos={photos} /> : null}
 
       <ul className="space-y-3">
         {day.exercises.map((ex) => {

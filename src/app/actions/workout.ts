@@ -86,6 +86,92 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
   redirect(`/history/${sessionId}`);
 }
 
+const PHOTO_BUCKET = "workout-photos";
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
+
+export async function uploadSessionPhotos(formData: FormData) {
+  const sessionId = formData.get("sessionId");
+  if (typeof sessionId !== "string") throw new Error("Missing sessionId");
+  z.string().uuid().parse(sessionId);
+
+  const files = formData.getAll("photos").filter((v): v is File => v instanceof File && v.size > 0);
+  if (files.length === 0) return { uploaded: 0 };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: session, error: sessionErr } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (sessionErr) throw sessionErr;
+  if (!session) throw new Error("Session not found");
+
+  let uploaded = 0;
+  for (const file of files) {
+    if (file.size > MAX_PHOTO_BYTES) continue;
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) continue;
+
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const path = `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) throw upErr;
+
+    const { error: insErr } = await supabase.from("workout_session_photos").insert({
+      session_id: sessionId,
+      user_id: user.id,
+      storage_path: path,
+    });
+    if (insErr) {
+      await supabase.storage.from(PHOTO_BUCKET).remove([path]);
+      throw insErr;
+    }
+    uploaded += 1;
+  }
+
+  revalidatePath(`/history/${sessionId}`);
+  return { uploaded };
+}
+
+const DeletePhotoSchema = z.object({
+  photoId: z.string().uuid(),
+});
+
+export async function deleteSessionPhoto(input: z.infer<typeof DeletePhotoSchema>) {
+  const { photoId } = DeletePhotoSchema.parse(input);
+  const supabase = await createClient();
+
+  const { data: photo, error: fetchErr } = await supabase
+    .from("workout_session_photos")
+    .select("id, session_id, storage_path")
+    .eq("id", photoId)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+  if (!photo) return;
+
+  await supabase.storage.from(PHOTO_BUCKET).remove([photo.storage_path]);
+  const { error: delErr } = await supabase
+    .from("workout_session_photos")
+    .delete()
+    .eq("id", photoId);
+  if (delErr) throw delErr;
+
+  revalidatePath(`/history/${photo.session_id}`);
+}
+
 export async function wipeAllSessions() {
   const supabase = await createClient();
 

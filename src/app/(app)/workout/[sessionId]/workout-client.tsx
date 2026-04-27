@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { Camera, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
-import { finishWorkout, logSet } from "@/app/actions/workout";
+import { finishWorkout, logSet, uploadSessionPhotos } from "@/app/actions/workout";
 import { RestTimerBar } from "@/components/rest-timer";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { useRestTimer } from "@/lib/stores/rest-timer";
@@ -48,7 +48,9 @@ export function WorkoutClient({
   const [exercises, setExercises] = useState(initialExercises);
   const [elapsed, setElapsed] = useState(0);
   const [finishing, startFinish] = useTransition();
-  const [confirmFinish, setConfirmFinish] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [notes, setNotes] = useState("");
   const startRest = useRestTimer((s) => s.start);
 
   useEffect(() => {
@@ -109,14 +111,32 @@ export function WorkoutClient({
     }
   }
 
-  function onFinish() {
-    if (!confirmFinish) {
-      setConfirmFinish(true);
-      setTimeout(() => setConfirmFinish(false), 3000);
-      return;
-    }
+  function addPhotos(list: FileList | null) {
+    if (!list) return;
+    const incoming = Array.from(list);
+    setPhotos((prev) => [...prev, ...incoming].slice(0, 6));
+  }
+
+  function removePhoto(idx: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function confirmFinish() {
     startFinish(async () => {
-      await finishWorkout({ sessionId });
+      if (photos.length > 0) {
+        const fd = new FormData();
+        fd.set("sessionId", sessionId);
+        photos.forEach((p) => fd.append("photos", p));
+        try {
+          await uploadSessionPhotos(fd);
+        } catch (err) {
+          console.error("uploadSessionPhotos failed", err);
+        }
+      }
+      await finishWorkout({
+        sessionId,
+        notes: notes.trim() ? notes.trim() : undefined,
+      });
     });
   }
 
@@ -160,24 +180,145 @@ export function WorkoutClient({
         <div className="max-w-md mx-auto">
           <button
             type="button"
-            onClick={onFinish}
+            onClick={() => setSheetOpen(true)}
             disabled={finishing}
             className={cn(
-              "w-full h-14 rounded-md font-medium text-base transition-colors",
-              confirmFinish
-                ? "bg-red-500 text-white"
-                : "bg-white text-black",
+              "w-full h-14 rounded-md font-medium text-base bg-white text-black transition-colors",
               finishing && "opacity-50"
             )}
           >
-            {finishing
-              ? "Finishing…"
-              : confirmFinish
-                ? "Tap again to confirm"
-                : "Finish workout"}
+            {finishing ? "Finishing…" : "Finish workout"}
           </button>
         </div>
       </div>
+
+      {sheetOpen ? (
+        <FinishSheet
+          photos={photos}
+          notes={notes}
+          finishing={finishing}
+          onAddPhotos={addPhotos}
+          onRemovePhoto={removePhoto}
+          onChangeNotes={setNotes}
+          onClose={() => setSheetOpen(false)}
+          onConfirm={confirmFinish}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function FinishSheet({
+  photos,
+  notes,
+  finishing,
+  onAddPhotos,
+  onRemovePhoto,
+  onChangeNotes,
+  onClose,
+  onConfirm,
+}: {
+  photos: File[];
+  notes: string;
+  finishing: boolean;
+  onAddPhotos: (list: FileList | null) => void;
+  onRemovePhoto: (idx: number) => void;
+  onChangeNotes: (v: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
+      <div
+        className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Finish workout</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-9 w-9 -mr-2 flex items-center justify-center text-neutral-400"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs uppercase tracking-wide text-neutral-500">
+            Photos (optional)
+          </label>
+          {photos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {photos.map((file, i) => (
+                <PhotoThumb key={i} file={file} onRemove={() => onRemovePhoto(i)} />
+              ))}
+            </div>
+          ) : null}
+          {photos.length < 6 ? (
+            <label className="flex items-center justify-center gap-2 h-12 rounded-md border border-dashed border-neutral-700 text-sm text-neutral-300">
+              <Camera className="w-4 h-4" />
+              <span>{photos.length === 0 ? "Add photo" : "Add more"}</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  onAddPhotos(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          ) : null}
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs uppercase tracking-wide text-neutral-500">
+            Notes (optional)
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => onChangeNotes(e.target.value)}
+            rows={2}
+            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:border-neutral-600"
+            placeholder="Felt strong, bumped weight on…"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={finishing}
+          className={cn(
+            "w-full h-12 rounded-md font-medium bg-emerald-500 text-black",
+            finishing && "opacity-50"
+          )}
+        >
+          {finishing ? "Finishing…" : "Finish workout"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const url = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  return (
+    <div className="relative aspect-square rounded-md overflow-hidden bg-neutral-900 border border-neutral-800">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" className="w-full h-full object-cover" />
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label="Remove photo"
+        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 }

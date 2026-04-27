@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -39,6 +40,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      body_logs: {
+        Row: {
+          calories: number | null
+          log_date: string
+          note: string | null
+          updated_at: string
+          user_id: string
+          weight_lb: number
+        }
+        Insert: {
+          calories?: number | null
+          log_date: string
+          note?: string | null
+          updated_at?: string
+          user_id: string
+          weight_lb: number
+        }
+        Update: {
+          calories?: number | null
+          log_date?: string
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+          weight_lb?: number
+        }
+        Relationships: []
+      }
       program_days: {
         Row: {
           day_number: number
@@ -198,6 +226,38 @@ export type Database = {
           },
           {
             foreignKeyName: "set_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_session_photos: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_session_photos_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "workout_sessions"

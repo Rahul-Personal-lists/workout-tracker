@@ -293,6 +293,59 @@ export type ExerciseHistoryPoint = {
   planned_reps: number | null;
 };
 
+export type SessionPhoto = {
+  id: string;
+  storage_path: string;
+  signed_url: string;
+  created_at: string;
+};
+
+export async function getSessionPhotos(sessionId: string): Promise<SessionPhoto[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_session_photos")
+    .select("id, storage_path, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  const paths = data.map((p) => p.storage_path);
+  const { data: signed, error: signErr } = await supabase.storage
+    .from("workout-photos")
+    .createSignedUrls(paths, 60 * 60);
+  if (signErr) throw signErr;
+
+  return data.map((row, i) => ({
+    id: row.id,
+    storage_path: row.storage_path,
+    created_at: row.created_at,
+    signed_url: signed?.[i]?.signedUrl ?? "",
+  }));
+}
+
+export type BodyLogRow = {
+  log_date: string;
+  weight_lb: number;
+  calories: number | null;
+  note: string | null;
+};
+
+export async function getBodyLogs(): Promise<BodyLogRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("body_logs")
+    .select("log_date, weight_lb, calories, note")
+    .order("log_date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    log_date: r.log_date,
+    weight_lb: Number(r.weight_lb),
+    calories: r.calories,
+    note: r.note,
+  }));
+}
+
 export async function getExerciseHistory(
   programExerciseId: string
 ): Promise<{ name: string; points: ExerciseHistoryPoint[] } | null> {
