@@ -4,6 +4,7 @@ import { getCurrentProgram, getNextWorkout } from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatWeight } from "@/lib/format";
 import { startWorkout } from "@/app/actions/workout";
+import { seedStarterProgram } from "@/app/actions/program";
 
 export default async function TodayPage() {
   const program = await getCurrentProgram();
@@ -14,10 +15,21 @@ export default async function TodayPage() {
         <header>
           <h1 className="text-2xl font-semibold">Today</h1>
         </header>
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
-          No program found for your account. Run{" "}
-          <code className="text-neutral-100">npx tsx scripts/seed-program.ts {`<email>`}</code>{" "}
-          to seed the 12-week plan.
+        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
+          <p>You don&apos;t have a program yet.</p>
+          <form
+            action={async () => {
+              "use server";
+              await seedStarterProgram();
+            }}
+          >
+            <button
+              type="submit"
+              className="w-full h-11 rounded-md bg-white text-black font-medium text-sm"
+            >
+              Use 12-Week starter program
+            </button>
+          </form>
         </div>
       </div>
     );

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { ArchiveExerciseButton } from "./archive-button";
 import { startWorkout } from "@/app/actions/workout";
+import { seedStarterProgram } from "@/app/actions/program";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,22 @@ export default async function ProgramPage({
         <header>
           <h1 className="text-2xl font-semibold">Program</h1>
         </header>
-        <p className="text-sm text-neutral-400">No program seeded yet.</p>
+        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
+          <p>No program yet. Start with the 12-week template — you can edit exercises after.</p>
+          <form
+            action={async () => {
+              "use server";
+              await seedStarterProgram();
+            }}
+          >
+            <button
+              type="submit"
+              className="w-full h-11 rounded-md bg-white text-black font-medium text-sm"
+            >
+              Use 12-Week starter program
+            </button>
+          </form>
+        </div>
       </div>
     );
   }

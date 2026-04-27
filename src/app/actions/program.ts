@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { STARTER_PROGRAM } from "@/lib/starter-program";
 
 const AddExerciseSchema = z.object({
   programDayId: z.string().uuid(),
@@ -76,6 +77,72 @@ export async function archiveExerciseFromProgram(
 
   revalidatePath("/program");
   revalidatePath("/today");
+}
+
+export async function seedStarterProgram() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: existing, error: existingErr } = await supabase
+    .from("programs")
+    .select("id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+  if (existingErr) throw existingErr;
+  if (existing) {
+    redirect("/program");
+  }
+
+  const { data: programRow, error: progErr } = await supabase
+    .from("programs")
+    .insert({
+      user_id: user.id,
+      name: STARTER_PROGRAM.name,
+      weeks: STARTER_PROGRAM.weeks,
+      deload_weeks: STARTER_PROGRAM.deload_weeks,
+    })
+    .select("id")
+    .single();
+  if (progErr) throw progErr;
+
+  for (const day of STARTER_PROGRAM.days) {
+    const { data: dayRow, error: dayErr } = await supabase
+      .from("program_days")
+      .insert({
+        program_id: programRow.id,
+        day_number: day.day_number,
+        label: day.label,
+        title: day.title,
+      })
+      .select("id")
+      .single();
+    if (dayErr) throw dayErr;
+
+    const exerciseRows = day.exercises.map((ex, i) => ({
+      program_day_id: dayRow.id,
+      order_index: i,
+      name: ex.name,
+      sets: ex.sets,
+      base_reps: ex.base_reps,
+      start_weight: ex.start_weight,
+      increment: ex.increment,
+      tracked: ex.tracked,
+      note: ex.note ?? null,
+      image_url: ex.image_url,
+    }));
+    const { error: exErr } = await supabase
+      .from("program_exercises")
+      .insert(exerciseRows);
+    if (exErr) throw exErr;
+  }
+
+  revalidatePath("/program");
+  revalidatePath("/today");
+  redirect("/today");
 }
 
 export async function unarchiveExerciseFromProgram(
