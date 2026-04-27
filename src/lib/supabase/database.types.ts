@@ -69,6 +69,7 @@ export type Database = {
       }
       program_days: {
         Row: {
+          archived_at: string | null
           day_number: number
           id: string
           label: string
@@ -76,6 +77,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          archived_at?: string | null
           day_number: number
           id?: string
           label: string
@@ -83,6 +85,7 @@ export type Database = {
           title: string
         }
         Update: {
+          archived_at?: string | null
           day_number?: number
           id?: string
           label?: string
@@ -154,25 +157,31 @@ export type Database = {
       }
       programs: {
         Row: {
+          archived_at: string | null
           created_at: string
           deload_weeks: number[]
           id: string
+          is_active: boolean
           name: string
           user_id: string
           weeks: number
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           deload_weeks?: number[]
           id?: string
+          is_active?: boolean
           name: string
           user_id: string
           weeks: number
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           deload_weeks?: number[]
           id?: string
+          is_active?: boolean
           name?: string
           user_id?: string
           weeks?: number

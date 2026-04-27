@@ -28,7 +28,12 @@ export type StarterProgram = {
   days: StarterDay[];
 };
 
-export const STARTER_PROGRAM: StarterProgram = {
+export type PresetProgram = StarterProgram & {
+  id: string;
+  description: string;
+};
+
+const PRESET_STARTER_12WK: StarterProgram = {
   name: "12-Week Hypertrophy",
   weeks: 12,
   deload_weeks: [4, 8, 12],
@@ -87,3 +92,170 @@ export const STARTER_PROGRAM: StarterProgram = {
     },
   ],
 };
+
+const PRESET_PPL_6WK: StarterProgram = {
+  name: "Push / Pull / Legs",
+  weeks: 6,
+  deload_weeks: [],
+  days: [
+    {
+      day_number: 1,
+      label: "Day 1",
+      title: "Push",
+      exercises: [
+        { name: "Barbell Bench Press",      sets: 4, base_reps: 8,  increment: 2.5, start_weight: 65, tracked: true,  image_url: IMG("Barbell_Bench_Press_-_Medium_Grip") },
+        { name: "Seated DB Overhead Press", sets: 3, base_reps: 10, increment: 2.5, start_weight: 35, tracked: false, image_url: IMG("Seated_Dumbbell_Press") },
+        { name: "Incline DB Press",         sets: 3, base_reps: 10, increment: 2.5, start_weight: 25, tracked: false, image_url: IMG("Incline_Dumbbell_Press") },
+        { name: "Cable Fly",                sets: 3, base_reps: 12, increment: 2.5, start_weight: 15, tracked: false, image_url: IMG("Flat_Bench_Cable_Flyes") },
+        { name: "Tricep Pushdown",          sets: 3, base_reps: 12, increment: 2.5, start_weight: 30, tracked: false, image_url: IMG("Triceps_Pushdown") },
+      ],
+    },
+    {
+      day_number: 2,
+      label: "Day 2",
+      title: "Pull",
+      exercises: [
+        { name: "Barbell Bent-Over Row",  sets: 4, base_reps: 8,  increment: 2.5, start_weight: 60, tracked: true,  image_url: IMG("Bent_Over_Barbell_Row") },
+        { name: "Lat Pulldown",           sets: 3, base_reps: 10, increment: 2.5, start_weight: 50, tracked: false, image_url: IMG("Wide-Grip_Lat_Pulldown") },
+        { name: "Cable Row (close grip)", sets: 3, base_reps: 10, increment: 2.5, start_weight: 50, tracked: false, image_url: IMG("Seated_Cable_Rows") },
+        { name: "Face Pulls",             sets: 3, base_reps: 15, increment: 2.5, start_weight: 20, tracked: false, image_url: IMG("Face_Pull") },
+        { name: "EZ Bar Curl",            sets: 3, base_reps: 12, increment: 2.5, start_weight: 30, tracked: false, image_url: IMG("Close-Grip_EZ_Bar_Curl") },
+      ],
+    },
+    {
+      day_number: 3,
+      label: "Day 3",
+      title: "Legs",
+      exercises: [
+        { name: "Barbell Back Squat",        sets: 4, base_reps: 8,  increment: 2.5, start_weight: 65, tracked: true,  image_url: IMG("Barbell_Squat") },
+        { name: "Romanian Deadlift",         sets: 3, base_reps: 10, increment: 2.5, start_weight: 75, tracked: true,  image_url: IMG("Romanian_Deadlift") },
+        { name: "DB Lunges",                 sets: 3, base_reps: 12, increment: 2.5, start_weight: 20, tracked: false, image_url: IMG("Dumbbell_Lunges"),         note: "per side" },
+        { name: "DB Hip Thrust",             sets: 3, base_reps: 12, increment: 5,   start_weight: 35, tracked: false, image_url: IMG("Barbell_Hip_Thrust") },
+        { name: "Standing Calf Raises (DB)", sets: 4, base_reps: 15, increment: 5,   start_weight: 30, tracked: false, image_url: IMG("Standing_Calf_Raises") },
+      ],
+    },
+  ],
+};
+
+const PRESET_UPPER_LOWER_8WK: StarterProgram = {
+  name: "Upper / Lower",
+  weeks: 8,
+  deload_weeks: [8],
+  days: [
+    {
+      day_number: 1,
+      label: "Day 1",
+      title: "Upper A",
+      exercises: [
+        { name: "Barbell Bench Press",      sets: 4, base_reps: 6,  increment: 5,   start_weight: 65, tracked: true,  image_url: IMG("Barbell_Bench_Press_-_Medium_Grip") },
+        { name: "Barbell Bent-Over Row",    sets: 4, base_reps: 6,  increment: 5,   start_weight: 60, tracked: true,  image_url: IMG("Bent_Over_Barbell_Row") },
+        { name: "Seated DB Overhead Press", sets: 3, base_reps: 10, increment: 2.5, start_weight: 35, tracked: false, image_url: IMG("Seated_Dumbbell_Press") },
+        { name: "EZ Bar Curl",              sets: 3, base_reps: 10, increment: 2.5, start_weight: 30, tracked: false, image_url: IMG("Close-Grip_EZ_Bar_Curl") },
+        { name: "Tricep Pushdown",          sets: 3, base_reps: 10, increment: 2.5, start_weight: 30, tracked: false, image_url: IMG("Triceps_Pushdown") },
+      ],
+    },
+    {
+      day_number: 2,
+      label: "Day 2",
+      title: "Lower A",
+      exercises: [
+        { name: "Barbell Back Squat",        sets: 4, base_reps: 6,  increment: 5,   start_weight: 65, tracked: true,  image_url: IMG("Barbell_Squat") },
+        { name: "Romanian Deadlift",         sets: 3, base_reps: 8,  increment: 5,   start_weight: 75, tracked: true,  image_url: IMG("Romanian_Deadlift") },
+        { name: "DB Reverse Lunge",          sets: 3, base_reps: 10, increment: 2.5, start_weight: 20, tracked: false, image_url: IMG("Dumbbell_Rear_Lunge"),    note: "per side" },
+        { name: "Standing Calf Raises (DB)", sets: 4, base_reps: 15, increment: 5,   start_weight: 30, tracked: false, image_url: IMG("Standing_Calf_Raises") },
+      ],
+    },
+    {
+      day_number: 3,
+      label: "Day 3",
+      title: "Upper B",
+      exercises: [
+        { name: "Incline DB Press",          sets: 4, base_reps: 10, increment: 2.5, start_weight: 25, tracked: false, image_url: IMG("Incline_Dumbbell_Press") },
+        { name: "Lat Pulldown",              sets: 4, base_reps: 10, increment: 2.5, start_weight: 50, tracked: false, image_url: IMG("Wide-Grip_Lat_Pulldown") },
+        { name: "Cable Fly",                 sets: 3, base_reps: 12, increment: 2.5, start_weight: 15, tracked: false, image_url: IMG("Flat_Bench_Cable_Flyes") },
+        { name: "Face Pulls",                sets: 3, base_reps: 15, increment: 2.5, start_weight: 20, tracked: false, image_url: IMG("Face_Pull") },
+        { name: "Hammer Curl",               sets: 3, base_reps: 12, increment: 2.5, start_weight: 20, tracked: false, image_url: IMG("Hammer_Curls") },
+        { name: "Overhead Tricep Extension", sets: 3, base_reps: 12, increment: 2.5, start_weight: 25, tracked: false, image_url: IMG("Seated_Triceps_Press") },
+      ],
+    },
+    {
+      day_number: 4,
+      label: "Day 4",
+      title: "Lower B",
+      exercises: [
+        { name: "Bulgarian Split Squat",  sets: 3, base_reps: 10, increment: 2.5, start_weight: 20, tracked: false, image_url: IMG("One_Leg_Barbell_Squat"), note: "per side, DB" },
+        { name: "DB Stiff-Leg Deadlift",  sets: 3, base_reps: 12, increment: 5,   start_weight: 35, tracked: false, image_url: IMG("Stiff-Legged_Dumbbell_Deadlift") },
+        { name: "DB Hip Thrust",          sets: 3, base_reps: 12, increment: 5,   start_weight: 35, tracked: false, image_url: IMG("Barbell_Hip_Thrust") },
+        { name: "Plank",                  sets: 3, base_reps: null, increment: 0, start_weight: null, tracked: false, image_url: IMG("Plank"),                note: "45 sec hold" },
+      ],
+    },
+  ],
+};
+
+const PRESET_FULL_BODY_3X_6WK: StarterProgram = {
+  name: "Full Body 3x",
+  weeks: 6,
+  deload_weeks: [],
+  days: [
+    {
+      day_number: 1,
+      label: "Day 1",
+      title: "Full Body A",
+      exercises: [
+        { name: "Barbell Back Squat",       sets: 3, base_reps: 5,  increment: 5,   start_weight: 65, tracked: true,  image_url: IMG("Barbell_Squat") },
+        { name: "Barbell Bench Press",      sets: 3, base_reps: 5,  increment: 5,   start_weight: 65, tracked: true,  image_url: IMG("Barbell_Bench_Press_-_Medium_Grip") },
+        { name: "Barbell Bent-Over Row",    sets: 3, base_reps: 5,  increment: 5,   start_weight: 60, tracked: true,  image_url: IMG("Bent_Over_Barbell_Row") },
+      ],
+    },
+    {
+      day_number: 2,
+      label: "Day 2",
+      title: "Full Body B",
+      exercises: [
+        { name: "Barbell Back Squat",        sets: 3, base_reps: 5,  increment: 5,   start_weight: 65, tracked: true,  image_url: IMG("Barbell_Squat") },
+        { name: "Seated DB Overhead Press",  sets: 3, base_reps: 8,  increment: 2.5, start_weight: 35, tracked: true,  image_url: IMG("Seated_Dumbbell_Press") },
+        { name: "Romanian Deadlift",         sets: 3, base_reps: 8,  increment: 5,   start_weight: 75, tracked: true,  image_url: IMG("Romanian_Deadlift") },
+      ],
+    },
+    {
+      day_number: 3,
+      label: "Day 3",
+      title: "Full Body C",
+      exercises: [
+        { name: "Barbell Back Squat",        sets: 3, base_reps: 5,  increment: 5,   start_weight: 65, tracked: true,  image_url: IMG("Barbell_Squat") },
+        { name: "Barbell Bench Press",       sets: 3, base_reps: 5,  increment: 5,   start_weight: 65, tracked: true,  image_url: IMG("Barbell_Bench_Press_-_Medium_Grip") },
+        { name: "Lat Pulldown",              sets: 3, base_reps: 10, increment: 2.5, start_weight: 50, tracked: false, image_url: IMG("Wide-Grip_Lat_Pulldown") },
+      ],
+    },
+  ],
+};
+
+export const PRESET_PROGRAMS: PresetProgram[] = [
+  {
+    id: "starter-12wk",
+    description: "Strength + hypertrophy split. 4 days. Deloads on weeks 4, 8, 12.",
+    ...PRESET_STARTER_12WK,
+  },
+  {
+    id: "ppl-6wk",
+    description: "Classic push/pull/legs. 3 days, no deloads, light progression.",
+    ...PRESET_PPL_6WK,
+  },
+  {
+    id: "upper-lower-8wk",
+    description: "4-day upper/lower split. Deload on week 8.",
+    ...PRESET_UPPER_LOWER_8WK,
+  },
+  {
+    id: "full-body-3x-6wk",
+    description: "Compound-focused full body, 3 days/week.",
+    ...PRESET_FULL_BODY_3X_6WK,
+  },
+];
+
+export function getPreset(id: string): PresetProgram | undefined {
+  return PRESET_PROGRAMS.find((p) => p.id === id);
+}
+
+// Backward compat for scripts/seed-program.ts
+export const STARTER_PROGRAM: StarterProgram = PRESET_STARTER_12WK;

@@ -4,7 +4,6 @@ import { getCurrentProgram, getNextWorkout } from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatWeight } from "@/lib/format";
 import { startWorkout } from "@/app/actions/workout";
-import { seedStarterProgram } from "@/app/actions/program";
 
 export default async function TodayPage() {
   const program = await getCurrentProgram();
@@ -17,19 +16,31 @@ export default async function TodayPage() {
         </header>
         <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
           <p>You don&apos;t have a program yet.</p>
-          <form
-            action={async () => {
-              "use server";
-              await seedStarterProgram();
-            }}
+          <Link
+            href="/program"
+            className="block w-full h-11 leading-[2.75rem] text-center rounded-md bg-white text-black font-medium text-sm"
           >
-            <button
-              type="submit"
-              className="w-full h-11 rounded-md bg-white text-black font-medium text-sm"
-            >
-              Use 12-Week starter program
-            </button>
-          </form>
+            Pick a program
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (program.days.length === 0) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-semibold">Today</h1>
+        </header>
+        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
+          <p>{program.name} has no days yet.</p>
+          <Link
+            href="/program"
+            className="block w-full h-11 leading-[2.75rem] text-center rounded-md bg-white text-black font-medium text-sm"
+          >
+            Set up days
+          </Link>
         </div>
       </div>
     );

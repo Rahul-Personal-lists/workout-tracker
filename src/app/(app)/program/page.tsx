@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { Play, Plus } from "lucide-react";
-import { getCurrentProgram, getNextWorkout } from "@/lib/queries";
+import {
+  getAllPrograms,
+  getCurrentProgram,
+  getNextWorkout,
+} from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatWeight } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
+import { PRESET_PROGRAMS } from "@/lib/starter-program";
 import { ArchiveExerciseButton } from "./archive-button";
+import { DayControls } from "./day-controls";
+import { ProgramSwitcher } from "./program-switcher";
 import { startWorkout } from "@/app/actions/workout";
-import { seedStarterProgram } from "@/app/actions/program";
+import { addDay, seedPresetProgram } from "@/app/actions/program";
 
 export const dynamic = "force-dynamic";
 
@@ -17,30 +24,59 @@ export default async function ProgramPage({
   searchParams: Promise<{ week?: string }>;
 }) {
   const { week: weekParam } = await searchParams;
-  const program = await getCurrentProgram();
+  const [program, allPrograms] = await Promise.all([
+    getCurrentProgram(),
+    getAllPrograms(),
+  ]);
 
   if (!program) {
     return (
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-2xl font-semibold">Program</h1>
+      <div className="space-y-5">
+        <header className="space-y-1">
+          <h1 className="text-2xl font-semibold">New program</h1>
+          <p className="text-xs text-neutral-500">
+            Pick a template or build your own.
+          </p>
         </header>
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
-          <p>No program yet. Start with the 12-week template — you can edit exercises after.</p>
-          <form
-            action={async () => {
-              "use server";
-              await seedStarterProgram();
-            }}
-          >
-            <button
-              type="submit"
-              className="w-full h-11 rounded-md bg-white text-black font-medium text-sm"
+        <ul className="space-y-2">
+          {PRESET_PROGRAMS.map((p) => (
+            <li
+              key={p.id}
+              className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 space-y-2"
             >
-              Use 12-Week starter program
-            </button>
-          </form>
-        </div>
+              <div>
+                <h2 className="text-sm font-medium">{p.name}</h2>
+                <p className="text-[11px] text-neutral-500">
+                  {p.weeks} weeks · {p.days.length} days/week
+                  {p.deload_weeks.length
+                    ? ` · deloads ${p.deload_weeks.join(", ")}`
+                    : ""}
+                </p>
+                <p className="text-xs text-neutral-400 mt-1">{p.description}</p>
+              </div>
+              <form
+                action={async () => {
+                  "use server";
+                  await seedPresetProgram({ presetId: p.id });
+                }}
+              >
+                <button
+                  type="submit"
+                  className="w-full h-10 rounded-md bg-white text-black font-medium text-xs"
+                >
+                  Use this program
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+        <Link
+          href="/program/new"
+          className="block rounded-lg border border-dashed border-neutral-700 bg-neutral-900/40 p-3 text-center text-sm text-neutral-300"
+        >
+          <Plus className="inline w-4 h-4 mr-1 -mt-0.5" />
+          Create blank program
+        </Link>
       </div>
     );
   }
@@ -59,6 +95,7 @@ export default async function ProgramPage({
 
   const phase = getPhase(selectedWeek);
   const isDeload = program.deload_weeks.includes(selectedWeek);
+  const canAddProgram = allPrograms.length < 2;
 
   return (
     <div className="space-y-5">
@@ -69,6 +106,24 @@ export default async function ProgramPage({
           {program.deload_weeks.join(", ") || "none"}
         </p>
       </header>
+
+      {(allPrograms.length > 1 || canAddProgram) && (
+        <div className="flex items-center justify-between gap-2">
+          {allPrograms.length > 1 ? (
+            <ProgramSwitcher programs={allPrograms} />
+          ) : (
+            <span />
+          )}
+          {canAddProgram ? (
+            <Link
+              href="/program/new"
+              className="h-9 px-3 rounded-md border border-neutral-800 text-xs text-neutral-300 inline-flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" /> New program
+            </Link>
+          ) : null}
+        </div>
+      )}
 
       <div className="-mx-4 px-4 overflow-x-auto">
         <div className="flex gap-1.5 min-w-max">
@@ -114,13 +169,18 @@ export default async function ProgramPage({
             key={day.id}
             className="rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden"
           >
-            <header className="px-3 py-2.5 border-b border-neutral-800 flex items-center gap-3">
+            <header className="px-3 py-2.5 border-b border-neutral-800 flex items-center gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] uppercase tracking-wide text-neutral-500">
                   {day.label}
                 </p>
-                <h2 className="text-sm font-medium">{day.title}</h2>
+                <h2 className="text-sm font-medium truncate">{day.title}</h2>
               </div>
+              <DayControls
+                dayId={day.id}
+                initialLabel={day.label}
+                initialTitle={day.title}
+              />
               <form
                 action={async () => {
                   "use server";
@@ -174,6 +234,11 @@ export default async function ProgramPage({
                   </li>
                 );
               })}
+              {day.exercises.length === 0 ? (
+                <li className="text-xs text-neutral-500 italic px-1 py-2">
+                  No exercises yet.
+                </li>
+              ) : null}
             </ul>
             <Link
               href={`/program/add?day=${day.id}&week=${selectedWeek}`}
@@ -184,6 +249,25 @@ export default async function ProgramPage({
           </li>
         ))}
       </ul>
+
+      <form
+        action={async () => {
+          "use server";
+          const nextN = program.days.length + 1;
+          await addDay({
+            programId: program.id,
+            label: `Day ${nextN}`,
+            title: "New day",
+          });
+        }}
+      >
+        <button
+          type="submit"
+          className="w-full h-10 rounded-md border border-dashed border-neutral-700 bg-neutral-900/40 text-xs text-neutral-300 inline-flex items-center justify-center gap-1.5"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add day
+        </button>
+      </form>
     </div>
   );
 }

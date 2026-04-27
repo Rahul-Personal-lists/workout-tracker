@@ -35,29 +35,49 @@ export async function getCurrentProgram(
   opts: { includeArchived?: boolean } = {}
 ): Promise<Program | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("programs")
-    .select(
-      `
+
+  const baseSelect = `
       id, name, weeks, deload_weeks,
       days:program_days (
-        id, day_number, label, title,
+        id, day_number, label, title, archived_at,
         exercises:program_exercises (
           id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at
         )
       )
-    `
-    )
-    .order("created_at", { ascending: false })
+    `;
+
+  // Prefer the explicitly active, non-archived program. Fall back to most recent
+  // non-archived for legacy users created before is_active existed.
+  const active = await supabase
+    .from("programs")
+    .select(baseSelect)
+    .eq("is_active", true)
+    .is("archived_at", null)
     .limit(1)
     .maybeSingle();
+  if (active.error) throw active.error;
 
-  if (error) throw error;
+  let data = active.data;
+  if (!data) {
+    const fallback = await supabase
+      .from("programs")
+      .select(baseSelect)
+      .is("archived_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (fallback.error) throw fallback.error;
+    data = fallback.data;
+  }
   if (!data) return null;
 
   const days = (data.days ?? [])
+    .filter((d) => opts.includeArchived || d.archived_at === null)
     .map((d) => ({
-      ...d,
+      id: d.id,
+      day_number: d.day_number,
+      label: d.label,
+      title: d.title,
       exercises: (d.exercises ?? [])
         .filter((ex) => opts.includeArchived || ex.archived_at === null)
         .slice()
@@ -72,6 +92,37 @@ export async function getCurrentProgram(
     deload_weeks: data.deload_weeks,
     days,
   };
+}
+
+export type ProgramSummary = {
+  id: string;
+  name: string;
+  is_active: boolean;
+  archived_at: string | null;
+  created_at: string;
+};
+
+export async function getAllPrograms(): Promise<ProgramSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("programs")
+    .select("id, name, is_active, archived_at, created_at")
+    .is("archived_at", null)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function hasInProgressSession(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .is("ended_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
 }
 
 export type NextWorkout =
