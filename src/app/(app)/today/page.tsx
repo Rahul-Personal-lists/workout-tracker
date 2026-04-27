@@ -63,10 +63,10 @@ export default async function TodayPage() {
           🎉 You finished all {program.weeks} weeks. Time to plan the next block.
         </div>
         <Link
-          href="/history"
+          href="/calendar"
           className="block w-full text-center h-12 leading-[3rem] rounded-md border border-neutral-800"
         >
-          View history
+          View calendar
         </Link>
       </div>
     );

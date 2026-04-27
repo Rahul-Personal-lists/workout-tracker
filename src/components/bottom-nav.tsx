@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Dumbbell, History, Scale, Settings } from "lucide-react";
+import { CalendarDays, CalendarRange, Dumbbell, Scale, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
-  { href: "/today",    label: "Today",   icon: CalendarDays },
-  { href: "/program",  label: "Program", icon: Dumbbell },
-  { href: "/history",  label: "History", icon: History },
-  { href: "/body",     label: "Body",    icon: Scale },
+  { href: "/today",    label: "Today",    icon: CalendarDays },
+  { href: "/program",  label: "Program",  icon: Dumbbell },
+  { href: "/calendar", label: "Calendar", icon: CalendarRange },
+  { href: "/body",     label: "Body",     icon: Scale },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

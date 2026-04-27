@@ -69,8 +69,9 @@ src/app/
 │   ├── program                    template picker (empty) OR week selector + day cards (Start W{n}, rename/archive day, + Add day, + Add exercise) and 2-program switcher
 │   │   ├── add                    catalog search → config form
 │   │   └── new                    blank-program builder (name, weeks, deloads, days)
-│   ├── history                    session list
-│   │   ├── [sessionId]            session detail with planned-vs-actual
+│   ├── calendar                   month grid of tracked sessions (?m=YYYY-MM); tap a day → /history/[sessionId]
+│   ├── history                    (no list page; only the detail routes below)
+│   │   ├── [sessionId]            session detail with planned-vs-actual (reached from /calendar)
 │   │   └── exercise/[id]          Recharts top-set-per-session
 │   └── settings                   user info, sign out, danger zone (wipe sessions)
 └── api/auth/callback              Supabase code exchange

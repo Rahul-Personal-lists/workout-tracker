@@ -82,7 +82,7 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
   if (error) throw error;
 
   revalidatePath("/today");
-  revalidatePath("/history");
+  revalidatePath("/calendar");
   redirect(`/history/${sessionId}`);
 }
 
@@ -188,6 +188,6 @@ export async function wipeAllSessions() {
   if (error) throw error;
 
   revalidatePath("/today");
-  revalidatePath("/history");
+  revalidatePath("/calendar");
   redirect("/today");
 }

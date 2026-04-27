@@ -45,10 +45,10 @@ export default async function SessionDetailPage({
   return (
     <div className="space-y-6">
       <Link
-        href="/history"
+        href="/calendar"
         className="inline-flex items-center text-sm text-neutral-400"
       >
-        <ArrowLeft className="w-4 h-4 mr-1" /> History
+        <ArrowLeft className="w-4 h-4 mr-1" /> Calendar
       </Link>
 
       <header className="space-y-1">

@@ -433,3 +433,46 @@ export async function getExerciseHistory(
     })),
   };
 }
+
+export type CalendarDay = {
+  date: string; // YYYY-MM-DD in local time
+  status: "completed" | "in-progress";
+  sessionId: string;
+  label: string;
+};
+
+export async function getCalendarMonth(
+  year: number,
+  month: number
+): Promise<Map<string, CalendarDay>> {
+  const supabase = await createClient();
+
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 1);
+
+  const { data: sessions, error } = await supabase
+    .from("workout_sessions")
+    .select(
+      `id, started_at, ended_at,
+       program_days ( label, title )`
+    )
+    .gte("started_at", start.toISOString())
+    .lt("started_at", end.toISOString())
+    .order("started_at", { ascending: true });
+  if (error) throw error;
+
+  const byDate = new Map<string, CalendarDay>();
+  for (const s of sessions ?? []) {
+    const d = new Date(s.started_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const dayLabel = s.program_days?.label ?? "—";
+    const dayTitle = s.program_days?.title ?? "—";
+    byDate.set(key, {
+      date: key,
+      status: s.ended_at ? "completed" : "in-progress",
+      sessionId: s.id,
+      label: `${dayLabel} · ${dayTitle}`,
+    });
+  }
+  return byDate;
+}
