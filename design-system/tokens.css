@@ -1,0 +1,79 @@
+/* Shared design tokens — imported by the Next app (globals.css) and by
+ * colors_and_type.css. Font *family* names are set by each consumer. */
+
+:root {
+  /* COLOR — Surface (permanently dark) */
+  --bg: #000000;
+  --bg-elev-1: #0a0a0a;
+  --bg-elev-2: #171717;
+  --bg-elev-3: #262626;
+
+  /* COLOR — Foreground */
+  --fg-1: #ffffff;
+  --fg-2: #d4d4d4;
+  --fg-3: #a3a3a3;
+  --fg-4: #737373;
+  --fg-5: #525252;
+
+  --border: #262626;
+  --border-soft: #404040;
+
+  /* COLOR — Accent (emerald) */
+  --accent: #10b981;
+  --accent-hi: #34d399;
+  --accent-hi-2: #6ee7b7;
+  --accent-tint: rgba(16, 185, 129, 0.1);
+  --accent-edge: rgba(16, 185, 129, 0.4);
+
+  /* COLOR — Danger */
+  --danger: #ef4444;
+  --danger-text: #f87171;
+  --danger-tint: rgba(239, 68, 68, 0.05);
+  --danger-edge: rgba(239, 68, 68, 0.3);
+
+  /* COLOR — Image plate */
+  --plate: #f5f5f5;
+
+  /* TYPE — Scale */
+  --text-2xs: 10px;
+  --text-xs: 11px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --w-bold: 700;
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-norm: 1.5;
+
+  --tracking-wide: 0.05em;
+
+  /* SPACING / RADIUS / SIZES */
+  --space-0_5: 2px;
+  --space-1: 4px;
+  --space-1_5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  --tap-min: 44px;
+  --button-h: 48px;
+  --button-h-lg: 56px;
+  --nav-h: 64px;
+  --container: 448px;
+}

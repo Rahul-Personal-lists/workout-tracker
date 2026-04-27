@@ -1,135 +1,19 @@
 /* Workout Tracker — colors_and_type.css
- * Source of truth: pulled from src/app/layout.tsx (Geist Sans/Mono),
- * src/app/globals.css (theme), and the Tailwind utility usage across
- * src/app/(app)/* and src/components/*. The product is a mobile-first PWA;
- * this file mirrors the live runtime palette: a hard black canvas, neutral-
- * scale chrome, white primary, emerald accent for active/complete, red for
- * danger.
- *
- * Fonts:
- *   Geist Sans  → primary UI typeface
- *   Geist Mono  → numeric / monospaced (tabular-nums)
- * Both are loaded from Google Fonts (the Next.js app uses next/font; this
- * project uses the @import equivalent so HTML cards work standalone).
+ * Design tokens: design-system/tokens.css (imported below).
+ * Standalone HTML cards load Geist from Google; the Next app uses
+ * next/font in layout.tsx and maps families in src/app/globals.css.
  */
 
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap");
+@import url("./tokens.css");
 
 :root {
-  /* ──────────────────────────────────────────────────────────────
-     COLOR — Surface
-     The app is permanently dark. There is no light mode.
-     ─────────────────────────────────────────────────────────── */
-  --bg:           #000000;            /* page canvas (body) */
-  --bg-elev-1:    #0a0a0a;            /* neutral-950 — sheets, modal sheets */
-  --bg-elev-2:    #171717;            /* neutral-900 — cards, inputs */
-  --bg-elev-3:    #262626;            /* neutral-800 — pressed/selected card */
-
-  /* ──────────────────────────────────────────────────────────────
-     COLOR — Foreground (neutral scale)
-     Used for text, icons, hairline borders, and disabled chrome.
-     fg-1 is primary, fg-5 is the lightest hint. Borders use n-800.
-     ─────────────────────────────────────────────────────────── */
-  --fg-1:         #ffffff;            /* primary text, primary CTA fill */
-  --fg-2:         #d4d4d4;            /* neutral-300 — secondary text, time readout */
-  --fg-3:         #a3a3a3;            /* neutral-400 — meta text, set hints */
-  --fg-4:         #737373;            /* neutral-500 — eyebrow labels, inactive nav */
-  --fg-5:         #525252;            /* neutral-600 — disabled */
-
-  --border:       #262626;            /* neutral-800 — every card, input, divider */
-  --border-soft:  #404040;            /* neutral-700 — focus border, dashed CTA */
-
-  /* ──────────────────────────────────────────────────────────────
-     COLOR — Accent (emerald)
-     Used for: completed sets, active rest timer, "current week"
-     indicator, primary success affordance. NEVER as a primary CTA —
-     primary CTA is white-on-black.
-     ─────────────────────────────────────────────────────────── */
-  --accent:           #10b981;        /* emerald-500 — fills, borders */
-  --accent-hi:        #34d399;        /* emerald-400 — text on emerald tint */
-  --accent-hi-2:      #6ee7b7;        /* emerald-300 — countdown numerals */
-  --accent-tint:      rgba(16, 185, 129, 0.10);  /* emerald-500/10 — rest bar fill */
-  --accent-edge:      rgba(16, 185, 129, 0.40);  /* emerald-500/40 — rest bar border */
-
-  /* ──────────────────────────────────────────────────────────────
-     COLOR — Danger (red)
-     Used for: settings danger zone, error text, destructive ops.
-     ─────────────────────────────────────────────────────────── */
-  --danger:           #ef4444;        /* red-500 */
-  --danger-text:      #f87171;        /* red-400 — error message */
-  --danger-tint:      rgba(239, 68, 68, 0.05);   /* red-500/5 — danger card fill */
-  --danger-edge:      rgba(239, 68, 68, 0.30);   /* red-500/30 — danger card border */
-
-  /* ──────────────────────────────────────────────────────────────
-     COLOR — Image plate
-     Exercise GIF frames sit on a near-white backing so the dark
-     line art reads against the dark UI.
-     ─────────────────────────────────────────────────────────── */
-  --plate:        #f5f5f5;            /* neutral-100 — exercise image backing */
-
-  /* ──────────────────────────────────────────────────────────────
-     TYPE — Family
-     ─────────────────────────────────────────────────────────── */
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-               Roboto, Helvetica, Arial, sans-serif;
+    Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-
-  /* ──────────────────────────────────────────────────────────────
-     TYPE — Scale (matches Tailwind text-*)
-     ─────────────────────────────────────────────────────────── */
-  --text-2xs:   10px;   /* set hint under input */
-  --text-xs:    11px;   /* eyebrow, meta, nav label */
-  --text-sm:    14px;   /* body, list items, exercise name */
-  --text-base:  16px;   /* inputs, primary button */
-  --text-lg:    18px;   /* rest countdown */
-  --text-xl:    20px;   /* page header on /workout */
-  --text-2xl:   24px;   /* page header (h1) */
-
-  /* Weights */
-  --w-regular:  400;
-  --w-medium:   500;
-  --w-semibold: 600;
-  --w-bold:     700;
-
-  /* Line height */
-  --leading-tight: 1.2;
-  --leading-snug:  1.35;
-  --leading-norm:  1.5;
-
-  /* Tracking */
-  --tracking-wide: 0.05em;     /* uppercase eyebrows */
-
-  /* ──────────────────────────────────────────────────────────────
-     SPACING / RADIUS / SIZES
-     ─────────────────────────────────────────────────────────── */
-  --space-0_5: 2px;
-  --space-1:   4px;
-  --space-1_5: 6px;
-  --space-2:   8px;
-  --space-3:   12px;
-  --space-4:   16px;
-  --space-5:   20px;
-  --space-6:   24px;
-  --space-8:   32px;
-
-  --radius-sm:  4px;     /* set rows, internal pills */
-  --radius-md:  6px;     /* default for buttons + cards */
-  --radius-lg:  8px;     /* exercise cards, day cards */
-  --radius-xl:  12px;    /* bottom sheet */
-  --radius-full: 9999px;
-
-  --tap-min:    44px;    /* every interactive element ≥ 44px */
-  --button-h:   48px;    /* secondary form button */
-  --button-h-lg:56px;    /* primary "Start workout" / "Finish workout" */
-  --nav-h:      64px;    /* bottom nav */
-  --container:  448px;   /* max-w-md — viewport-centered column */
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   SEMANTIC ELEMENT STYLES
-   Plain tags inside a .wt-doc wrapper get product-correct defaults.
-   Use these in HTML cards / kit demos. Production code uses Tailwind.
-   ────────────────────────────────────────────────────────────────── */
+/* SEMANTIC ELEMENT STYLES — used by preview HTML; production uses Tailwind. */
 
 .wt-doc {
   background: var(--bg);
