@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LogoKettlePop } from "@/components/logo-kettle-pop";
 
@@ -8,6 +8,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,7 +55,7 @@ export default function LoginPage() {
           <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm">
             Check <span className="font-medium">{email}</span> for the sign-in link.
           </div>
-        ) : (
+        ) : mounted ? (
           <form onSubmit={onSubmit} className="space-y-4">
             <input
               type="email"
@@ -73,6 +78,11 @@ export default function LoginPage() {
               <p className="text-sm text-red-400">{errorMsg}</p>
             ) : null}
           </form>
+        ) : (
+          <div className="space-y-4">
+            <div className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800" />
+            <div className="w-full h-12 rounded-md bg-white/90" />
+          </div>
         )}
       </div>
     </main>

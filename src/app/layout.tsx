@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { TimezoneInit } from "@/components/tz-init";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Workout Tracker",
-  description: "Mobile-first PWA for tracking my 12-week program.",
+  description: "Turn every workout into measurable progress.",
   applicationName: "Workout",
   appleWebApp: {
     capable: true,
@@ -33,21 +35,24 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
+const VALID_THEMES = new Set(["lime", "sky", "amber", "violet", "rose"]);
+
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const stored = cookieStore.get("accent-theme")?.value;
+  const theme = stored && VALID_THEMES.has(stored) ? stored : "lime";
+
   return (
     <html
       lang="en"
+      data-theme={theme}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('accent-theme')||'lime';document.documentElement.dataset.theme=t;var tz=Intl.DateTimeFormat().resolvedOptions().timeZone;if(tz){var c='tz='+encodeURIComponent(tz);if(document.cookie.indexOf(c)===-1)document.cookie=c+';path=/;max-age=31536000;samesite=lax';}}catch(e){document.documentElement.dataset.theme='lime';}`,
-          }}
-        />
+        <TimezoneInit />
         {children}
         <ServiceWorkerRegister />
       </body>

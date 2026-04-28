@@ -18,13 +18,14 @@ export function ThemePicker() {
   const [theme, setTheme] = useState<ThemeKey>("lime");
 
   useEffect(() => {
-    const stored = (localStorage.getItem("accent-theme") as ThemeKey | null) ?? "lime";
+    const match = document.cookie.match(/(?:^|;\s*)accent-theme=([^;]+)/);
+    const stored = (match?.[1] as ThemeKey | undefined) ?? "lime";
     setTheme(stored);
   }, []);
 
   function pick(key: ThemeKey) {
     setTheme(key);
-    localStorage.setItem("accent-theme", key);
+    document.cookie = `accent-theme=${key};path=/;max-age=31536000;samesite=lax`;
     document.documentElement.dataset.theme = key;
   }
 
