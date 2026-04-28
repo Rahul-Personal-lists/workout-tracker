@@ -357,6 +357,11 @@ function ExerciseCard({
       </div>
 
       <div className="space-y-1.5">
+        <div className="grid grid-cols-[1fr_1fr_44px] gap-2 px-2 text-[10px] uppercase tracking-wide text-neutral-500">
+          <span className="text-center">Lb</span>
+          <span className="text-center">Reps</span>
+          <span />
+        </div>
         {exercise.sets.map((set) => (
           <SetInputRow
             key={set.setNumber}

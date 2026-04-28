@@ -1,7 +1,5 @@
 @import "tailwindcss";
-@import "../../design-system/colors_and_type.css";
 
-/* Map next/font (layout.tsx) to design token names used in CSS. */
 :root {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
     sans-serif;
@@ -10,70 +8,10 @@
 }
 
 @theme inline {
-  /* shadcn-friendly aliases */
-  --color-background: var(--bg);
-  --color-foreground: var(--fg-1);
-
-  /* Surface + text */
-  --color-wt-bg: var(--bg);
-  --color-wt-elev-1: var(--bg-elev-1);
-  --color-wt-elev-2: var(--bg-elev-2);
-  --color-wt-elev-3: var(--bg-elev-3);
-  --color-wt-fg-1: var(--fg-1);
-  --color-wt-fg-2: var(--fg-2);
-  --color-wt-fg-3: var(--fg-3);
-  --color-wt-fg-4: var(--fg-4);
-  --color-wt-fg-5: var(--fg-5);
-  --color-wt-border: var(--border);
-  --color-wt-border-soft: var(--border-soft);
-
-  /* Accent + danger + plate */
-  --color-wt-accent: var(--accent);
-  --color-wt-accent-hi: var(--accent-hi);
-  --color-wt-accent-hi-2: var(--accent-hi-2);
-  --color-wt-accent-tint: var(--accent-tint);
-  --color-wt-accent-edge: var(--accent-edge);
-  --color-wt-danger: var(--danger);
-  --color-wt-danger-text: var(--danger-text);
-  --color-wt-danger-tint: var(--danger-tint);
-  --color-wt-danger-edge: var(--danger-edge);
-  --color-wt-plate: var(--plate);
-
-  /* Typography — Tailwind text-* and font */
+  --color-background: #000;
+  --color-foreground: #fff;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --text-wt-2xs: var(--text-2xs);
-  --text-wt-xs: var(--text-xs);
-  --text-wt-sm: var(--text-sm);
-  --text-wt-base: var(--text-base);
-  --text-wt-lg: var(--text-lg);
-  --text-wt-xl: var(--text-xl);
-  --text-wt-2xl: var(--text-2xl);
-  --tracking-wt-wide: var(--tracking-wide);
-
-  /* Radius + layout */
-  --radius-wt-sm: var(--radius-sm);
-  --radius-wt-md: var(--radius-md);
-  --radius-wt-lg: var(--radius-lg);
-  --radius-wt-xl: var(--radius-xl);
-  --radius-wt-full: var(--radius-full);
-  --height-wt-tap: var(--tap-min);
-  --height-wt-button: var(--button-h);
-  --height-wt-button-lg: var(--button-h-lg);
-  --height-wt-nav: var(--nav-h);
-  --max-width-wt-container: var(--container);
-
-  /* Spacing scale (opt-in) */
-  --spacing-wt-0_5: var(--space-0_5);
-  --spacing-wt-1: var(--space-1);
-  --spacing-wt-1_5: var(--space-1_5);
-  --spacing-wt-2: var(--space-2);
-  --spacing-wt-3: var(--space-3);
-  --spacing-wt-4: var(--space-4);
-  --spacing-wt-5: var(--space-5);
-  --spacing-wt-6: var(--space-6);
-  --spacing-wt-8: var(--space-8);
-
   --animate-exercise-flip: exercise-flip 1.6s ease-in-out infinite;
 }
 
@@ -92,8 +30,8 @@
 }
 
 body {
-  background: var(--bg);
-  color: var(--fg-1);
+  background: #000;
+  color: #fff;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

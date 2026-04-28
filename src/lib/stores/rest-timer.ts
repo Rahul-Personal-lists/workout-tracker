@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export const REST_DURATIONS = [60, 90, 120, 180] as const;
+export const REST_DURATIONS = [30, 60, 90, 120] as const;
 export type RestDuration = (typeof REST_DURATIONS)[number];
 
 type RestTimerState = {
