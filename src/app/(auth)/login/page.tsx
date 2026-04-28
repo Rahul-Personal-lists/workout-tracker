@@ -36,13 +36,12 @@ export default function LoginPage() {
         className="pointer-events-none absolute inset-x-0 top-0 h-[55%]"
         style={{
           background:
-            "radial-gradient(ellipse 60% 80% at 50% 0%, rgb(16 185 129 / 0.18), transparent 70%)",
+            "radial-gradient(ellipse 60% 80% at 50% 0%, rgb(16 185 129 / 0.35), transparent 70%)",
         }}
       />
       <div className="relative w-full max-w-sm space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold">Workout Tracker</h1>
-          <p className="text-sm text-neutral-400 mt-1">Sign in with a magic link.</p>
+          <h1 className="text-2xl font-semibold">Welcome to Workout Tracker</h1>
         </div>
 
         {status === "sent" ? (

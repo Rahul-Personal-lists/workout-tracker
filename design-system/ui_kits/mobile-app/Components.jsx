@@ -192,18 +192,87 @@ function TodayScreen({ onStart }) {
   // gapDays >= 4 (cold-start / returning user) — wire from sessions.completed_at.
   const gapDays = 0; // mock: most recent session was today/yesterday
   const showReengage = gapDays >= 4;
+  // Block-aware coaching line. Tied to current program block + day type — not
+  // a random quote. Imperative, terse, one actionable cue per cell.
+  // Same line shows for the whole 4-week block on purpose; repetition is the
+  // coaching. Read as: COACH[`${block.kind}.${day.kind}`] ?? COACH.default
+  const COACH = {
+    "foundation.upper-strength":    "Focus on bar speed. Smooth descent, drive fast.",
+    "foundation.upper-hypertrophy": "Slow eccentrics. Three counts down on every rep.",
+    "foundation.lower-strength":    "Tight setup. Wedge into the bar before you unrack.",
+    "foundation.lower-hypertrophy": "Full depth. Don't chase weight today.",
+    "build.upper-strength":         "Top set is the work set. Back-offs at RPE 7.",
+    "build.upper-hypertrophy":      "Stretch under load. Pause one count at the bottom.",
+    "build.lower-strength":         "Brace before the rep, not during. Drive through the floor.",
+    "build.lower-hypertrophy":      "Control the negative. The pump is the point.",
+    "peak.upper-strength":          "Trust the program. Don't add weight today.",
+    "peak.upper-hypertrophy":       "Volume over intensity this week. Save it for the test.",
+    "peak.lower-strength":          "Singles only on top sets. Reset between reps.",
+    "peak.lower-hypertrophy":       "Pump work. Stay 2 reps shy of failure.",
+    "deload.upper-strength":        "Half the volume, half the bar. Practice the patterns.",
+    "deload.upper-hypertrophy":     "Light and clean. Leave the gym feeling fresh.",
+    "deload.lower-strength":        "Bar warmup only on top sets. Reset your back.",
+    "deload.lower-hypertrophy":     "Mobility focus. Quality reps, no grinders.",
+    "default":                      "Show up. The program does the rest.",
+  };
+  const userName = "Rahul";
+  const blockKind = "foundation"; // mock — read from current_block
+  const dayKind = "lower-strength"; // mock — read from day
+  const coach = COACH[`${blockKind}.${dayKind}`] ?? COACH.default;
   return (
     <div style={{display:"flex",flexDirection:"column",gap:24}}>
-      <header style={{display:"flex",flexDirection:"column",gap:4}}>
+      <header style={{display:"flex",flexDirection:"column",gap:6}}>
+        <p style={{margin:0,fontSize:13,color:"#d4d4d4"}}>
+          Hi, {userName}.
+        </p>
         <p style={{margin:0,fontSize:11,color:"#737373",fontVariantNumeric:"tabular-nums",
           display:"flex",alignItems:"center",gap:8}}>
           <span>Day 23 of 84</span>
           <span style={{color:"#404040"}}>·</span>
           <span>4-day streak</span>
         </p>
-        <Eyebrow>Foundation · Week {week}</Eyebrow>
-        <H1>{day.label}: {day.title}</H1>
+        <p style={{margin:"8px 0 0",fontSize:13,color:"#a3a3a3",lineHeight:1.45,
+          fontStyle:"normal",borderLeft:"1.5px solid #262626",paddingLeft:10}}>
+          {coach}
+        </p>
+        <H1 style={{marginTop:8}}>{day.label}: {day.title}</H1>
       </header>
+
+      {showReengage ? (
+        <div style={{border:"1px solid #262626",background:"#171717",borderRadius:8,padding:12,
+          display:"flex",flexDirection:"column",gap:10}}>
+          <p style={{margin:0,fontSize:13,color:"#d4d4d4",lineHeight:1.45}}>
+            It's been {gapDays} days. Pick up where you left off — or shift the program back a week.
+          </p>
+          <div style={{display:"flex",gap:8}}>
+            <button style={{height:36,padding:"0 12px",borderRadius:6,background:"#fff",color:"#000",
+              fontSize:12,fontWeight:500,border:"none",cursor:"pointer"}}>Pick up here</button>
+            <button style={{height:36,padding:"0 12px",borderRadius:6,background:"transparent",color:"#d4d4d4",
+              fontSize:12,border:"1px solid #262626",cursor:"pointer"}}>Shift back 1 week</button>
+            <button aria-label="Dismiss" style={{marginLeft:"auto",height:36,width:36,borderRadius:6,
+              background:"transparent",color:"#737373",border:"none",cursor:"pointer",
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+              <ic.X size={16}/>
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <ul style={{listStyle:"none",margin:0,padding:0,display:"flex",flexDirection:"column",gap:8}}>
+        {day.exercises.map(ex => (
+          <li key={ex.id} style={{border:"1px solid #262626",background:"#171717",borderRadius:6,padding:12,
+            display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:12}}>
+            <span style={{fontSize:14}}>{ex.name}</span>
+            <span style={{fontSize:11,color:"#a3a3a3",fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>
+              {ex.sets}×{ex.reps??"—"}{ex.wt!==null?` · ${ex.wt} lb`:""}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <PrimaryButton lg onClick={onStart}>Start workout</PrimaryButton>
+    </div>
+  );
+}
 
       {showReengage ? (
         <div style={{border:"1px solid #262626",background:"#171717",borderRadius:8,padding:12,

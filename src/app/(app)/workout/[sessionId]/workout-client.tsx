@@ -436,7 +436,7 @@ function SetInputRow({
         set.completed ? "bg-neutral-800/60" : "bg-neutral-950"
       )}
     >
-      <label className="flex flex-col">
+      <label className="flex flex-col min-w-0">
         <input
           type="text"
           inputMode="decimal"
@@ -446,7 +446,7 @@ function SetInputRow({
           onBlur={commitOnBlur}
           placeholder="lb"
           className={cn(
-            "h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
+            "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
             set.completed && "text-neutral-400"
           )}
         />
@@ -463,7 +463,7 @@ function SetInputRow({
         onBlur={commitOnBlur}
         placeholder="reps"
         className={cn(
-          "h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
+          "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
           set.completed && "text-neutral-400"
         )}
       />

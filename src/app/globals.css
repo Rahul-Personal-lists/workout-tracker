@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "../../design-system/tokens.css";
+@import "../../design-system/colors_and_type.css";
 
 /* Map next/font (layout.tsx) to design token names used in CSS. */
 :root {
