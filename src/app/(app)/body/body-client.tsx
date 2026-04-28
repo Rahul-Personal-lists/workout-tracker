@@ -154,7 +154,7 @@ export function BodyClient({ initialLogs }: { initialLogs: BodyLogRow[] }) {
           onClick={onSave}
           disabled={pending}
           className={cn(
-            "w-full h-11 rounded-md font-medium text-sm bg-white text-black",
+            "w-full h-11 rounded-md font-medium text-sm bg-accent text-accent-foreground",
             pending && "opacity-50"
           )}
         >

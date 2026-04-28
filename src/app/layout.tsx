@@ -40,8 +40,14 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('accent-theme')||'lime';document.documentElement.dataset.theme=t;var tz=Intl.DateTimeFormat().resolvedOptions().timeZone;if(tz){var c='tz='+encodeURIComponent(tz);if(document.cookie.indexOf(c)===-1)document.cookie=c+';path=/;max-age=31536000;samesite=lax';}}catch(e){document.documentElement.dataset.theme='lime';}`,
+          }}
+        />
         {children}
         <ServiceWorkerRegister />
       </body>

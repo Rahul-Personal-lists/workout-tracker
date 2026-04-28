@@ -15,6 +15,17 @@
   --animate-exercise-flip: exercise-flip 1.6s ease-in-out infinite;
 }
 
+@theme {
+  --color-accent: #a3e635;
+  --color-accent-foreground: #000;
+}
+
+:root[data-theme="lime"]   { --color-accent: #a3e635; }
+:root[data-theme="sky"]    { --color-accent: #38bdf8; }
+:root[data-theme="amber"]  { --color-accent: #fbbf24; }
+:root[data-theme="violet"] { --color-accent: #a78bfa; }
+:root[data-theme="rose"]   { --color-accent: #fb7185; }
+
 @keyframes exercise-flip {
   0%,
   40% {

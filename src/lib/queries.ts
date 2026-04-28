@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { dateKeyInTz } from "@/lib/tz";
 
 export type ProgramExercise = {
   id: string;
@@ -443,12 +444,15 @@ export type CalendarDay = {
 
 export async function getCalendarMonth(
   year: number,
-  month: number
+  month: number,
+  tz: string
 ): Promise<Map<string, CalendarDay>> {
   const supabase = await createClient();
 
-  const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 1);
+  // Pad ±1 day in UTC so sessions whose local-tz date falls inside the
+  // visible month are included even when their UTC instant straddles the boundary.
+  const start = new Date(Date.UTC(year, month - 1, 1) - 24 * 60 * 60 * 1000);
+  const end = new Date(Date.UTC(year, month, 1) + 24 * 60 * 60 * 1000);
 
   const { data: sessions, error } = await supabase
     .from("workout_sessions")
@@ -463,8 +467,7 @@ export async function getCalendarMonth(
 
   const byDate = new Map<string, CalendarDay>();
   for (const s of sessions ?? []) {
-    const d = new Date(s.started_at);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const key = dateKeyInTz(new Date(s.started_at), tz);
     const dayLabel = s.program_days?.label ?? "—";
     const dayTitle = s.program_days?.title ?? "—";
     byDate.set(key, {

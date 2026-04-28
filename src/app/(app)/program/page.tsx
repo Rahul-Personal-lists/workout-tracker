@@ -62,7 +62,7 @@ export default async function ProgramPage({
               >
                 <button
                   type="submit"
-                  className="w-full h-10 rounded-md bg-white text-black font-medium text-xs"
+                  className="w-full h-10 rounded-md bg-accent text-accent-foreground font-medium text-xs"
                 >
                   Use this program
                 </button>
@@ -139,7 +139,7 @@ export default async function ProgramPage({
                 className={cn(
                   "h-9 min-w-[44px] px-2 rounded-md flex flex-col items-center justify-center text-[11px] tabular-nums border",
                   isSelected
-                    ? "bg-white text-black border-white"
+                    ? "bg-accent text-accent-foreground border-accent"
                     : isCurrent
                       ? "border-emerald-500 text-emerald-400"
                       : "border-neutral-800 text-neutral-400"
@@ -192,7 +192,7 @@ export default async function ProgramPage({
               >
                 <button
                   type="submit"
-                  className="h-9 px-3 rounded-md bg-white text-black text-xs font-medium flex items-center gap-1.5"
+                  className="h-9 px-3 rounded-md bg-accent text-accent-foreground text-xs font-medium flex items-center gap-1.5"
                   aria-label={`Start ${day.label} for week ${selectedWeek}`}
                 >
                   <Play className="w-3.5 h-3.5" /> Start W{selectedWeek}

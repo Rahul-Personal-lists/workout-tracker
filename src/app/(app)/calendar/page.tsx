@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getCalendarMonth, type CalendarDay } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { dateKeyInTz, getUserTimezone, yearMonthInTz } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,10 @@ const MONTH_NAMES = [
 ];
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-function parseMonth(param: string | undefined): { year: number; month: number } {
+function parseMonth(
+  param: string | undefined,
+  tz: string
+): { year: number; month: number } {
   if (param) {
     const m = /^(\d{4})-(\d{2})$/.exec(param);
     if (m) {
@@ -20,18 +24,12 @@ function parseMonth(param: string | undefined): { year: number; month: number } 
       if (month >= 1 && month <= 12) return { year, month };
     }
   }
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  return yearMonthInTz(new Date(), tz);
 }
 
 function shiftMonth(year: number, month: number, delta: number) {
   const d = new Date(year, month - 1 + delta, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function todayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export default async function CalendarPage({
@@ -40,14 +38,15 @@ export default async function CalendarPage({
   searchParams: Promise<{ m?: string }>;
 }) {
   const { m } = await searchParams;
-  const { year, month } = parseMonth(m);
-  const sessionsByDate = await getCalendarMonth(year, month);
+  const tz = await getUserTimezone();
+  const { year, month } = parseMonth(m, tz);
+  const sessionsByDate = await getCalendarMonth(year, month, tz);
 
   const firstOfMonth = new Date(year, month - 1, 1);
   const leadingBlanks = firstOfMonth.getDay();
   const daysInMonth = new Date(year, month, 0).getDate();
   const totalCells = Math.ceil((leadingBlanks + daysInMonth) / 7) * 7;
-  const today = todayKey();
+  const today = dateKeyInTz(new Date(), tz);
 
   const cells: Array<{ key: string; date: number | null; dateKey: string | null }> = [];
   for (let i = 0; i < totalCells; i++) {

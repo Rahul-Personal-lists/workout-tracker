@@ -279,7 +279,7 @@ function ConfigForm({
           type="submit"
           disabled={submitting}
           className={cn(
-            "h-12 rounded-md bg-white text-black font-medium text-sm flex-1",
+            "h-12 rounded-md bg-accent text-accent-foreground font-medium text-sm flex-1",
             submitting && "opacity-50"
           )}
         >

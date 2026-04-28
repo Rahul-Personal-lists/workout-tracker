@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./sign-out";
 import { WipeSessionsButton } from "./wipe-sessions";
+import { ThemePicker } from "./theme-picker";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -22,6 +23,8 @@ export default async function SettingsPage() {
         <p className="text-xs text-neutral-500 uppercase tracking-wide">Signed in as</p>
         <p className="text-sm">{user?.email}</p>
       </section>
+
+      <ThemePicker />
 
       <SignOutButton />
 

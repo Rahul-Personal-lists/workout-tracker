@@ -66,6 +66,63 @@ export async function logSet(input: z.infer<typeof LogSetSchema>) {
   if (error) throw error;
 }
 
+export async function editSetLog(input: z.infer<typeof LogSetSchema>) {
+  const parsed = LogSetSchema.parse(input);
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("set_logs").upsert(
+    {
+      session_id: parsed.sessionId,
+      program_exercise_id: parsed.programExerciseId,
+      set_number: parsed.setNumber,
+      planned_weight: parsed.plannedWeight,
+      planned_reps: parsed.plannedReps,
+      actual_weight: parsed.actualWeight,
+      actual_reps: parsed.actualReps,
+      completed: parsed.completed,
+      logged_at: new Date().toISOString(),
+    },
+    { onConflict: "session_id,program_exercise_id,set_number" }
+  );
+  if (error) throw error;
+
+  revalidatePath(`/history/${parsed.sessionId}`);
+  revalidatePath("/calendar");
+}
+
+const EditDurationSchema = z.object({
+  sessionId: z.string().uuid(),
+  durationSeconds: z.number().int().min(0).max(60 * 60 * 24),
+});
+
+export async function editSessionDuration(
+  input: z.infer<typeof EditDurationSchema>
+) {
+  const { sessionId, durationSeconds } = EditDurationSchema.parse(input);
+  const supabase = await createClient();
+
+  const { data: session, error: getErr } = await supabase
+    .from("workout_sessions")
+    .select("started_at")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (getErr) throw getErr;
+  if (!session) throw new Error("Session not found");
+
+  const ended = new Date(
+    new Date(session.started_at).getTime() + durationSeconds * 1000
+  ).toISOString();
+
+  const { error } = await supabase
+    .from("workout_sessions")
+    .update({ ended_at: ended })
+    .eq("id", sessionId);
+  if (error) throw error;
+
+  revalidatePath(`/history/${sessionId}`);
+  revalidatePath("/calendar");
+}
+
 const FinishSchema = z.object({
   sessionId: z.string().uuid(),
   notes: z.string().optional(),

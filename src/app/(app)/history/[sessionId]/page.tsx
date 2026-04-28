@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { format } from "date-fns";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import {
   getCurrentProgram,
@@ -9,7 +8,10 @@ import {
   getSessionPhotos,
 } from "@/lib/queries";
 import { SessionPhotos } from "./session-photos";
-import { formatDuration, formatWeight } from "@/lib/format";
+import { DurationEditor } from "./duration-editor";
+import { EditableSetRow } from "./set-editor";
+import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
+import { formatDateInTz, getUserTimezone } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +29,10 @@ export default async function SessionDetailPage({
   const day = program?.days.find((d) => d.id === session.program_day_id);
   if (!day) notFound();
 
-  const [logs, photos] = await Promise.all([
+  const [logs, photos, tz] = await Promise.all([
     getSessionLogs(sessionId),
     getSessionPhotos(sessionId),
+    getUserTimezone(),
   ]);
 
   const totalVolume = logs.reduce(
@@ -53,11 +56,14 @@ export default async function SessionDetailPage({
 
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-neutral-500">
-          Week {session.week_number} · {day.label} · {format(new Date(session.started_at), "MMM d, yyyy")}
+          Week {session.week_number} · {day.label} · {formatDateInTz(new Date(session.started_at), tz)}
         </p>
         <h1 className="text-xl font-semibold leading-tight">{day.title}</h1>
         <div className="text-[11px] text-neutral-400 tabular-nums flex gap-3 pt-1">
-          <span>{formatDuration(session.duration_seconds)}</span>
+          <DurationEditor
+            sessionId={session.id}
+            durationSeconds={session.duration_seconds}
+          />
           <span>{completedCount} sets</span>
           {totalVolume > 0 ? (
             <span>{Math.round(totalVolume).toLocaleString()} lb·reps</span>
@@ -78,20 +84,31 @@ export default async function SessionDetailPage({
           const exLogs = logs
             .filter((l) => l.program_exercise_id === ex.id)
             .sort((a, b) => a.set_number - b.set_number);
+          const fallbackPlannedWeight = getPlannedWeight(
+            ex.start_weight,
+            ex.increment,
+            session.week_number,
+            program?.deload_weeks ?? []
+          );
+          const fallbackPlannedReps = getPlannedReps(
+            ex.base_reps,
+            session.week_number,
+            program?.deload_weeks ?? []
+          );
           const expected = Array.from({ length: ex.sets }, (_, i) => {
             const setNumber = i + 1;
-            return (
-              exLogs.find((l) => l.set_number === setNumber) ?? {
-                id: `missing-${ex.id}-${setNumber}`,
-                program_exercise_id: ex.id,
-                set_number: setNumber,
-                planned_weight: null,
-                planned_reps: null,
-                actual_weight: null,
-                actual_reps: null,
-                completed: false,
-              }
-            );
+            const existing = exLogs.find((l) => l.set_number === setNumber);
+            if (existing) return existing;
+            return {
+              id: `missing-${ex.id}-${setNumber}`,
+              program_exercise_id: ex.id,
+              set_number: setNumber,
+              planned_weight: fallbackPlannedWeight,
+              planned_reps: fallbackPlannedReps,
+              actual_weight: null,
+              actual_reps: null,
+              completed: false,
+            };
           });
 
           return (
@@ -108,23 +125,17 @@ export default async function SessionDetailPage({
               </Link>
               <div className="px-3 pb-3 space-y-1">
                 {expected.map((s) => (
-                  <div
+                  <EditableSetRow
                     key={s.set_number}
-                    className="grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm"
-                  >
-                    <span className="text-neutral-500 tabular-nums">{s.set_number}</span>
-                    <span className="tabular-nums">
-                      {s.actual_weight !== null
-                        ? `${formatWeight(s.actual_weight)} lb`
-                        : "—"}
-                      {s.actual_reps !== null ? ` × ${s.actual_reps}` : ""}
-                    </span>
-                    <span className="text-[11px] text-neutral-500 tabular-nums">
-                      {s.planned_weight !== null
-                        ? `planned ${formatWeight(s.planned_weight)} × ${s.planned_reps ?? "—"}`
-                        : ""}
-                    </span>
-                  </div>
+                    sessionId={session.id}
+                    programExerciseId={ex.id}
+                    setNumber={s.set_number}
+                    plannedWeight={s.planned_weight}
+                    plannedReps={s.planned_reps}
+                    actualWeight={s.actual_weight}
+                    actualReps={s.actual_reps}
+                    completed={s.completed}
+                  />
                 ))}
               </div>
             </li>

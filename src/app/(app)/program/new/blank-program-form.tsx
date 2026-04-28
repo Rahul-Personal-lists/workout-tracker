@@ -133,28 +133,40 @@ export function BlankProgramForm() {
           {days.map((d, i) => (
             <li
               key={i}
-              className="rounded-lg border border-neutral-800 bg-neutral-900 p-2 flex gap-2"
+              className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 flex gap-2 items-start"
             >
-              <input
-                type="text"
-                value={d.label}
-                onChange={(e) => updateDay(i, { label: e.target.value })}
-                placeholder={`Day ${i + 1}`}
-                className={`${fieldClass} w-24`}
-              />
-              <input
-                type="text"
-                value={d.title}
-                onChange={(e) => updateDay(i, { title: e.target.value })}
-                placeholder="Title (e.g. Upper)"
-                className={`${fieldClass} flex-1`}
-              />
+              <div className="flex-1 space-y-2">
+                <label className="block space-y-1">
+                  <span className="block text-[10px] uppercase tracking-wide text-neutral-500">
+                    Label
+                  </span>
+                  <input
+                    type="text"
+                    value={d.label}
+                    onChange={(e) => updateDay(i, { label: e.target.value })}
+                    placeholder={`Day ${i + 1}`}
+                    className={fieldClass}
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="block text-[10px] uppercase tracking-wide text-neutral-500">
+                    Title
+                  </span>
+                  <input
+                    type="text"
+                    value={d.title}
+                    onChange={(e) => updateDay(i, { title: e.target.value })}
+                    placeholder="e.g. Upper"
+                    className={fieldClass}
+                  />
+                </label>
+              </div>
               <button
                 type="button"
                 onClick={() => removeDay(i)}
                 disabled={days.length <= 1}
                 aria-label="Remove day"
-                className="h-11 w-11 flex items-center justify-center text-neutral-500 disabled:opacity-30"
+                className="h-11 w-11 shrink-0 flex items-center justify-center text-neutral-500 disabled:opacity-30"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -170,7 +182,7 @@ export function BlankProgramForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full h-11 rounded-md bg-white text-black font-medium text-sm disabled:opacity-60"
+        className="w-full h-11 rounded-md bg-accent text-accent-foreground font-medium text-sm disabled:opacity-60"
       >
         {pending ? "Creating…" : "Create program"}
       </button>
