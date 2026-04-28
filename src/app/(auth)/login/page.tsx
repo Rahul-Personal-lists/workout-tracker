@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { LogoKettlePop } from "@/components/logo-kettle-pop";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -39,9 +40,10 @@ export default function LoginPage() {
             "radial-gradient(ellipse 60% 80% at 50% 0%, rgb(16 185 129 / 0.35), transparent 70%)",
         }}
       />
-      <div className="relative w-full max-w-sm space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Welcome to Workout Tracker</h1>
+      <div className="relative w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950/80 p-10 space-y-8 shadow-2xl backdrop-blur">
+        <div className="flex flex-col items-center space-y-4">
+          <LogoKettlePop size={72} />
+          <h1 className="text-2xl font-semibold text-center">Welcome to Workout Tracker</h1>
         </div>
 
         {status === "sent" ? (
