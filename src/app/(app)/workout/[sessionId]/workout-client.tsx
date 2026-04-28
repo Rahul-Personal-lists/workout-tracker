@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Camera, Check, X } from "lucide-react";
+import { Camera, Check, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
 import { finishWorkout, logSet, uploadSessionPhotos } from "@/app/actions/workout";
@@ -94,6 +94,29 @@ export function WorkoutClient({
     );
   }
 
+  function addSet(exerciseId: string) {
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id !== exerciseId) return ex;
+        const nextNumber =
+          ex.sets.reduce((m, s) => Math.max(m, s.setNumber), 0) + 1;
+        const last = ex.sets[ex.sets.length - 1];
+        return {
+          ...ex,
+          sets: [
+            ...ex.sets,
+            {
+              setNumber: nextNumber,
+              actualWeight: last?.actualWeight ?? ex.plannedWeight,
+              actualReps: last?.actualReps ?? ex.plannedReps,
+              completed: false,
+            },
+          ],
+        };
+      })
+    );
+  }
+
   async function persistSet(exercise: ExerciseRow, set: SetRow) {
     try {
       await logSet({
@@ -172,6 +195,7 @@ export function WorkoutClient({
                 startRest();
               }
             }}
+            onAddSet={() => addSet(ex.id)}
           />
         ))}
       </ul>
@@ -326,6 +350,7 @@ function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
 function ExerciseCard({
   exercise,
   onChange,
+  onAddSet,
 }: {
   exercise: ExerciseRow;
   onChange: (
@@ -333,6 +358,7 @@ function ExerciseCard({
     patch: Partial<SetRow>,
     persist: boolean
   ) => void;
+  onAddSet: () => void;
 }) {
   const plannedSummary =
     exercise.plannedWeight !== null
@@ -371,6 +397,14 @@ function ExerciseCard({
             onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}
           />
         ))}
+        <button
+          type="button"
+          onClick={onAddSet}
+          className="flex items-center justify-center gap-1.5 w-full h-9 rounded-md border border-dashed border-neutral-700 text-xs text-neutral-400 hover:border-neutral-600 hover:text-neutral-300 transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add set
+        </button>
       </div>
     </li>
   );

@@ -48,7 +48,9 @@ export default async function WorkoutPage({
     );
 
     const existing = logs.filter((l) => l.program_exercise_id === ex.id);
-    const sets = Array.from({ length: ex.sets }, (_, i) => {
+    const maxLogged = existing.reduce((m, l) => Math.max(m, l.set_number), 0);
+    const setCount = Math.max(ex.sets, maxLogged);
+    const sets = Array.from({ length: setCount }, (_, i) => {
       const setNumber = i + 1;
       const log = existing.find((l) => l.set_number === setNumber);
       return {

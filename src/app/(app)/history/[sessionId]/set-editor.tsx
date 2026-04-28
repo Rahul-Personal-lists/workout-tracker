@@ -124,23 +124,45 @@ export function EditableSetRow({
     );
   }
 
+  const hasActual = actualWeight !== null && actualReps !== null;
+  const matchesPlan =
+    hasActual &&
+    plannedWeight !== null &&
+    actualWeight === plannedWeight &&
+    actualReps === plannedReps;
+  const exceeds =
+    hasActual &&
+    plannedWeight !== null &&
+    plannedReps !== null &&
+    actualWeight! * actualReps! > plannedWeight * plannedReps;
+  const showPlanned = plannedWeight !== null && !matchesPlan;
+  const dimmed = !completed && !hasActual;
+
   return (
     <button
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-neutral-800/40"
+        "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-neutral-800/40",
+        dimmed && "text-neutral-500"
       )}
     >
-      <span className="text-neutral-500 tabular-nums">{setNumber}</span>
-      <span className="tabular-nums">
+      <span className="text-neutral-600 tabular-nums">{setNumber}</span>
+      <span className={cn("tabular-nums", !dimmed && "font-medium")}>
         {actualWeight !== null ? `${formatWeight(actualWeight)} lb` : "—"}
         {actualReps !== null ? ` × ${actualReps}` : ""}
       </span>
       <span className="text-[11px] text-neutral-500 tabular-nums">
-        {plannedWeight !== null
-          ? `planned ${formatWeight(plannedWeight)} × ${plannedReps ?? "—"}`
-          : ""}
+        {showPlanned ? (
+          <>
+            {hasActual ? (
+              <span className={exceeds ? "text-accent" : "text-neutral-500"}>
+                {exceeds ? "↑" : "↓"}{" "}
+              </span>
+            ) : null}
+            planned {formatWeight(plannedWeight)} × {plannedReps ?? "—"}
+          </>
+        ) : null}
       </span>
     </button>
   );

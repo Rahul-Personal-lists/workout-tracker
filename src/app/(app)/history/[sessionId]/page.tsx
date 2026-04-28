@@ -12,6 +12,7 @@ import { DurationEditor } from "./duration-editor";
 import { EditableSetRow } from "./set-editor";
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatDateInTz, getUserTimezone } from "@/lib/tz";
+import { formatWeight } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -54,20 +55,37 @@ export default async function SessionDetailPage({
         <ArrowLeft className="w-4 h-4 mr-1" /> Calendar
       </Link>
 
-      <header className="space-y-1">
+      <header className="space-y-2">
         <p className="text-xs uppercase tracking-wide text-neutral-500">
           Week {session.week_number} · {day.label} · {formatDateInTz(new Date(session.started_at), tz)}
         </p>
         <h1 className="text-xl font-semibold leading-tight">{day.title}</h1>
-        <div className="text-[11px] text-neutral-400 tabular-nums flex gap-3 pt-1">
-          <DurationEditor
-            sessionId={session.id}
-            durationSeconds={session.duration_seconds}
-          />
-          <span>{completedCount} sets</span>
-          {totalVolume > 0 ? (
-            <span>{Math.round(totalVolume).toLocaleString()} lb·reps</span>
-          ) : null}
+        <div className="grid grid-cols-3 gap-4 pt-3 border-t border-neutral-900">
+          <div>
+            <div className="text-base tabular-nums leading-tight">
+              <DurationEditor
+                sessionId={session.id}
+                durationSeconds={session.duration_seconds}
+              />
+            </div>
+            <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+              Time
+            </div>
+          </div>
+          <div>
+            <div className="text-base tabular-nums leading-tight">{completedCount}</div>
+            <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+              Sets
+            </div>
+          </div>
+          <div>
+            <div className="text-base tabular-nums leading-tight">
+              {totalVolume > 0 ? Math.round(totalVolume).toLocaleString() : "—"}
+            </div>
+            <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+              Lb · Reps
+            </div>
+          </div>
         </div>
       </header>
 
@@ -111,6 +129,16 @@ export default async function SessionDetailPage({
             };
           });
 
+          const topSet = exLogs.reduce<(typeof exLogs)[number] | null>((best, l) => {
+            if (!l.completed || l.actual_weight === null || l.actual_reps === null) return best;
+            if (!best) return l;
+            const bw = best.actual_weight ?? 0;
+            const br = best.actual_reps ?? 0;
+            if (l.actual_weight > bw) return l;
+            if (l.actual_weight === bw && l.actual_reps > br) return l;
+            return best;
+          }, null);
+
           return (
             <li
               key={ex.id}
@@ -118,12 +146,17 @@ export default async function SessionDetailPage({
             >
               <Link
                 href={`/history/exercise/${ex.id}`}
-                className="flex items-center justify-between px-3 py-2.5 hover:bg-neutral-800/40"
+                className="flex items-center gap-2 px-3 py-2 border-b border-neutral-900 hover:bg-neutral-800/40"
               >
-                <span className="text-sm font-medium">{ex.name}</span>
-                <ChevronRight className="w-4 h-4 text-neutral-500" />
+                <span className="text-sm font-medium flex-1 min-w-0 truncate">{ex.name}</span>
+                {topSet ? (
+                  <span className="text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                    Top {formatWeight(topSet.actual_weight)} × {topSet.actual_reps}
+                  </span>
+                ) : null}
+                <ChevronRight className="w-4 h-4 text-neutral-500 flex-none" />
               </Link>
-              <div className="px-3 pb-3 space-y-1">
+              <div className="px-3 py-3 space-y-1">
                 {expected.map((s) => (
                   <EditableSetRow
                     key={s.set_number}
