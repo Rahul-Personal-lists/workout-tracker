@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
-import { wipeAllSessions } from "@/app/actions/workout";
+import { deleteSession } from "@/app/actions/workout";
 
-export function WipeSessionsButton() {
+export function DeleteSessionButton({ sessionId }: { sessionId: string }) {
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -16,9 +16,9 @@ export function WipeSessionsButton() {
     }
     startTransition(async () => {
       try {
-        await wipeAllSessions();
+        await deleteSession({ sessionId });
       } catch (err) {
-        console.error("wipe failed", err);
+        console.error("delete session failed", err);
         setConfirming(false);
       }
     });
@@ -38,10 +38,10 @@ export function WipeSessionsButton() {
       )}
     >
       {pending
-        ? "Wiping…"
+        ? "Deleting…"
         : confirming
           ? "Tap again to confirm — this is permanent"
-          : "Wipe all workout sessions"}
+          : "Delete this workout"}
     </button>
   );
 }

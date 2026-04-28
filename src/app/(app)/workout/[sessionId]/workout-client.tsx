@@ -360,15 +360,29 @@ function ExerciseCard({
   ) => void;
   onAddSet: () => void;
 }) {
+  const [zoomed, setZoomed] = useState(false);
+
   const plannedSummary =
     exercise.plannedWeight !== null
       ? `${exercise.sets.length}×${exercise.plannedReps ?? "—"} · ${formatWeight(exercise.plannedWeight)} lb`
       : `${exercise.sets.length}×${exercise.plannedReps ?? "—"}`;
 
   return (
+    <>
     <li className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 space-y-2">
       <div className="flex items-start gap-3">
-        <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
+        {exercise.imageUrl ? (
+          <button
+            type="button"
+            onClick={() => setZoomed(true)}
+            aria-label={`View ${exercise.name} animation`}
+            className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+          >
+            <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
+          </button>
+        ) : (
+          <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
+        )}
         <div className="flex-1 min-w-0 space-y-0.5">
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="text-sm font-medium leading-snug">{exercise.name}</h2>
@@ -407,6 +421,32 @@ function ExerciseCard({
         </button>
       </div>
     </li>
+    {zoomed && exercise.imageUrl ? (
+      <div
+        onClick={() => setZoomed(false)}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${exercise.name} animation`}
+          onClick={(e) => e.stopPropagation()}
+          className="relative bg-neutral-950 border border-neutral-800 rounded-xl p-4 max-w-sm w-full flex flex-col items-center gap-3"
+        >
+          <button
+            type="button"
+            onClick={() => setZoomed(false)}
+            aria-label="Close"
+            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/70 text-white flex items-center justify-center"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={288} />
+          <p className="text-sm text-neutral-300 text-center">{exercise.name}</p>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
 

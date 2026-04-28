@@ -140,6 +140,7 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
 
   revalidatePath("/today");
   revalidatePath("/calendar");
+  revalidatePath("/program");
   redirect(`/history/${sessionId}`);
 }
 
@@ -229,22 +230,35 @@ export async function deleteSessionPhoto(input: z.infer<typeof DeletePhotoSchema
   revalidatePath(`/history/${photo.session_id}`);
 }
 
-export async function wipeAllSessions() {
+const DeleteSessionSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+
+export async function deleteSession(input: z.infer<typeof DeleteSessionSchema>) {
+  const { sessionId } = DeleteSessionSchema.parse(input);
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { data: photos, error: photoErr } = await supabase
+    .from("workout_session_photos")
+    .select("storage_path")
+    .eq("session_id", sessionId);
+  if (photoErr) throw photoErr;
 
-  // set_logs cascade via FK on session_id.
+  if (photos && photos.length > 0) {
+    await supabase.storage
+      .from(PHOTO_BUCKET)
+      .remove(photos.map((p) => p.storage_path));
+  }
+
+  // set_logs and workout_session_photos cascade via FK on session_id.
   const { error } = await supabase
     .from("workout_sessions")
     .delete()
-    .eq("user_id", user.id);
+    .eq("id", sessionId);
   if (error) throw error;
 
   revalidatePath("/today");
   revalidatePath("/calendar");
-  redirect("/today");
+  revalidatePath("/program");
+  redirect("/calendar");
 }

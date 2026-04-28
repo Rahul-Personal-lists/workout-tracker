@@ -10,6 +10,7 @@ import {
 import { SessionPhotos } from "./session-photos";
 import { DurationEditor } from "./duration-editor";
 import { EditableSetRow } from "./set-editor";
+import { DeleteSessionButton } from "./delete-session";
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatDateInTz, getUserTimezone } from "@/lib/tz";
 import { formatWeight } from "@/lib/format";
@@ -175,6 +176,10 @@ export default async function SessionDetailPage({
           );
         })}
       </ul>
+
+      <div className="pt-4">
+        <DeleteSessionButton sessionId={session.id} />
+      </div>
     </div>
   );
 }
