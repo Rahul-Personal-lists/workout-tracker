@@ -23,6 +23,10 @@ jobs:
         run: |
           QS=""
           if [ "$FORCE" = "true" ]; then QS="?force=1"; fi
-          curl -fsS -X POST \
+          STATUS=$(curl -sS -L -o /tmp/resp.txt -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
-            "$APP_URL/api/cron/weekly-summary$QS"
+            "$APP_URL/api/cron/weekly-summary$QS")
+          echo "HTTP $STATUS"
+          cat /tmp/resp.txt
+          echo
+          [ "$STATUS" -lt 400 ]
