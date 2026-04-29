@@ -4,7 +4,7 @@ import type { Database } from "./database.types";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
-const PUBLIC_PATHS = ["/login", "/api/auth/callback"];
+const PUBLIC_PATHS = ["/login", "/api/auth/callback", "/api/cron/"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
