@@ -1,0 +1,28 @@
+name: Weekly workout summary
+
+on:
+  schedule:
+    # Sunday 7pm Vancouver = Monday 02:00 UTC during PDT
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force-run even if outside the Sunday-evening window"
+        required: false
+        default: "false"
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST to weekly-summary endpoint
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          QS=""
+          if [ "$FORCE" = "true" ]; then QS="?force=1"; fi
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/cron/weekly-summary$QS"

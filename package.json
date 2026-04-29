@@ -13,6 +13,8 @@
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@hookform/resolvers": "^3.9.1",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.8",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.46.1",
     "@tanstack/query-async-storage-persister": "^5.59.20",
@@ -21,6 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "idb-keyval": "^6.2.1",
     "lucide-react": "^0.454.0",
     "next": "16.2.4",
@@ -28,6 +31,7 @@
     "react-dom": "19.2.4",
     "react-hook-form": "^7.53.2",
     "recharts": "^2.13.3",
+    "resend": "^6.12.2",
     "tailwind-merge": "^2.5.4",
     "zod": "^3.23.8",
     "zustand": "^5.0.1"
