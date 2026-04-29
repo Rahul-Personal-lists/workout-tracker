@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { addExerciseToProgram } from "@/app/actions/program";
@@ -19,6 +19,39 @@ type CatalogEntry = {
 const IMG = (slug: string) =>
   `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${slug}/0.jpg`;
 
+const MUSCLE_GROUPS: { label: string; match: (e: CatalogEntry) => boolean }[] =
+  [
+    { label: "Abs", match: (e) => e.primary.includes("abdominals") },
+    {
+      label: "Arms",
+      match: (e) =>
+        e.primary.some((m) => ["biceps", "triceps", "forearms"].includes(m)),
+    },
+    {
+      label: "Back",
+      match: (e) =>
+        e.primary.some((m) =>
+          ["lats", "lower back", "middle back", "traps"].includes(m)
+        ),
+    },
+    { label: "Calves", match: (e) => e.primary.includes("calves") },
+    { label: "Cardio", match: (e) => e.category === "cardio" },
+    { label: "Chest", match: (e) => e.primary.includes("chest") },
+    {
+      label: "Legs",
+      match: (e) =>
+        e.primary.some((m) =>
+          ["quadriceps", "hamstrings", "glutes", "adductors", "abductors"].includes(
+            m
+          )
+        ),
+    },
+    {
+      label: "Shoulders",
+      match: (e) => e.primary.some((m) => ["shoulders", "neck"].includes(m)),
+    },
+  ];
+
 export function AddExerciseClient({
   programDayId,
   redirectWeek,
@@ -29,6 +62,7 @@ export function AddExerciseClient({
   const [catalog, setCatalog] = useState<CatalogEntry[] | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<CatalogEntry | null>(null);
+  const [activeMuscles, setActiveMuscles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -45,22 +79,44 @@ export function AddExerciseClient({
     };
   }, []);
 
+  const hasFilters = query.trim() !== "" || activeMuscles.size > 0;
+
   const filtered = useMemo(() => {
     if (!catalog) return [];
     const q = query.trim().toLowerCase();
-    if (!q) {
-      // Default: show a small set of common exercises rather than all 873.
+    const tokens = q ? q.split(/\s+/) : [];
+
+    const muscleMatchers = MUSCLE_GROUPS.filter((g) =>
+      activeMuscles.has(g.label)
+    );
+
+    if (!hasFilters) {
       return catalog.slice(0, 30);
     }
-    const tokens = q.split(/\s+/);
+
     return catalog
       .filter((e) => {
-        const hay =
-          `${e.name} ${e.equipment ?? ""} ${e.primary.join(" ")}`.toLowerCase();
-        return tokens.every((t) => hay.includes(t));
+        if (tokens.length > 0) {
+          const hay =
+            `${e.name} ${e.equipment ?? ""} ${e.primary.join(" ")}`.toLowerCase();
+          if (!tokens.every((t) => hay.includes(t))) return false;
+        }
+        if (muscleMatchers.length > 0) {
+          if (!muscleMatchers.some((g) => g.match(e))) return false;
+        }
+        return true;
       })
-      .slice(0, 60);
-  }, [catalog, query]);
+      .slice(0, 100);
+  }, [catalog, query, activeMuscles, hasFilters]);
+
+  function toggleMuscle(label: string) {
+    setActiveMuscles((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
 
   if (selected) {
     return (
@@ -85,6 +141,43 @@ export function AddExerciseClient({
           autoFocus
           className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 pl-9 pr-3 text-base outline-none focus:border-neutral-600"
         />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] uppercase tracking-wide text-neutral-500">
+            Muscle group
+          </span>
+          {activeMuscles.size > 0 ? (
+            <button
+              type="button"
+              onClick={() => setActiveMuscles(new Set())}
+              className="text-[11px] text-neutral-400 inline-flex items-center gap-1"
+            >
+              <X className="w-3 h-3" /> Clear
+            </button>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {MUSCLE_GROUPS.map((g) => {
+            const on = activeMuscles.has(g.label);
+            return (
+              <button
+                key={g.label}
+                type="button"
+                onClick={() => toggleMuscle(g.label)}
+                className={cn(
+                  "h-8 px-3 rounded-full text-xs border transition-colors",
+                  on
+                    ? "bg-accent text-accent-foreground border-accent"
+                    : "border-neutral-800 bg-neutral-900 text-neutral-300"
+                )}
+              >
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {catalog === null ? (
