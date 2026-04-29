@@ -145,14 +145,14 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
 }
 
 const PHOTO_BUCKET = "workout-photos";
-const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-]);
+const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
+
+function isLikelyImage(file: File): boolean {
+  if (file.type && file.type.startsWith("image/")) return true;
+  // iOS Safari sometimes submits camera files with empty/unknown type — fall back to extension.
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  return !!ext && ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"].includes(ext);
+}
 
 export async function uploadSessionPhotos(formData: FormData) {
   const sessionId = formData.get("sessionId");
@@ -178,14 +178,20 @@ export async function uploadSessionPhotos(formData: FormData) {
 
   let uploaded = 0;
   for (const file of files) {
-    if (file.size > MAX_PHOTO_BYTES) continue;
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) continue;
+    if (file.size > MAX_PHOTO_BYTES) {
+      const mb = (file.size / 1024 / 1024).toFixed(1);
+      throw new Error(`Photo too large (${mb} MB). Max is 25 MB.`);
+    }
+    if (!isLikelyImage(file)) {
+      throw new Error(`Unsupported file: ${file.name || "(unnamed)"} (${file.type || "unknown type"}).`);
+    }
 
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const path = `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`;
+    const contentType = file.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
     const { error: upErr } = await supabase.storage
       .from(PHOTO_BUCKET)
-      .upload(path, file, { contentType: file.type, upsert: false });
+      .upload(path, file, { contentType, upsert: false });
     if (upErr) throw upErr;
 
     const { error: insErr } = await supabase.from("workout_session_photos").insert({
