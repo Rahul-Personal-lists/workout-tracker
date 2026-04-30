@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import {
+  getAllTimeTopByExercise,
   getSessionContext,
   getSessionLogs,
   getSessionPhotos,
@@ -27,10 +28,12 @@ export default async function SessionDetailPage({
   if (!ctx) notFound();
   const { session, program, day } = ctx;
 
-  const [logs, photos, tz] = await Promise.all([
+  const exerciseIds = day.exercises.map((e) => e.id);
+  const [logs, photos, tz, allTimeTops] = await Promise.all([
     getSessionLogs(sessionId),
     getSessionPhotos(sessionId),
     getUserTimezone(),
+    getAllTimeTopByExercise(exerciseIds),
   ]);
 
   const totalVolume = logs.reduce(
@@ -156,11 +159,24 @@ export default async function SessionDetailPage({
                 className="flex items-center gap-2 px-3 py-2 border-b border-neutral-900 hover:bg-neutral-800/40"
               >
                 <span className="text-sm font-medium flex-1 min-w-0 truncate">{ex.name}</span>
-                {topSet ? (
-                  <span className="text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
-                    Top {formatWeight(topSet.actual_weight)} × {topSet.actual_reps}
-                  </span>
-                ) : null}
+                {(() => {
+                  if (!topSet) return null;
+                  const todayW = topSet.actual_weight as number;
+                  const todayR = topSet.actual_reps as number;
+                  const allTime = allTimeTops.get(ex.id);
+                  const allTimeIsBetter =
+                    allTime !== undefined &&
+                    (allTime.weight > todayW ||
+                      (allTime.weight === todayW && allTime.reps > todayR));
+                  return (
+                    <span className="text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                      Top today · {formatWeight(todayW)} × {todayR}
+                      {allTimeIsBetter
+                        ? ` · all-time ${formatWeight(allTime.weight)} × ${allTime.reps}`
+                        : ""}
+                    </span>
+                  );
+                })()}
                 <ChevronRight className="w-4 h-4 text-neutral-500 flex-none" />
               </Link>
               <div className="px-3 py-3 space-y-1">

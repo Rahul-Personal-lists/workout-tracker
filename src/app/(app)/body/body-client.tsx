@@ -50,6 +50,32 @@ export function BodyClient({ initialLogs }: { initialLogs: BodyLogRow[] }) {
     [logs]
   );
 
+  const last30 = useMemo(() => {
+    if (chartData.length === 0) return [] as typeof chartData;
+    const now = new Date();
+    const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+    const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
+    return chartData.filter((p) => p.date >= cutoffKey);
+  }, [chartData]);
+
+  const stats = useMemo(() => {
+    if (last30.length < 7) return null;
+    const avg = (xs: number[]) =>
+      xs.length === 0 ? null : xs.reduce((s, x) => s + x, 0) / xs.length;
+    const last7 = last30.slice(-7).map((p) => p.weight);
+    const first7 = last30.slice(0, 7).map((p) => p.weight);
+    const avg7 = avg(last7);
+    const avg30 = avg(last30.map((p) => p.weight));
+    const avgFirst = avg(first7);
+    let trend: "up" | "down" | "flat" = "flat";
+    if (avg7 !== null && avgFirst !== null) {
+      const diff = avg7 - avgFirst;
+      if (Math.abs(diff) < 0.2) trend = "flat";
+      else trend = diff > 0 ? "up" : "down";
+    }
+    return { avg7, avg30, trend };
+  }, [last30]);
+
   function onSave() {
     setError(null);
     const w = Number(weight);
@@ -162,7 +188,47 @@ export function BodyClient({ initialLogs }: { initialLogs: BodyLogRow[] }) {
         </button>
       </div>
 
-      {chartData.length >= 2 ? <BodyChart data={chartData} /> : null}
+      {last30.length >= 2 ? (
+        <div className="space-y-3">
+          {stats ? (
+            <div className="grid grid-cols-3 gap-2 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2.5 tabular-nums">
+              <div>
+                <div className="text-base">
+                  {stats.avg7 !== null ? stats.avg7.toFixed(1) : "—"}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+                  7d avg
+                </div>
+              </div>
+              <div>
+                <div className="text-base">
+                  {stats.avg30 !== null ? stats.avg30.toFixed(1) : "—"}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+                  30d avg
+                </div>
+              </div>
+              <div>
+                <div className="text-base">
+                  {stats.trend === "up"
+                    ? "↑"
+                    : stats.trend === "down"
+                      ? "↓"
+                      : "—"}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+                  Trend
+                </div>
+              </div>
+            </div>
+          ) : null}
+          <BodyChart data={last30} />
+        </div>
+      ) : (
+        <p className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-4 text-center text-sm text-neutral-400">
+          Log a few days to see trends.
+        </p>
+      )}
 
       <section className="space-y-2">
         <h2 className="text-xs uppercase tracking-wide text-neutral-500">

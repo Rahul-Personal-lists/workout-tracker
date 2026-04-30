@@ -25,6 +25,28 @@ function getGreetingName(email: string | undefined) {
   return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
 }
 
+function progressionHint(
+  startWeight: number | null,
+  increment: number,
+  weekNumber: number,
+  deloadWeeks: number[]
+): string | null {
+  if (weekNumber === 1) return "Baseline";
+  if (deloadWeeks.includes(weekNumber)) return "Deload · 70%";
+  let prior = 0;
+  for (let w = weekNumber - 1; w >= 1; w--) {
+    if (!deloadWeeks.includes(w)) {
+      prior = w;
+      break;
+    }
+  }
+  if (prior === 0) return "Baseline";
+  const cur = getPlannedWeight(startWeight, increment, weekNumber, deloadWeeks);
+  const prev = getPlannedWeight(startWeight, increment, prior, deloadWeeks);
+  if (cur === null || prev === null || cur <= prev) return null;
+  return `+${formatWeight(cur - prev)} lb from W${prior}`;
+}
+
 export default async function TodayPage() {
   const supabase = await createClient();
   const {
@@ -109,6 +131,9 @@ export default async function TodayPage() {
   const titleWords = day.title.split(/\s+/);
   const titleLast = titleWords.pop() ?? "";
   const titleRest = titleWords.join(" ");
+  const totalSets = day.exercises.reduce((sum, ex) => sum + ex.sets, 0);
+  // Heuristic: ~3 min per set (work + rest), rounded to nearest 5 min for honesty.
+  const estimatedMinutes = Math.max(5, Math.round((totalSets * 3) / 5) * 5);
 
   return (
     <div className="space-y-6 pt-8">
@@ -122,6 +147,10 @@ export default async function TodayPage() {
           {day.label}: {titleRest ? `${titleRest} ` : ""}
           <em className="font-display italic font-medium">{titleLast}</em>
         </h1>
+        <p className="text-[11px] text-neutral-500 tabular-nums">
+          ~{estimatedMinutes} min · {day.exercises.length}{" "}
+          {day.exercises.length === 1 ? "exercise" : "exercises"}
+        </p>
       </header>
 
       <ul className="space-y-2">
@@ -137,18 +166,29 @@ export default async function TodayPage() {
             weekNumber,
             program.deload_weeks
           );
+          const hint = progressionHint(
+            ex.start_weight,
+            ex.increment,
+            weekNumber,
+            program.deload_weeks
+          );
           return (
             <li
               key={ex.id}
-              className="rounded-md border border-neutral-800 bg-neutral-900 p-3 flex items-baseline justify-between gap-3"
+              className="rounded-md border border-neutral-800 bg-neutral-900 p-3"
             >
-              <span className="text-sm">{ex.name}</span>
-              <span className="text-xs text-neutral-400 tabular-nums whitespace-nowrap">
-                {ex.sets}×{plannedReps ?? "—"}
-                {plannedWeight !== null
-                  ? ` · ${formatWeight(plannedWeight)} lb`
-                  : ""}
-              </span>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-sm">{ex.name}</span>
+                <span className="text-xs text-neutral-400 tabular-nums whitespace-nowrap">
+                  {ex.sets}×{plannedReps ?? "—"}
+                  {plannedWeight !== null
+                    ? ` · ${formatWeight(plannedWeight)} lb`
+                    : ""}
+                </span>
+              </div>
+              {hint ? (
+                <p className="mt-1 text-[11px] text-neutral-500">{hint}</p>
+              ) : null}
             </li>
           );
         })}
