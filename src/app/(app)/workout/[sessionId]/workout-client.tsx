@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Camera, Check, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
@@ -45,6 +46,7 @@ export function WorkoutClient({
   dayTitle,
   exercises: initialExercises,
 }: Props) {
+  const router = useRouter();
   const [exercises, setExercises] = useState(initialExercises);
   const [elapsed, setElapsed] = useState(0);
   const [finishing, startFinish] = useTransition();
@@ -52,6 +54,7 @@ export function WorkoutClient({
   const [photos, setPhotos] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [finishedSuccessfully, setFinishedSuccessfully] = useState(false);
   const startRest = useRestTimer((s) => s.start);
 
   useEffect(() => {
@@ -148,23 +151,48 @@ export function WorkoutClient({
   function confirmFinish() {
     setUploadError(null);
     startFinish(async () => {
+      // Commit the workout first so ended_at + notes are durable even if
+      // the photo upload later fails. finishWorkout is idempotent.
+      try {
+        await finishWorkout({
+          sessionId,
+          notes: notes.trim() ? notes.trim() : undefined,
+        });
+        setFinishedSuccessfully(true);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Couldn't save workout";
+        setUploadError(msg);
+        return;
+      }
+
       if (photos.length > 0) {
         const fd = new FormData();
         fd.set("sessionId", sessionId);
         photos.forEach((p) => fd.append("photos", p));
         try {
-          await uploadSessionPhotos(fd);
+          const result = await uploadSessionPhotos(fd);
+          if (result.failed > 0) {
+            const total = result.uploaded + result.failed;
+            const msg =
+              result.uploaded > 0
+                ? `${result.uploaded} of ${total} photos uploaded — ${result.failed} failed${result.firstError ? `: ${result.firstError}` : ""}.`
+                : `Photos didn't upload${result.firstError ? `: ${result.firstError}` : ""}.`;
+            setUploadError(msg);
+            return;
+          }
         } catch (err) {
-          const msg = err instanceof Error ? err.message : "Photo upload failed";
+          const msg = err instanceof Error ? err.message : "Photos didn't upload";
           setUploadError(msg);
           return;
         }
       }
-      await finishWorkout({
-        sessionId,
-        notes: notes.trim() ? notes.trim() : undefined,
-      });
+
+      router.push(`/history/${sessionId}`);
     });
+  }
+
+  function skipAndContinue() {
+    router.push(`/history/${sessionId}`);
   }
 
   return (
@@ -226,6 +254,7 @@ export function WorkoutClient({
           notes={notes}
           finishing={finishing}
           uploadError={uploadError}
+          finishedSuccessfully={finishedSuccessfully}
           onAddPhotos={addPhotos}
           onRemovePhoto={(idx) => {
             removePhoto(idx);
@@ -234,6 +263,7 @@ export function WorkoutClient({
           onChangeNotes={setNotes}
           onClose={() => setSheetOpen(false)}
           onConfirm={confirmFinish}
+          onSkip={skipAndContinue}
         />
       ) : null}
     </div>
@@ -245,21 +275,25 @@ function FinishSheet({
   notes,
   finishing,
   uploadError,
+  finishedSuccessfully,
   onAddPhotos,
   onRemovePhoto,
   onChangeNotes,
   onClose,
   onConfirm,
+  onSkip,
 }: {
   photos: File[];
   notes: string;
   finishing: boolean;
   uploadError: string | null;
+  finishedSuccessfully: boolean;
   onAddPhotos: (list: FileList | null) => void;
   onRemovePhoto: (idx: number) => void;
   onChangeNotes: (v: string) => void;
   onClose: () => void;
   onConfirm: () => void;
+  onSkip: () => void;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
@@ -324,21 +358,53 @@ function FinishSheet({
 
         {uploadError ? (
           <p className="rounded-md border border-red-500/40 bg-red-500/10 text-red-300 text-xs px-3 py-2">
+            {finishedSuccessfully ? (
+              <>
+                <span className="text-emerald-300">Your workout and notes are saved.</span>{" "}
+              </>
+            ) : null}
             {uploadError}
           </p>
         ) : null}
 
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={finishing}
-          className={cn(
-            "w-full h-12 rounded-md font-medium bg-emerald-500 text-black",
-            finishing && "opacity-50"
-          )}
-        >
-          {finishing ? "Finishing…" : "Finish workout"}
-        </button>
+        {finishedSuccessfully && uploadError ? (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onSkip}
+              disabled={finishing}
+              className={cn(
+                "h-12 rounded-md font-medium bg-neutral-800 text-neutral-100",
+                finishing && "opacity-50"
+              )}
+            >
+              Skip & continue
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={finishing}
+              className={cn(
+                "h-12 rounded-md font-medium bg-emerald-500 text-black",
+                finishing && "opacity-50"
+              )}
+            >
+              {finishing ? "Retrying…" : "Retry"}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={finishing}
+            className={cn(
+              "w-full h-12 rounded-md font-medium bg-emerald-500 text-black",
+              finishing && "opacity-50"
+            )}
+          >
+            {finishing ? "Finishing…" : "Finish workout"}
+          </button>
+        )}
       </div>
     </div>
   );
