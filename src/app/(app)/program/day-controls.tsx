@@ -100,7 +100,7 @@ export function DayControls({
         type="button"
         onClick={() => setEditing(true)}
         aria-label="Rename day"
-        className="h-8 w-8 rounded flex items-center justify-center text-neutral-500 hover:text-neutral-300"
+        className="h-11 w-11 rounded flex items-center justify-center text-neutral-500 hover:text-neutral-300"
       >
         <Pencil className="w-3.5 h-3.5" />
       </button>
@@ -110,7 +110,7 @@ export function DayControls({
         disabled={pending}
         aria-label={confirming ? "Confirm remove day" : "Remove day"}
         className={cn(
-          "h-8 w-8 rounded flex items-center justify-center transition-colors",
+          "h-11 w-11 rounded flex items-center justify-center transition-colors",
           confirming
             ? "bg-red-500/15 text-red-400 border border-red-500/40"
             : "text-neutral-500 hover:text-neutral-300",
