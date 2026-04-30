@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createBlankProgram } from "@/app/actions/program";
@@ -14,13 +14,52 @@ const DEFAULT_DAYS: DayRow[] = [
   { label: "Day 4", title: "Lower" },
 ];
 
+const DRAFT_KEY = "new-program-draft";
+
+type Draft = {
+  name: string;
+  weeks: string;
+  deloadSet: number[];
+  days: DayRow[];
+};
+
+function loadDraft(): Draft | null {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as Draft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(d: Draft) {
+  try {
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+  } catch {}
+}
+
+function clearDraft() {
+  try {
+    sessionStorage.removeItem(DRAFT_KEY);
+  } catch {}
+}
+
 export function BlankProgramForm() {
-  const [name, setName] = useState("");
-  const [weeks, setWeeks] = useState("8");
-  const [deloadSet, setDeloadSet] = useState<Set<number>>(new Set());
-  const [days, setDays] = useState<DayRow[]>(DEFAULT_DAYS);
+  const draft = useMemo(() => loadDraft(), []);
+
+  const [name, setName] = useState(draft?.name ?? "");
+  const [weeks, setWeeks] = useState(draft?.weeks ?? "8");
+  const [deloadSet, setDeloadSet] = useState<Set<number>>(
+    new Set(draft?.deloadSet ?? [])
+  );
+  const [days, setDays] = useState<DayRow[]>(draft?.days ?? DEFAULT_DAYS);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  // Persist draft on every change
+  useEffect(() => {
+    saveDraft({ name, weeks, deloadSet: Array.from(deloadSet), days });
+  }, [name, weeks, deloadSet, days]);
 
   const weeksN = useMemo(() => {
     const n = parseInt(weeks, 10);
@@ -85,6 +124,7 @@ export function BlankProgramForm() {
           deloadWeeks,
           days: cleanedDays,
         });
+        clearDraft();
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Failed to create.");
       }
