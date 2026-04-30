@@ -191,12 +191,12 @@ export function AddExerciseClient({
               <button
                 type="button"
                 onClick={() => setSelected(entry)}
-                className="w-full flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-2.5 text-left hover:border-neutral-700"
+                className="w-full flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-2 text-left hover:border-neutral-700"
               >
                 <ExerciseAnimation
                   url={IMG(entry.id)}
                   alt={entry.name}
-                  size={48}
+                  size={64}
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{entry.name}</p>

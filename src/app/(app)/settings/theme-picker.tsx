@@ -36,20 +36,31 @@ export function ThemePicker() {
         {THEMES.map((t) => {
           const active = theme === t.key;
           return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => pick(t.key)}
-              aria-pressed={active}
-              aria-label={t.label}
-              className={cn(
-                "h-12 rounded-md border flex items-center justify-center transition-colors",
-                active ? "border-white" : "border-neutral-800"
-              )}
-              style={{ background: t.color }}
-            >
-              {active ? <Check className="w-5 h-5 text-black" strokeWidth={3} /> : null}
-            </button>
+            <div key={t.key} className="flex flex-col items-center gap-1">
+              <button
+                type="button"
+                onClick={() => pick(t.key)}
+                aria-pressed={active}
+                aria-label={t.label}
+                className={cn(
+                  "w-full h-12 rounded-md border flex items-center justify-center transition-colors",
+                  active ? "border-white" : "border-neutral-800"
+                )}
+                style={{ background: t.color }}
+              >
+                {active ? (
+                  <Check className="w-5 h-5 text-black" strokeWidth={3} />
+                ) : null}
+              </button>
+              <span
+                className={cn(
+                  "text-[10px] tabular-nums",
+                  active ? "text-neutral-200" : "text-neutral-500"
+                )}
+              >
+                {t.label}
+              </span>
+            </div>
           );
         })}
       </div>

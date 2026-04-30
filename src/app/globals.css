@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Active-state lexicon — keep these consistent across the app:
+ *   accent fill  = currently SELECTED (week pill, muscle-group chip, deload chip)
+ *   accent text  = currently ACTIVE  (bottom-nav tab)
+ *   accent ring  = currently IS      (today's date on /calendar)
+ * Accent picker is its own special case: each swatch fills with the
+ * color it represents; the selected one gets a white border + check.
+ */
+
 :root {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
     sans-serif;
