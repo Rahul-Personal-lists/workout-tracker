@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Check, Plus, X } from "lucide-react";
+import { Camera, Check, ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
 import { finishWorkout, logSet, uploadSessionPhotos } from "@/app/actions/workout";
@@ -443,11 +443,53 @@ function ExerciseCard({
   onAddSet: () => void;
 }) {
   const [zoomed, setZoomed] = useState(false);
+  const allComplete =
+    exercise.sets.length > 0 && exercise.sets.every((s) => s.completed);
+  const [expanded, setExpanded] = useState(!allComplete);
+  const prevAllComplete = useRef(allComplete);
+  useEffect(() => {
+    if (prevAllComplete.current !== allComplete) {
+      setExpanded(!allComplete);
+      prevAllComplete.current = allComplete;
+    }
+  }, [allComplete]);
 
   const plannedSummary =
     exercise.plannedWeight !== null
       ? `${exercise.sets.length}×${exercise.plannedReps ?? "—"} · ${formatWeight(exercise.plannedWeight)} lb`
       : `${exercise.sets.length}×${exercise.plannedReps ?? "—"}`;
+
+  if (allComplete && !expanded) {
+    return (
+      <>
+        <li className="rounded-lg border border-neutral-800 bg-neutral-900/60">
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            aria-expanded={false}
+            aria-label={`Expand ${exercise.name}`}
+            className="w-full flex items-center gap-3 p-2.5 text-left"
+          >
+            <ExerciseAnimation
+              url={exercise.imageUrl}
+              alt={exercise.name}
+              size={40}
+            />
+            <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
+              <span className="text-sm font-medium truncate">{exercise.name}</span>
+              <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                {plannedSummary}
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
+              </span>
+            </div>
+            <span className="h-6 w-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <Check className="w-3.5 h-3.5" strokeWidth={3} />
+            </span>
+          </button>
+        </li>
+      </>
+    );
+  }
 
   return (
     <>
@@ -465,17 +507,27 @@ function ExerciseCard({
         ) : (
           <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
         )}
-        <div className="flex-1 min-w-0 space-y-0.5">
+        <button
+          type="button"
+          onClick={allComplete ? () => setExpanded(false) : undefined}
+          aria-expanded={allComplete ? true : undefined}
+          aria-label={allComplete ? `Collapse ${exercise.name}` : undefined}
+          disabled={!allComplete}
+          className="flex-1 min-w-0 space-y-0.5 text-left disabled:cursor-default"
+        >
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="text-sm font-medium leading-snug">{exercise.name}</h2>
-            <span className="text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+            <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
               {plannedSummary}
+              {allComplete ? (
+                <ChevronUp className="w-3.5 h-3.5 text-neutral-500" />
+              ) : null}
             </span>
           </div>
           {exercise.note ? (
             <p className="text-[11px] text-neutral-500">{exercise.note}</p>
           ) : null}
-        </div>
+        </button>
       </div>
 
       <div className="space-y-1.5">
