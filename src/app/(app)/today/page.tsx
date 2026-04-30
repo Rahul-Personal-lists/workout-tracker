@@ -53,7 +53,7 @@ export default async function TodayPage() {
           <p>You don&apos;t have a program yet.</p>
           <Link
             href="/program"
-            className="block w-full h-11 leading-[2.75rem] text-center rounded-md bg-white text-black font-medium text-sm"
+            className="btn-primary w-full h-11 text-sm"
           >
             Pick a program
           </Link>
@@ -70,7 +70,7 @@ export default async function TodayPage() {
           <p>{program.name} has no days yet.</p>
           <Link
             href="/program"
-            className="block w-full h-11 leading-[2.75rem] text-center rounded-md bg-white text-black font-medium text-sm"
+            className="btn-primary w-full h-11 text-sm"
           >
             Set up days
           </Link>
@@ -95,7 +95,7 @@ export default async function TodayPage() {
         </div>
         <Link
           href="/calendar"
-          className="block w-full text-center h-12 leading-[3rem] rounded-md border border-neutral-800"
+          className="btn-secondary w-full h-12 text-sm"
         >
           View calendar
         </Link>
@@ -162,7 +162,7 @@ export default async function TodayPage() {
       >
         <button
           type="submit"
-          className="w-full h-14 rounded-md bg-accent text-accent-foreground font-medium text-base"
+          className="btn-primary w-full h-14 text-base"
         >
           Start workout
         </button>

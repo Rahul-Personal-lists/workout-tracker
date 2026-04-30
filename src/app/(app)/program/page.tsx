@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Play, Plus } from "lucide-react";
+import { ChevronRight, Play, Plus } from "lucide-react";
 import {
   getAllPrograms,
+  getCompletedDayIdsForWeek,
   getCurrentProgram,
   getNextWorkout,
 } from "@/lib/queries";
@@ -62,7 +63,7 @@ export default async function ProgramPage({
               >
                 <button
                   type="submit"
-                  className="w-full h-10 rounded-md bg-accent text-accent-foreground font-medium text-xs"
+                  className="btn-primary w-full h-10 text-xs"
                 >
                   Use this program
                 </button>
@@ -72,10 +73,9 @@ export default async function ProgramPage({
         </ul>
         <Link
           href="/program/new"
-          className="block rounded-lg border border-dashed border-neutral-700 bg-neutral-900/40 p-3 text-center text-sm text-neutral-300"
+          className="btn-ghost-add h-12 px-3 text-sm"
         >
-          <Plus className="inline w-4 h-4 mr-1 -mt-0.5" />
-          Create blank program
+          <Plus className="w-4 h-4" /> Create blank program
         </Link>
       </div>
     );
@@ -97,6 +97,14 @@ export default async function ProgramPage({
   const isDeload = program.deload_weeks.includes(selectedWeek);
   const canAddProgram = allPrograms.length < 2;
 
+  const completedDayIds = await getCompletedDayIdsForWeek(
+    program.id,
+    selectedWeek
+  );
+  const nextUpDay = program.days.find((d) => !completedDayIds.has(d.id));
+  const nextUpDayId = nextUpDay?.id ?? null;
+  const programIsEmpty = program.days.every((d) => d.exercises.length === 0);
+
   return (
     <div className="space-y-5">
       <header className="space-y-1">
@@ -117,7 +125,7 @@ export default async function ProgramPage({
           {canAddProgram ? (
             <Link
               href="/program/new"
-              className="h-9 px-3 rounded-md border border-neutral-800 text-xs text-neutral-300 inline-flex items-center gap-1.5"
+              className="btn-secondary h-9 px-3 text-xs"
             >
               <Plus className="w-3.5 h-3.5" /> New program
             </Link>
@@ -163,11 +171,23 @@ export default async function ProgramPage({
         {selectedWeek === currentWeek ? " · Current" : ""}
       </div>
 
+      {programIsEmpty ? (
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
+          <p className="font-medium text-neutral-100">No exercises yet.</p>
+          <p className="text-neutral-400 mt-1">
+            Add them per day below — tap the{" "}
+            <span aria-hidden>⋯</span>
+            <span className="sr-only">menu</span> on a day to add exercises.
+          </p>
+        </div>
+      ) : null}
+
       <ul className="space-y-3">
         {program.days.map((day) => {
           const titleWords = day.title.split(/\s+/);
           const titleLast = titleWords.pop() ?? "";
           const titleRest = titleWords.join(" ");
+          const isNextUp = day.id === nextUpDayId;
           return (
           <li
             key={day.id}
@@ -187,6 +207,7 @@ export default async function ProgramPage({
                 dayId={day.id}
                 initialLabel={day.label}
                 initialTitle={day.title}
+                selectedWeek={selectedWeek}
               />
               <form
                 action={async () => {
@@ -197,13 +218,23 @@ export default async function ProgramPage({
                   });
                 }}
               >
-                <button
-                  type="submit"
-                  className="h-9 px-3 rounded-md bg-accent text-accent-foreground text-xs font-medium flex items-center gap-1.5"
-                  aria-label={`Start ${day.label} for week ${selectedWeek}`}
-                >
-                  <Play className="w-3.5 h-3.5" /> Start W{selectedWeek}
-                </button>
+                {isNextUp ? (
+                  <button
+                    type="submit"
+                    className="btn-primary h-9 px-3 text-xs"
+                    aria-label={`Start ${day.label} for week ${selectedWeek}`}
+                  >
+                    <Play className="w-3.5 h-3.5" /> Start W{selectedWeek}
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="h-11 w-11 rounded flex items-center justify-center text-neutral-500 hover:text-neutral-300"
+                    aria-label={`Start ${day.label} for week ${selectedWeek}`}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
               </form>
             </header>
             <ul className="px-3 py-2 space-y-1.5">
@@ -241,18 +272,12 @@ export default async function ProgramPage({
                   </li>
                 );
               })}
-              {day.exercises.length === 0 ? (
+              {day.exercises.length === 0 && !programIsEmpty ? (
                 <li className="text-xs text-neutral-500 italic px-1 py-2">
                   No exercises yet.
                 </li>
               ) : null}
             </ul>
-            <Link
-              href={`/program/add?day=${day.id}&week=${selectedWeek}`}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-neutral-400 border-t border-neutral-800 hover:bg-neutral-800/40"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add exercise
-            </Link>
           </li>
           );
         })}
@@ -271,7 +296,7 @@ export default async function ProgramPage({
       >
         <button
           type="submit"
-          className="w-full h-10 rounded-md border border-dashed border-neutral-700 bg-neutral-900/40 text-xs text-neutral-300 inline-flex items-center justify-center gap-1.5"
+          className="btn-ghost-add h-10 text-xs"
         >
           <Plus className="w-3.5 h-3.5" /> Add day
         </button>

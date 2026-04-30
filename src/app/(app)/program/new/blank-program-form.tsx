@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { createBlankProgram } from "@/app/actions/program";
 
 type DayRow = { label: string; title: string };
@@ -16,10 +17,24 @@ const DEFAULT_DAYS: DayRow[] = [
 export function BlankProgramForm() {
   const [name, setName] = useState("");
   const [weeks, setWeeks] = useState("8");
-  const [deloads, setDeloads] = useState("");
+  const [deloadSet, setDeloadSet] = useState<Set<number>>(new Set());
   const [days, setDays] = useState<DayRow[]>(DEFAULT_DAYS);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const weeksN = useMemo(() => {
+    const n = parseInt(weeks, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }, [weeks]);
+
+  function toggleDeload(w: number) {
+    setDeloadSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(w)) next.delete(w);
+      else next.add(w);
+      return next;
+    });
+  }
 
   function addDay() {
     if (days.length >= 7) return;
@@ -45,19 +60,17 @@ export function BlankProgramForm() {
     setErrorMsg(null);
 
     const trimmedName = name.trim();
-    const weeksN = parseInt(weeks, 10);
     if (!trimmedName) {
       setErrorMsg("Name required.");
       return;
     }
-    if (!Number.isFinite(weeksN) || weeksN < 1 || weeksN > 52) {
+    if (weeksN < 1 || weeksN > 52) {
       setErrorMsg("Weeks must be between 1 and 52.");
       return;
     }
-    const deloadWeeks = deloads
-      .split(",")
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => Number.isFinite(n));
+    const deloadWeeks = Array.from(deloadSet)
+      .filter((w) => w >= 1 && w <= weeksN)
+      .sort((a, b) => a - b);
 
     const cleanedDays = days.map((d, i) => ({
       label: d.label.trim() || `Day ${i + 1}`,
@@ -91,28 +104,48 @@ export function BlankProgramForm() {
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Weeks" htmlFor="weeks">
-          <input
-            id="weeks"
-            type="text"
-            inputMode="numeric"
-            value={weeks}
-            onChange={(e) => setWeeks(e.target.value.replace(/[^\d]/g, ""))}
-            className={fieldClass}
-          />
-        </Field>
-        <Field label="Deload weeks (csv)" htmlFor="deloads">
-          <input
-            id="deloads"
-            type="text"
-            inputMode="numeric"
-            value={deloads}
-            onChange={(e) => setDeloads(e.target.value)}
-            placeholder="e.g. 4, 8"
-            className={fieldClass}
-          />
-        </Field>
+      <Field label="Weeks" htmlFor="weeks">
+        <input
+          id="weeks"
+          type="text"
+          inputMode="numeric"
+          value={weeks}
+          onChange={(e) => setWeeks(e.target.value.replace(/[^\d]/g, ""))}
+          className={fieldClass}
+        />
+      </Field>
+
+      <div className="space-y-2">
+        <span className="block text-[11px] uppercase tracking-wide text-neutral-500">
+          Deload weeks
+        </span>
+        {weeksN > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {Array.from({ length: weeksN }, (_, i) => i + 1).map((w) => {
+              const active = deloadSet.has(w);
+              return (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => toggleDeload(w)}
+                  aria-pressed={active}
+                  className={cn(
+                    "h-9 min-w-[44px] px-2 rounded-md text-[11px] tabular-nums border",
+                    active
+                      ? "bg-accent text-accent-foreground border-accent"
+                      : "border-neutral-800 text-neutral-400 hover:text-neutral-200"
+                  )}
+                >
+                  W{w}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[11px] text-neutral-500">
+            Set a number of weeks to pick deloads.
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -182,7 +215,7 @@ export function BlankProgramForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full h-11 rounded-md bg-accent text-accent-foreground font-medium text-sm disabled:opacity-60"
+        className="btn-primary w-full h-11 text-sm"
       >
         {pending ? "Creating…" : "Create program"}
       </button>

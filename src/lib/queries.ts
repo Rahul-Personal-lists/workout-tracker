@@ -187,6 +187,21 @@ export async function getNextWorkout(
   return { kind: "next", weekNumber: nextWeek, day };
 }
 
+export async function getCompletedDayIdsForWeek(
+  programId: string,
+  weekNumber: number
+): Promise<Set<string>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select("program_day_id, program_days!inner(program_id)")
+    .eq("week_number", weekNumber)
+    .eq("program_days.program_id", programId)
+    .not("ended_at", "is", null);
+  if (error) throw error;
+  return new Set((data ?? []).map((r) => r.program_day_id));
+}
+
 export type SetLog = {
   id: string;
   program_exercise_id: string;
@@ -503,11 +518,15 @@ export async function getExerciseHistory(
   };
 }
 
+export type CalendarSession = {
+  sessionId: string;
+  status: "completed" | "in-progress";
+  label: string;
+};
+
 export type CalendarDay = {
   date: string; // YYYY-MM-DD in local time
-  status: "completed" | "in-progress";
-  sessionId: string;
-  label: string;
+  sessions: CalendarSession[];
 };
 
 export async function getCalendarMonth(
@@ -538,12 +557,14 @@ export async function getCalendarMonth(
     const key = dateKeyInTz(new Date(s.started_at), tz);
     const dayLabel = s.program_days?.label ?? "—";
     const dayTitle = s.program_days?.title ?? "—";
-    byDate.set(key, {
-      date: key,
-      status: s.ended_at ? "completed" : "in-progress",
+    const entry =
+      byDate.get(key) ?? ({ date: key, sessions: [] } as CalendarDay);
+    entry.sessions.push({
       sessionId: s.id,
+      status: s.ended_at ? "completed" : "in-progress",
       label: `${dayLabel} · ${dayTitle}`,
     });
+    byDate.set(key, entry);
   }
   return byDate;
 }
