@@ -71,14 +71,16 @@ src/app/
 │   │   └── new                    blank-program builder (name, weeks, deloads, days)
 │   ├── calendar                   month grid of tracked sessions (?m=YYYY-MM); tap a day → /history/[sessionId]
 │   ├── history                    (no list page; only the detail routes below)
-│   │   ├── [sessionId]            session detail with planned-vs-actual (reached from /calendar)
+│   │   ├── [sessionId]            session detail with planned-vs-actual; "Delete this workout" button at the bottom (2-tap-within-4s confirm via DeleteSessionButton)
 │   │   └── exercise/[id]          Recharts top-set-per-session
-│   └── settings                   user info, sign out, danger zone (wipe sessions)
+│   └── settings                   user info, accent picker, sign out
 └── api/auth/callback              Supabase code exchange
 ```
 
+Workouts are deleted **one at a time** from the history detail page; there is no bulk "wipe all sessions" action. The previous `wipeAllSessions` was removed — `deleteSession(sessionId)` is the only delete path. It cleans up the session's photos in storage first, then deletes the row (set_logs and workout_session_photos cascade via FK on session_id).
+
 Server actions:
-- [src/app/actions/workout.ts](src/app/actions/workout.ts) — startWorkout, logSet, finishWorkout, wipeAllSessions
+- [src/app/actions/workout.ts](src/app/actions/workout.ts) — startWorkout, logSet, editSetLog, editSessionDuration, finishWorkout, uploadSessionPhotos, deleteSessionPhoto, deleteSession
 - [src/app/actions/program.ts](src/app/actions/program.ts) — addExerciseToProgram, archive/unarchiveExerciseFromProgram, seedPresetProgram, createBlankProgram, setActiveProgram, archiveProgram, addDay, renameDay, archiveDay, unarchiveDay
 
 ## Setup / run
