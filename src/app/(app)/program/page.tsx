@@ -191,7 +191,7 @@ export default async function ProgramPage({
           return (
           <li
             key={day.id}
-            className="rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden"
+            className="rounded-lg border border-neutral-800 bg-neutral-900"
           >
             <header className="px-3 py-2.5 border-b border-neutral-800 flex items-center gap-2">
               <div className="flex-1 min-w-0">
