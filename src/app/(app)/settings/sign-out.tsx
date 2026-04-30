@@ -15,7 +15,7 @@ export function SignOutButton() {
   return (
     <button
       onClick={onClick}
-      className="w-full h-12 rounded-md border border-neutral-800 text-sm text-neutral-200 hover:bg-neutral-900"
+      className="btn-secondary w-full h-12 text-sm"
     >
       Sign out
     </button>

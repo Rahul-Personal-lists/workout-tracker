@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getCalendarMonth, type CalendarDay } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { dateKeyInTz, getUserTimezone, yearMonthInTz } from "@/lib/tz";
+import { MonthJump } from "./month-jump";
 
 export const dynamic = "force-dynamic";
 
@@ -65,10 +66,14 @@ export default async function CalendarPage({
   return (
     <div className="space-y-5">
       <header className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold leading-tight">{MONTH_NAMES[month - 1]}</h1>
-          <p className="text-2xl text-neutral-500 leading-tight tabular-nums">{year}</p>
-        </div>
+        <MonthJump value={`${year}-${String(month).padStart(2, "0")}`}>
+          <h1 className="text-2xl font-semibold leading-tight">
+            {MONTH_NAMES[month - 1]}
+          </h1>
+          <p className="text-2xl text-neutral-500 leading-tight tabular-nums">
+            {year}
+          </p>
+        </MonthJump>
         <div className="flex gap-2">
           <Link
             href={`/calendar?m=${prev}`}
@@ -98,65 +103,95 @@ export default async function CalendarPage({
           <DayCell
             key={c.key}
             date={c.date}
-            session={c.dateKey ? sessionsByDate.get(c.dateKey) : undefined}
+            day={c.dateKey ? sessionsByDate.get(c.dateKey) : undefined}
             isToday={c.dateKey === today}
           />
         ))}
       </div>
+
+      <p className="text-[11px] text-neutral-500 text-center">
+        Tap a day to review · accent ring marks today
+      </p>
     </div>
   );
 }
 
 function DayCell({
   date,
-  session,
+  day,
   isToday,
 }: {
   date: number | null;
-  session: CalendarDay | undefined;
+  day: CalendarDay | undefined;
   isToday: boolean;
 }) {
   if (date === null) {
     return <div aria-hidden className="aspect-square" />;
   }
 
-  const base = "aspect-square rounded-md border p-1.5 flex flex-col text-left";
+  const base =
+    "aspect-square rounded-md border p-1.5 flex flex-col text-left";
   const todayRing = isToday ? "ring-1 ring-accent" : "";
+  const sessions = day?.sessions ?? [];
+  const last = sessions[sessions.length - 1];
+  const hasInProgress = sessions.some((s) => s.status === "in-progress");
+  const allCompleted =
+    sessions.length > 0 && sessions.every((s) => s.status === "completed");
 
-  if (session?.status === "completed") {
+  if (sessions.length > 0 && last) {
+    const href =
+      last.status === "in-progress"
+        ? `/workout/${last.sessionId}`
+        : `/history/${last.sessionId}`;
+    const tone = hasInProgress
+      ? "bg-neutral-900 border-emerald-500/60 text-emerald-300"
+      : allCompleted
+        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-200"
+        : "bg-neutral-900 border-neutral-700 text-white";
     return (
       <Link
-        href={`/history/${session.sessionId}`}
-        className={cn(base, "bg-emerald-500 border-emerald-500 text-black", todayRing)}
+        href={href}
+        className={cn(base, tone, todayRing)}
+        aria-label={`${sessions.length} workout${sessions.length === 1 ? "" : "s"} on day ${date}`}
       >
         <span className="text-xs font-medium tabular-nums">{date}</span>
-        <span className="text-[10px] leading-tight mt-auto line-clamp-2">{session.label}</span>
-      </Link>
-    );
-  }
-
-  if (session?.status === "in-progress") {
-    return (
-      <Link
-        href={`/workout/${session.sessionId}`}
-        className={cn(base, "bg-neutral-900 border-emerald-500/60 text-emerald-300", todayRing)}
-      >
-        <span className="text-xs font-medium tabular-nums">{date}</span>
-        <span className="text-[10px] leading-tight mt-auto line-clamp-2">{session.label}</span>
+        <span className="mt-auto flex items-center gap-1">
+          {sessions.map((s, i) => (
+            <span
+              key={s.sessionId}
+              aria-hidden
+              className={cn(
+                "inline-block w-1.5 h-1.5 rounded-full",
+                s.status === "completed"
+                  ? "bg-emerald-400"
+                  : "bg-emerald-300/60",
+                i > 0 ? "ml-0" : ""
+              )}
+            />
+          ))}
+        </span>
       </Link>
     );
   }
 
   if (isToday) {
     return (
-      <div className={cn(base, "bg-neutral-900 border-neutral-700 text-white", todayRing)}>
+      <div
+        className={cn(
+          base,
+          "bg-neutral-900 border-neutral-700 text-white",
+          todayRing
+        )}
+      >
         <span className="text-xs font-medium tabular-nums">{date}</span>
       </div>
     );
   }
 
   return (
-    <div className={cn(base, "bg-transparent border-neutral-800 text-neutral-600")}>
+    <div
+      className={cn(base, "bg-transparent border-neutral-800 text-neutral-600")}
+    >
       <span className="text-xs tabular-nums">{date}</span>
     </div>
   );
