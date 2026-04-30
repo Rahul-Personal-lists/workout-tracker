@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, MoreVertical, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, MoreVertical, Plus, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { archiveDay, renameDay } from "@/app/actions/program";
 
@@ -89,7 +89,7 @@ export function DayControls({
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 flex-1 min-w-0">
         <input
           aria-label="Day label"
           value={label}
@@ -123,66 +123,76 @@ export function DayControls({
     );
   }
 
+  const titleWords = title.split(/\s+/);
+  const titleLast = titleWords.pop() ?? "";
+  const titleRest = titleWords.join(" ");
+
   return (
-    <div ref={wrapperRef} className="relative">
+    <>
       <button
         type="button"
-        onClick={onTriggerClick}
+        onClick={() => setEditing(true)}
         disabled={pending}
-        aria-label={confirming ? "Confirm archive day" : "Day actions"}
-        aria-expanded={menuOpen && !confirming}
-        className={cn(
-          "h-11 w-11 rounded flex items-center justify-center transition-colors",
-          confirming
-            ? "bg-red-500/15 text-red-400 border border-red-500/40"
-            : "text-neutral-500 hover:text-neutral-300",
-          pending && "opacity-50"
-        )}
+        aria-label="Rename day"
+        className="flex-1 min-w-0 text-left"
       >
-        {confirming ? (
-          <X className="w-4 h-4" />
-        ) : (
-          <MoreVertical className="w-4 h-4" />
-        )}
+        <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+          {label}
+        </p>
+        <h2 className="text-sm font-medium truncate">
+          {titleRest ? `${titleRest} ` : ""}
+          <em className="font-display italic font-medium">{titleLast}</em>
+        </h2>
       </button>
-      {menuOpen && !confirming ? (
-        <div
-          role="menu"
-          className="absolute right-0 top-12 z-20 min-w-44 rounded-md border border-neutral-700 bg-neutral-900 shadow-lg py-1"
+      <div ref={wrapperRef} className="relative">
+        <button
+          type="button"
+          onClick={onTriggerClick}
+          disabled={pending}
+          aria-label={confirming ? "Confirm archive day" : "Day actions"}
+          aria-expanded={menuOpen && !confirming}
+          className={cn(
+            "h-11 w-11 rounded flex items-center justify-center transition-colors",
+            confirming
+              ? "bg-red-500/15 text-red-400 border border-red-500/40"
+              : "text-neutral-500 hover:text-neutral-300",
+            pending && "opacity-50"
+          )}
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setMenuOpen(false);
-              setEditing(true);
-            }}
-            className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
+          {confirming ? (
+            <X className="w-4 h-4" />
+          ) : (
+            <MoreVertical className="w-4 h-4" />
+          )}
+        </button>
+        {menuOpen && !confirming ? (
+          <div
+            role="menu"
+            className="absolute right-0 top-12 z-20 min-w-44 rounded-md border border-neutral-700 bg-neutral-900 shadow-lg py-1"
           >
-            <Pencil className="w-3.5 h-3.5 text-neutral-500" /> Rename day
-          </button>
-          <Link
-            href={`/program/add?day=${dayId}&week=${selectedWeek}`}
-            role="menuitem"
-            onClick={() => setMenuOpen(false)}
-            className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
-          >
-            <Plus className="w-3.5 h-3.5 text-neutral-500" /> Add exercise
-          </Link>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setMenuOpen(false);
-              setConfirming(true);
-              setTimeout(() => setConfirming(false), 2500);
-            }}
-            className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-neutral-800 inline-flex items-center gap-2"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Archive day
-          </button>
-        </div>
-      ) : null}
-    </div>
+            <Link
+              href={`/program/add?day=${dayId}&week=${selectedWeek}`}
+              role="menuitem"
+              onClick={() => setMenuOpen(false)}
+              className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
+            >
+              <Plus className="w-3.5 h-3.5 text-neutral-500" /> Add exercise
+            </Link>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                setConfirming(true);
+                setTimeout(() => setConfirming(false), 2500);
+              }}
+              className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-neutral-800 inline-flex items-center gap-2"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Archive day
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </>
   );
 }

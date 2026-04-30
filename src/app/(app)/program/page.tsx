@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { ChevronRight, Play, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   getAllPrograms,
-  getCompletedDayIdsForWeek,
   getCurrentProgram,
   getNextWorkout,
 } from "@/lib/queries";
@@ -14,7 +13,6 @@ import { PRESET_PROGRAMS } from "@/lib/starter-program";
 import { ArchiveExerciseButton } from "./archive-button";
 import { DayControls } from "./day-controls";
 import { ProgramSwitcher } from "./program-switcher";
-import { startWorkout } from "@/app/actions/workout";
 import { addDay, seedPresetProgram } from "@/app/actions/program";
 
 export const dynamic = "force-dynamic";
@@ -97,12 +95,6 @@ export default async function ProgramPage({
   const isDeload = program.deload_weeks.includes(selectedWeek);
   const canAddProgram = allPrograms.length < 2;
 
-  const completedDayIds = await getCompletedDayIdsForWeek(
-    program.id,
-    selectedWeek
-  );
-  const nextUpDay = program.days.find((d) => !completedDayIds.has(d.id));
-  const nextUpDayId = nextUpDay?.id ?? null;
   const programIsEmpty = program.days.every((d) => d.exercises.length === 0);
 
   return (
@@ -184,58 +176,18 @@ export default async function ProgramPage({
 
       <ul className="space-y-3">
         {program.days.map((day) => {
-          const titleWords = day.title.split(/\s+/);
-          const titleLast = titleWords.pop() ?? "";
-          const titleRest = titleWords.join(" ");
-          const isNextUp = day.id === nextUpDayId;
-          return (
+            return (
           <li
             key={day.id}
             className="rounded-lg border border-neutral-800 bg-neutral-900"
           >
             <header className="px-3 py-2.5 border-b border-neutral-800 flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] uppercase tracking-wide text-neutral-500">
-                  {day.label}
-                </p>
-                <h2 className="text-sm font-medium truncate">
-                  {titleRest ? `${titleRest} ` : ""}
-                  <em className="font-display italic font-medium">{titleLast}</em>
-                </h2>
-              </div>
               <DayControls
                 dayId={day.id}
                 initialLabel={day.label}
                 initialTitle={day.title}
                 selectedWeek={selectedWeek}
               />
-              <form
-                action={async () => {
-                  "use server";
-                  await startWorkout({
-                    programDayId: day.id,
-                    weekNumber: selectedWeek,
-                  });
-                }}
-              >
-                {isNextUp ? (
-                  <button
-                    type="submit"
-                    className="btn-primary h-9 px-3 text-xs"
-                    aria-label={`Start ${day.label} for week ${selectedWeek}`}
-                  >
-                    <Play className="w-3.5 h-3.5" /> Start W{selectedWeek}
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="h-11 w-11 rounded flex items-center justify-center text-neutral-500 hover:text-neutral-300"
-                    aria-label={`Start ${day.label} for week ${selectedWeek}`}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                )}
-              </form>
             </header>
             <ul className="px-3 py-2 space-y-1.5">
               {day.exercises.map((ex) => {
