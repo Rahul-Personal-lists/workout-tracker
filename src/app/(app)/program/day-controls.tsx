@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, MoreVertical, Plus, Trash2, X } from "lucide-react";
+import { MoreVertical, Plus, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { archiveDay, renameDay } from "@/app/actions/program";
+import { archiveDay } from "@/app/actions/program";
 
 type DayControlsProps = {
   dayId: string;
@@ -19,11 +19,8 @@ export function DayControls({
   initialTitle,
   selectedWeek,
 }: DayControlsProps) {
-  const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [label, setLabel] = useState(initialLabel);
-  const [title, setTitle] = useState(initialTitle);
   const [pending, startTransition] = useTransition();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -48,26 +45,6 @@ export function DayControls({
     };
   }, [menuOpen]);
 
-  function save() {
-    const l = label.trim();
-    const t = title.trim();
-    if (!l || !t) return;
-    startTransition(async () => {
-      try {
-        await renameDay({ dayId, label: l, title: t });
-        setEditing(false);
-      } catch (err) {
-        console.error("rename failed", err);
-      }
-    });
-  }
-
-  function cancelEdit() {
-    setLabel(initialLabel);
-    setTitle(initialTitle);
-    setEditing(false);
-  }
-
   function commitArchive() {
     startTransition(async () => {
       try {
@@ -87,63 +64,21 @@ export function DayControls({
     setMenuOpen((o) => !o);
   }
 
-  if (editing) {
-    return (
-      <div className="flex items-center gap-1.5 flex-1 min-w-0">
-        <input
-          aria-label="Day label"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          className="h-8 w-20 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs"
-        />
-        <input
-          aria-label="Day title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="h-8 w-32 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs"
-        />
-        <button
-          type="button"
-          onClick={save}
-          disabled={pending}
-          aria-label="Save"
-          className="h-11 w-11 rounded flex items-center justify-center text-emerald-400 disabled:opacity-50"
-        >
-          <Check className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={cancelEdit}
-          aria-label="Cancel"
-          className="h-11 w-11 rounded flex items-center justify-center text-neutral-500"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-    );
-  }
-
-  const titleWords = title.split(/\s+/);
+  const titleWords = initialTitle.split(/\s+/);
   const titleLast = titleWords.pop() ?? "";
   const titleRest = titleWords.join(" ");
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        disabled={pending}
-        aria-label="Rename day"
-        className="flex-1 min-w-0 text-left"
-      >
+      <div className="flex-1 min-w-0">
         <p className="text-[11px] uppercase tracking-wide text-neutral-500">
-          {label}
+          {initialLabel}
         </p>
         <h2 className="text-sm font-medium truncate">
           {titleRest ? `${titleRest} ` : ""}
           <em className="font-display italic font-medium">{titleLast}</em>
         </h2>
-      </button>
+      </div>
       <div ref={wrapperRef} className="relative">
         <button
           type="button"
