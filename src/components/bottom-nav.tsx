@@ -21,7 +21,10 @@ export function BottomNav() {
   if (pathname.startsWith("/workout/")) return null;
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-neutral-800 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/70 pb-[env(safe-area-inset-bottom)]">
+    <nav
+      aria-label="Primary"
+      className="fixed bottom-0 inset-x-0 z-40 border-t border-neutral-800 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/70 pb-[env(safe-area-inset-bottom)]"
+    >
       <ul className="grid grid-cols-5 h-16 max-w-md mx-auto">
         {ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -29,8 +32,9 @@ export function BottomNav() {
             <li key={href} className="flex">
               <Link
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex-1 flex flex-col items-center justify-center gap-1 text-[11px]",
+                  "flex-1 flex flex-col items-center justify-center gap-1 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black",
                   active ? "text-accent" : "text-neutral-500"
                 )}
               >
