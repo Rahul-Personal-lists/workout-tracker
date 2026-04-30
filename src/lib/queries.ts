@@ -136,10 +136,12 @@ export async function getNextWorkout(
 ): Promise<NextWorkout | null> {
   if (program.days.length === 0) return null;
   const supabase = await createClient();
+  const dayIds = program.days.map((d) => d.id);
 
   const { data: inProgress } = await supabase
     .from("workout_sessions")
     .select("id, week_number, program_day_id")
+    .in("program_day_id", dayIds)
     .is("ended_at", null)
     .order("started_at", { ascending: false })
     .limit(1)
@@ -160,6 +162,7 @@ export async function getNextWorkout(
   const { data: lastFinished } = await supabase
     .from("workout_sessions")
     .select("week_number, program_day_id")
+    .in("program_day_id", dayIds)
     .not("ended_at", "is", null)
     .order("ended_at", { ascending: false })
     .limit(1)
@@ -200,6 +203,41 @@ export async function getCompletedDayIdsForWeek(
     .not("ended_at", "is", null);
   if (error) throw error;
   return new Set((data ?? []).map((r) => r.program_day_id));
+}
+
+export type TopSet = { weight: number; reps: number };
+
+// All-time best top-set per exercise across every completed log.
+// "Best" = highest weight, ties broken by reps. Excludes incomplete sets.
+export async function getAllTimeTopByExercise(
+  exerciseIds: string[]
+): Promise<Map<string, TopSet>> {
+  if (exerciseIds.length === 0) return new Map();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("set_logs")
+    .select("program_exercise_id, actual_weight, actual_reps")
+    .in("program_exercise_id", exerciseIds)
+    .eq("completed", true)
+    .not("actual_weight", "is", null)
+    .not("actual_reps", "is", null);
+  if (error) throw error;
+  const out = new Map<string, TopSet>();
+  for (const row of data ?? []) {
+    if (row.actual_weight === null || row.actual_reps === null) continue;
+    const cur = out.get(row.program_exercise_id);
+    if (
+      !cur ||
+      row.actual_weight > cur.weight ||
+      (row.actual_weight === cur.weight && row.actual_reps > cur.reps)
+    ) {
+      out.set(row.program_exercise_id, {
+        weight: row.actual_weight,
+        reps: row.actual_reps,
+      });
+    }
+  }
+  return out;
 }
 
 export type SetLog = {
