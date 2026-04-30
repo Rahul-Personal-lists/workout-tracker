@@ -19,6 +19,22 @@ export async function startWorkout(input: z.infer<typeof StartSchema>) {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // If an in-progress session already exists, send the user to it instead
+  // of creating a duplicate. Page-level redirects already cover the happy
+  // path; this is the action-side guard for double-tap or stale-cache races.
+  const { data: existing } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .eq("user_id", user.id)
+    .is("ended_at", null)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing) {
+    revalidatePath("/today");
+    redirect(`/workout/${existing.id}`);
+  }
+
   const { data, error } = await supabase
     .from("workout_sessions")
     .insert({
