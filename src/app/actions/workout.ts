@@ -148,16 +148,34 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
   const { sessionId, notes } = FinishSchema.parse(input);
   const supabase = await createClient();
 
+  // Idempotent: only stamp ended_at the first time, but always update notes
+  // so the user can correct them on a re-finish (e.g. after a flaky-wifi retry).
+  const { data: existing, error: getErr } = await supabase
+    .from("workout_sessions")
+    .select("ended_at")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (getErr) throw getErr;
+  if (!existing) throw new Error("Session not found");
+
+  const update: { notes: string | null; ended_at?: string } = {
+    notes: notes ?? null,
+  };
+  if (existing.ended_at === null) {
+    update.ended_at = new Date().toISOString();
+  }
+
   const { error } = await supabase
     .from("workout_sessions")
-    .update({ ended_at: new Date().toISOString(), notes: notes ?? null })
+    .update(update)
     .eq("id", sessionId);
   if (error) throw error;
 
   revalidatePath("/today");
   revalidatePath("/calendar");
   revalidatePath("/program");
-  redirect(`/history/${sessionId}`);
+  revalidatePath(`/history/${sessionId}`);
+  return { ok: true as const };
 }
 
 const PHOTO_BUCKET = "workout-photos";
@@ -176,7 +194,7 @@ export async function uploadSessionPhotos(formData: FormData) {
   z.string().uuid().parse(sessionId);
 
   const files = formData.getAll("photos").filter((v): v is File => v instanceof File && v.size > 0);
-  if (files.length === 0) return { uploaded: 0 };
+  if (files.length === 0) return { uploaded: 0, failed: 0, firstError: null };
 
   const supabase = await createClient();
   const {
@@ -193,37 +211,46 @@ export async function uploadSessionPhotos(formData: FormData) {
   if (!session) throw new Error("Session not found");
 
   let uploaded = 0;
+  let failed = 0;
+  let firstError: string | null = null;
   for (const file of files) {
-    if (file.size > MAX_PHOTO_BYTES) {
-      const mb = (file.size / 1024 / 1024).toFixed(1);
-      throw new Error(`Photo too large (${mb} MB). Max is 25 MB.`);
-    }
-    if (!isLikelyImage(file)) {
-      throw new Error(`Unsupported file: ${file.name || "(unnamed)"} (${file.type || "unknown type"}).`);
-    }
+    try {
+      if (file.size > MAX_PHOTO_BYTES) {
+        const mb = (file.size / 1024 / 1024).toFixed(1);
+        throw new Error(`Photo too large (${mb} MB). Max is 25 MB.`);
+      }
+      if (!isLikelyImage(file)) {
+        throw new Error(`Unsupported file: ${file.name || "(unnamed)"} (${file.type || "unknown type"}).`);
+      }
 
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-    const path = `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`;
-    const contentType = file.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
-    const { error: upErr } = await supabase.storage
-      .from(PHOTO_BUCKET)
-      .upload(path, file, { contentType, upsert: false });
-    if (upErr) throw upErr;
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`;
+      const contentType = file.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
+      const { error: upErr } = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .upload(path, file, { contentType, upsert: false });
+      if (upErr) throw upErr;
 
-    const { error: insErr } = await supabase.from("workout_session_photos").insert({
-      session_id: sessionId,
-      user_id: user.id,
-      storage_path: path,
-    });
-    if (insErr) {
-      await supabase.storage.from(PHOTO_BUCKET).remove([path]);
-      throw insErr;
+      const { error: insErr } = await supabase.from("workout_session_photos").insert({
+        session_id: sessionId,
+        user_id: user.id,
+        storage_path: path,
+      });
+      if (insErr) {
+        await supabase.storage.from(PHOTO_BUCKET).remove([path]);
+        throw insErr;
+      }
+      uploaded += 1;
+    } catch (err) {
+      failed += 1;
+      if (firstError === null) {
+        firstError = err instanceof Error ? err.message : "Photo upload failed";
+      }
     }
-    uploaded += 1;
   }
 
-  revalidatePath(`/history/${sessionId}`);
-  return { uploaded };
+  if (uploaded > 0) revalidatePath(`/history/${sessionId}`);
+  return { uploaded, failed, firstError };
 }
 
 const DeletePhotoSchema = z.object({
