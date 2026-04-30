@@ -121,12 +121,13 @@ function DayCell({
   }
 
   const base = "aspect-square rounded-md border p-1.5 flex flex-col text-left";
+  const todayRing = isToday ? "ring-1 ring-accent" : "";
 
   if (session?.status === "completed") {
     return (
       <Link
         href={`/history/${session.sessionId}`}
-        className={cn(base, "bg-emerald-500 border-emerald-500 text-black")}
+        className={cn(base, "bg-emerald-500 border-emerald-500 text-black", todayRing)}
       >
         <span className="text-xs font-medium tabular-nums">{date}</span>
         <span className="text-[10px] leading-tight mt-auto line-clamp-2">{session.label}</span>
@@ -138,7 +139,7 @@ function DayCell({
     return (
       <Link
         href={`/workout/${session.sessionId}`}
-        className={cn(base, "bg-neutral-900 border-emerald-500/60 text-emerald-300")}
+        className={cn(base, "bg-neutral-900 border-emerald-500/60 text-emerald-300", todayRing)}
       >
         <span className="text-xs font-medium tabular-nums">{date}</span>
         <span className="text-[10px] leading-tight mt-auto line-clamp-2">{session.label}</span>
@@ -148,7 +149,7 @@ function DayCell({
 
   if (isToday) {
     return (
-      <div className={cn(base, "bg-neutral-900 border-neutral-700 text-white")}>
+      <div className={cn(base, "bg-neutral-900 border-neutral-700 text-white", todayRing)}>
         <span className="text-xs font-medium tabular-nums">{date}</span>
       </div>
     );

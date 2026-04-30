@@ -32,7 +32,7 @@ export function ArchiveExerciseButton({ exerciseId }: { exerciseId: string }) {
       disabled={pending}
       aria-label={confirming ? "Confirm remove" : "Remove exercise"}
       className={cn(
-        "h-8 w-8 rounded flex items-center justify-center shrink-0 transition-colors",
+        "h-11 w-11 rounded flex items-center justify-center shrink-0 transition-colors",
         confirming
           ? "bg-red-500/15 text-red-400 border border-red-500/40"
           : "text-neutral-500 hover:text-neutral-300",

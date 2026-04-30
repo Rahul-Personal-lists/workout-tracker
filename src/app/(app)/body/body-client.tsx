@@ -128,7 +128,7 @@ export function BodyClient({ initialLogs }: { initialLogs: BodyLogRow[] }) {
               inputMode="decimal"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              placeholder="—"
+              placeholder="e.g. 124.4"
               className="mt-1 w-full h-11 rounded-md bg-neutral-950 border border-neutral-800 px-3 text-base tabular-nums outline-none focus:border-neutral-600"
             />
           </label>
@@ -141,7 +141,7 @@ export function BodyClient({ initialLogs }: { initialLogs: BodyLogRow[] }) {
               inputMode="numeric"
               value={calories}
               onChange={(e) => setCalories(e.target.value.replace(/[^\d]/g, ""))}
-              placeholder="—"
+              placeholder="e.g. 2400"
               className="mt-1 w-full h-11 rounded-md bg-neutral-950 border border-neutral-800 px-3 text-base tabular-nums outline-none focus:border-neutral-600"
             />
           </label>

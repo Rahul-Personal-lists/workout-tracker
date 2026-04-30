@@ -12,6 +12,7 @@
   --color-foreground: #fff;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: ui-serif, Georgia, "Times New Roman", serif;
   --animate-exercise-flip: exercise-flip 1.6s ease-in-out infinite;
 }
 
@@ -44,6 +45,7 @@ body {
   background: #000;
   color: #fff;
   font-family: var(--font-sans);
+  font-synthesis-style: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

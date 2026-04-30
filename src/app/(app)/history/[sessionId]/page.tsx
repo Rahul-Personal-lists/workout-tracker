@@ -43,6 +43,10 @@ export default async function SessionDetailPage({
   );
   const completedCount = logs.filter((l) => l.completed).length;
 
+  const titleWords = day.title.split(/\s+/);
+  const titleLast = titleWords.pop() ?? "";
+  const titleRest = titleWords.join(" ");
+
   return (
     <div className="space-y-6">
       <Link
@@ -56,7 +60,10 @@ export default async function SessionDetailPage({
         <p className="text-xs uppercase tracking-wide text-neutral-500">
           Week {session.week_number} · {day.label} · {formatDateInTz(new Date(session.started_at), tz)}
         </p>
-        <h1 className="text-xl font-semibold leading-tight">{day.title}</h1>
+        <h1 className="text-xl font-semibold leading-tight">
+          {titleRest ? `${titleRest} ` : ""}
+          <em className="font-display italic font-medium">{titleLast}</em>
+        </h1>
         <div className="grid grid-cols-3 gap-4 pt-3 border-t border-neutral-900">
           <div>
             <div className="text-base tabular-nums leading-tight">
@@ -87,9 +94,12 @@ export default async function SessionDetailPage({
       </header>
 
       {session.notes ? (
-        <p className="rounded-md border border-neutral-800 bg-neutral-900 p-3 text-sm text-neutral-300">
-          {session.notes}
-        </p>
+        <section className="space-y-2">
+          <p className="text-xs uppercase tracking-wide text-neutral-500">Notes</p>
+          <p className="rounded-md border border-neutral-800 bg-neutral-900 p-3 text-sm text-neutral-300">
+            {session.notes}
+          </p>
+        </section>
       ) : null}
 
       {photos.length > 0 ? <SessionPhotos photos={photos} /> : null}
@@ -154,19 +164,23 @@ export default async function SessionDetailPage({
                 <ChevronRight className="w-4 h-4 text-neutral-500 flex-none" />
               </Link>
               <div className="px-3 py-3 space-y-1">
-                {expected.map((s) => (
-                  <EditableSetRow
-                    key={s.set_number}
-                    sessionId={session.id}
-                    programExerciseId={ex.id}
-                    setNumber={s.set_number}
-                    plannedWeight={s.planned_weight}
-                    plannedReps={s.planned_reps}
-                    actualWeight={s.actual_weight}
-                    actualReps={s.actual_reps}
-                    completed={s.completed}
-                  />
-                ))}
+                {exLogs.length === 0 ? (
+                  <p className="px-1 text-sm text-neutral-500 opacity-50">Skipped</p>
+                ) : (
+                  expected.map((s) => (
+                    <EditableSetRow
+                      key={s.set_number}
+                      sessionId={session.id}
+                      programExerciseId={ex.id}
+                      setNumber={s.set_number}
+                      plannedWeight={s.planned_weight}
+                      plannedReps={s.planned_reps}
+                      actualWeight={s.actual_weight}
+                      actualReps={s.actual_reps}
+                      completed={s.completed}
+                    />
+                  ))
+                )}
               </div>
             </li>
           );

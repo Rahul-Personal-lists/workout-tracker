@@ -106,6 +106,9 @@ export default async function TodayPage() {
   const { weekNumber, day } = next;
   const phase = getPhase(weekNumber);
   const isDeload = program.deload_weeks.includes(weekNumber);
+  const titleWords = day.title.split(/\s+/);
+  const titleLast = titleWords.pop() ?? "";
+  const titleRest = titleWords.join(" ");
 
   return (
     <div className="space-y-6 pt-8">
@@ -115,7 +118,10 @@ export default async function TodayPage() {
           {phase} · Week {weekNumber}
           {isDeload ? " · Deload" : ""}
         </p>
-        <h1 className="text-2xl font-semibold">{day.label}: {day.title}</h1>
+        <h1 className="text-2xl font-semibold">
+          {day.label}: {titleRest ? `${titleRest} ` : ""}
+          <em className="font-display italic font-medium">{titleLast}</em>
+        </h1>
       </header>
 
       <ul className="space-y-2">

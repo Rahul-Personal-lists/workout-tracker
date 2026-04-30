@@ -164,7 +164,11 @@ export default async function ProgramPage({
       </div>
 
       <ul className="space-y-3">
-        {program.days.map((day) => (
+        {program.days.map((day) => {
+          const titleWords = day.title.split(/\s+/);
+          const titleLast = titleWords.pop() ?? "";
+          const titleRest = titleWords.join(" ");
+          return (
           <li
             key={day.id}
             className="rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden"
@@ -174,7 +178,10 @@ export default async function ProgramPage({
                 <p className="text-[11px] uppercase tracking-wide text-neutral-500">
                   {day.label}
                 </p>
-                <h2 className="text-sm font-medium truncate">{day.title}</h2>
+                <h2 className="text-sm font-medium truncate">
+                  {titleRest ? `${titleRest} ` : ""}
+                  <em className="font-display italic font-medium">{titleLast}</em>
+                </h2>
               </div>
               <DayControls
                 dayId={day.id}
@@ -247,7 +254,8 @@ export default async function ProgramPage({
               <Plus className="w-3.5 h-3.5" /> Add exercise
             </Link>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <form
