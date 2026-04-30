@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export const REST_DURATIONS = [30, 60, 90, 120] as const;
+export const REST_DURATIONS = [30, 45, 60, 90, 120] as const;
 export type RestDuration = (typeof REST_DURATIONS)[number];
 
 type RestTimerState = {
@@ -18,7 +18,7 @@ type RestTimerState = {
 export const useRestTimer = create<RestTimerState>()(
   persist(
     (set, get) => ({
-      defaultDuration: 90,
+      defaultDuration: 45,
       endsAt: null,
       setDefaultDuration: (d) => set({ defaultDuration: d }),
       start: (durationSec) => {
@@ -35,8 +35,10 @@ export const useRestTimer = create<RestTimerState>()(
     }),
     {
       name: "rest-timer",
+      version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ defaultDuration: s.defaultDuration }),
+      migrate: () => ({ defaultDuration: 45 as RestDuration }),
     }
   )
 );
