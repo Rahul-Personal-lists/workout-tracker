@@ -276,6 +276,74 @@ export async function getSession(sessionId: string) {
   return data;
 }
 
+export type SessionContext = {
+  session: {
+    id: string;
+    started_at: string;
+    ended_at: string | null;
+    duration_seconds: number | null;
+    week_number: number;
+    notes: string | null;
+    program_day_id: string;
+  };
+  program: { id: string; name: string; weeks: number; deload_weeks: number[] };
+  day: { id: string; label: string; title: string; exercises: ProgramExercise[] };
+};
+
+// Resolves a session's day + parent program by following its FK chain, so history
+// renders correctly even when the session belongs to a non-active program.
+export async function getSessionContext(
+  sessionId: string
+): Promise<SessionContext | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select(
+      `
+      id, started_at, ended_at, duration_seconds, week_number, notes, program_day_id,
+      program_days!inner (
+        id, label, title,
+        programs!inner ( id, name, weeks, deload_weeks ),
+        exercises:program_exercises (
+          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at
+        )
+      )
+    `
+    )
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || !data.program_days || !data.program_days.programs) return null;
+
+  const d = data.program_days;
+  const p = d.programs;
+  return {
+    session: {
+      id: data.id,
+      started_at: data.started_at,
+      ended_at: data.ended_at,
+      duration_seconds: data.duration_seconds,
+      week_number: data.week_number,
+      notes: data.notes,
+      program_day_id: data.program_day_id,
+    },
+    program: {
+      id: p.id,
+      name: p.name,
+      weeks: p.weeks,
+      deload_weeks: p.deload_weeks,
+    },
+    day: {
+      id: d.id,
+      label: d.label,
+      title: d.title,
+      exercises: (d.exercises ?? [])
+        .slice()
+        .sort((a, b) => a.order_index - b.order_index),
+    },
+  };
+}
+
 export type HistoryRow = {
   id: string;
   started_at: string;

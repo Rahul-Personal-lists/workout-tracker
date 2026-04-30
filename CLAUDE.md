@@ -36,7 +36,7 @@ workout_sessions      — started_at, ended_at, week_number, generated duration_
   └─ set_logs         — planned_* snapshotted at log time, FK no-cascade to program_exercises
 ```
 
-- **Soft delete** via `programs.archived_at`, `program_days.archived_at`, and `program_exercises.archived_at`. Hard delete is blocked by FKs (`set_logs.program_exercise_id`, `workout_sessions.program_day_id`) once any session/log references the row. `getCurrentProgram({ includeArchived: true })` is used by `/history/[sessionId]` so old logged exercises and archived days still render in past sessions.
+- **Soft delete** via `programs.archived_at`, `program_days.archived_at`, and `program_exercises.archived_at`. Hard delete is blocked by FKs (`set_logs.program_exercise_id`, `workout_sessions.program_day_id`) once any session/log references the row. `/history/[sessionId]` uses `getSessionContext(sessionId)`, which resolves the session's day + parent program via FK chain — so past sessions render correctly across both programs (active or not) and across archived days/exercises.
 - **Multi-program**: a user can have up to **2 non-archived programs**. Exactly one is `is_active = true`, enforced by the partial unique index `programs_one_active_per_user`. Server actions that promote a program (`seedPresetProgram`, `createBlankProgram`, `setActiveProgram`) **must demote the existing active one in the same call** before promoting, or the index will reject the write.
 - **`planned_weight` / `planned_reps`** in `set_logs` are **snapshotted at log time** so changing the program later doesn't rewrite history.
 

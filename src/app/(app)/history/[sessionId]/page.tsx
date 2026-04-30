@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import {
-  getCurrentProgram,
-  getSession,
+  getSessionContext,
   getSessionLogs,
   getSessionPhotos,
 } from "@/lib/queries";
@@ -24,12 +23,9 @@ export default async function SessionDetailPage({
 }) {
   const { sessionId } = await params;
 
-  const session = await getSession(sessionId);
-  if (!session) notFound();
-
-  const program = await getCurrentProgram({ includeArchived: true });
-  const day = program?.days.find((d) => d.id === session.program_day_id);
-  if (!day) notFound();
+  const ctx = await getSessionContext(sessionId);
+  if (!ctx) notFound();
+  const { session, program, day } = ctx;
 
   const [logs, photos, tz] = await Promise.all([
     getSessionLogs(sessionId),
@@ -107,12 +103,12 @@ export default async function SessionDetailPage({
             ex.start_weight,
             ex.increment,
             session.week_number,
-            program?.deload_weeks ?? []
+            program.deload_weeks
           );
           const fallbackPlannedReps = getPlannedReps(
             ex.base_reps,
             session.week_number,
-            program?.deload_weeks ?? []
+            program.deload_weeks
           );
           const expected = Array.from({ length: ex.sets }, (_, i) => {
             const setNumber = i + 1;
