@@ -208,8 +208,8 @@ export function BlankProgramForm() {
               key={i}
               className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 flex gap-2 items-start"
             >
-              <div className="flex-1 space-y-2">
-                <label className="block space-y-1">
+              <div className="flex-1 flex gap-2">
+                <label className="block space-y-1 w-24 shrink-0">
                   <span className="block text-[10px] uppercase tracking-wide text-neutral-500">
                     Label
                   </span>
@@ -221,7 +221,7 @@ export function BlankProgramForm() {
                     className={fieldClass}
                   />
                 </label>
-                <label className="block space-y-1">
+                <label className="block space-y-1 flex-1 min-w-0">
                   <span className="block text-[10px] uppercase tracking-wide text-neutral-500">
                     Title
                   </span>
