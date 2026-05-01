@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -320,7 +319,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      swap_day_order: {
+        Args: { p_day_a: string; p_day_b: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

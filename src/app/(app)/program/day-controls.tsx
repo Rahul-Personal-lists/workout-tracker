@@ -2,15 +2,17 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { MoreVertical, Pencil, Plus, Trash2, X, Check } from "lucide-react";
+import { ChevronUp, ChevronDown, MoreVertical, Pencil, Plus, Trash2, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { archiveDay, renameDay } from "@/app/actions/program";
+import { archiveDay, renameDay, reorderDay } from "@/app/actions/program";
 
 type DayControlsProps = {
   dayId: string;
   initialLabel: string;
   initialTitle: string;
   selectedWeek: number;
+  isFirst: boolean;
+  isLast: boolean;
 };
 
 export function DayControls({
@@ -18,6 +20,8 @@ export function DayControls({
   initialLabel,
   initialTitle,
   selectedWeek,
+  isFirst,
+  isLast,
 }: DayControlsProps) {
   const [confirming, setConfirming] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -226,6 +230,34 @@ export function DayControls({
             >
               <Pencil className="w-3.5 h-3.5 text-neutral-500" /> Rename day
             </button>
+            {!isFirst && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  startTransition(() => reorderDay({ dayId, direction: "up" }));
+                }}
+                disabled={pending}
+                className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
+              >
+                <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> Move up
+              </button>
+            )}
+            {!isLast && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  startTransition(() => reorderDay({ dayId, direction: "down" }));
+                }}
+                disabled={pending}
+                className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
+              >
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500" /> Move down
+              </button>
+            )}
             <button
               type="button"
               role="menuitem"
