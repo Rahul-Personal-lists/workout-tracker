@@ -25,6 +25,14 @@ Mobile-first PWA Rahul uses to log strength programs at the gym. Personal app, s
 - **Image source** for exercise reference pics is `yuhonas/free-exercise-db` (public domain). Each exercise has `/0.jpg` (start) and `/1.jpg` (end). UI in [src/components/exercise-animation.tsx](src/components/exercise-animation.tsx) layers them and CSS-flips opacity (`@keyframes exercise-flip` in globals.css). No JS animation loop.
 - **Bottom nav** ([src/components/bottom-nav.tsx](src/components/bottom-nav.tsx)) auto-hides on `/workout/*` so the Finish button isn't covered and the user stays focused mid-set.
 - **Auth gate** is in [src/middleware.ts](src/middleware.ts) → [src/lib/supabase/middleware.ts](src/lib/supabase/middleware.ts). The `(app)` layout also redirects, defense-in-depth.
+- **Design tokens.** Semantic CSS variables in [globals.css](src/app/globals.css) under `@theme`:
+  - Surfaces — `--color-surface` (cards), `--color-surface-hover`, `--color-surface-subtle`
+  - Borders — `--color-border` (default), `--color-border-strong` (dashed CTAs)
+  - Foreground — `--color-foreground` (primary), `--color-foreground-muted` (single muted tier; the dark palette has no contrast headroom for a third tier — there is no `subtle`)
+  - Focus ring — `--focus-ring-width` / `--focus-ring-offset` / `--focus-ring-color` (refs `--color-accent`, theme-aware)
+
+  Prefer `bg-surface` / `border-border` / `text-foreground-muted` over `bg-neutral-900` / `border-neutral-800` / `text-neutral-{400,500}` in new code. `/today` and `bottom-nav` are migrated; other screens still use raw `text-neutral-*` and migrate per-screen.
+- **A11y baseline** (from the `/today` audit, applies app-wide): pinch-zoom must stay enabled, every interactive element needs a `:focus-visible` ring, the bottom nav has `aria-label="Primary"` + `aria-current="page"` on the active tab, and `(app)/layout.tsx` carries a skip-to-main link targeting `<main id="main">`.
 
 ## DB schema (all RLS-owner-scoped)
 
@@ -102,7 +110,7 @@ The seed script auto-creates the auth user (admin API) if missing, and on re-run
 ## Known limitations / deferred
 
 - **Offline write queue.** Decided to ship without it; revisit if connection actually drops at the gym. Plan was IndexedDB queue on `logSet` calls + flush on reconnect.
-- **Multiple in-progress sessions.** `startWorkout` doesn't block creation of a second session if one's already active. `/today` redirects to most recent, so it's not destructive — just messy. Add a "cancel session" action if this gets annoying.
+- **No "cancel session" action.** `startWorkout` redirects to any existing open session instead of creating a duplicate (server-side guard in [actions/workout.ts](src/app/actions/workout.ts), plus the Start button now disables while the action is pending), but there's no UI to abandon a session you don't want to finish. The session sits as `ended_at = null` until you manually finish or delete it from history.
 - **Mid-workout exercise add.** New exercises only appear in *future* sessions of that day. The active in-progress session won't pick them up.
 - **Day/program structure edits during an active session.** `setActiveProgram` blocks while a session is in-progress, but archiving the day of an in-progress session is not blocked — avoid it manually.
 - **No program-level editor for weeks/deloads after creation** — only days and exercises. Change weeks/deloads by archiving and re-creating.
@@ -116,3 +124,5 @@ The seed script auto-creates the auth user (admin API) if missing, and on re-run
 - Don't change `planned_*` snapshotting semantics in set_logs without flagging — it's load-bearing for history accuracy.
 - Don't hand-edit `src/lib/supabase/database.types.ts` — regenerate via `npm run db:types`.
 - Don't bypass the partial unique index `programs_one_active_per_user`. When promoting a program to active, demote the existing active one **first** in the same server action (see `seedPresetProgram` / `setActiveProgram` for the pattern).
+- Don't disable user zoom in the viewport (`userScalable: false` / `maximumScale: 1`). Pinch-zoom is required for low-vision users (WCAG 1.4.4) and was explicitly removed from `src/app/layout.tsx`.
+- Don't hardcode focus-ring values — reference the `--focus-ring-*` CSS variables (or `--color-accent` for the color) so accent-theme switching keeps working across all five themes.

@@ -157,7 +157,7 @@ export default async function TodayPage() {
     <div className="space-y-6 pt-8">
       {greeting}
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-foreground-subtle">
+        <p className="text-xs uppercase tracking-wide text-foreground-muted">
           {phase} · Week {weekNumber}
           {isDeload ? " · Deload" : ""}
         </p>
@@ -165,7 +165,7 @@ export default async function TodayPage() {
           {day.label}: {titleRest ? `${titleRest} ` : ""}
           <em className="font-display italic font-medium">{titleLast}</em>
         </h1>
-        <p className="text-[11px] text-foreground-subtle tabular-nums">
+        <p className="text-[11px] text-foreground-muted tabular-nums">
           ~{estimatedMinutes} min · {day.exercises.length}{" "}
           {day.exercises.length === 1 ? "exercise" : "exercises"}
         </p>

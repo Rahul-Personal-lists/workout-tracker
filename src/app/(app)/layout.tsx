@@ -16,7 +16,15 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <main className="max-w-md mx-auto pb-24 px-4 pt-6">{children}</main>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:text-sm focus:font-medium focus:outline-none"
+      >
+        Skip to content
+      </a>
+      <main id="main" className="max-w-md mx-auto pb-24 px-4 pt-6">
+        {children}
+      </main>
       <BottomNav />
     </div>
   );

@@ -44,8 +44,11 @@
   --color-border: var(--color-neutral-800);
   --color-border-strong: var(--color-neutral-700);
 
+  /* Single muted tier. A tertiary `subtle` tier (neutral-500) was tried
+   * earlier but failed WCAG AA on neutral-900 surfaces (4.16:1) and was
+   * borderline on black (4.68:1). On this palette there is no contrast
+   * headroom for a third tier — collapsed into muted. */
   --color-foreground-muted: var(--color-neutral-400);
-  --color-foreground-subtle: var(--color-neutral-500);
 }
 
 :root[data-theme="lime"]   { --color-accent: #a3e635; }
