@@ -188,6 +188,8 @@ export default async function ProgramPage({
                 initialLabel={day.label}
                 initialTitle={day.title}
                 selectedWeek={selectedWeek}
+                isFirst={program.days.indexOf(day) === 0}
+                isLast={program.days.indexOf(day) === program.days.length - 1}
               />
             </header>
             <ul className="px-3 py-2 space-y-1.5">

@@ -422,6 +422,45 @@ export async function addDay(input: z.infer<typeof AddDaySchema>) {
   revalidatePath("/today");
 }
 
+const ReorderDaySchema = z.object({
+  dayId: z.string().uuid(),
+  direction: z.enum(["up", "down"]),
+});
+
+export async function reorderDay(input: z.infer<typeof ReorderDaySchema>) {
+  const { dayId, direction } = ReorderDaySchema.parse(input);
+  const supabase = await createClient();
+
+  const { data: target, error: tErr } = await supabase
+    .from("program_days")
+    .select("id, program_id, day_number")
+    .eq("id", dayId)
+    .single();
+  if (tErr || !target) throw tErr ?? new Error("Day not found");
+
+  const { data: siblings, error: sErr } = await supabase
+    .from("program_days")
+    .select("id, day_number")
+    .eq("program_id", target.program_id)
+    .is("archived_at", null)
+    .order("day_number", { ascending: true });
+  if (sErr) throw sErr;
+
+  const idx = siblings.findIndex((d) => d.id === dayId);
+  const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (neighborIdx < 0 || neighborIdx >= siblings.length) return;
+
+  const neighbor = siblings[neighborIdx];
+  const { error } = await supabase.rpc("swap_day_order", {
+    p_day_a: dayId,
+    p_day_b: neighbor.id,
+  });
+  if (error) throw error;
+
+  revalidatePath("/program");
+  revalidatePath("/today");
+}
+
 const DayIdSchema = z.object({ dayId: z.string().uuid() });
 
 export async function archiveDay(input: z.infer<typeof DayIdSchema>) {
