@@ -15,7 +15,7 @@ export default async function AppLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="min-h-dvh bg-black text-white">
+    <div className="min-h-dvh bg-background text-foreground">
       <main className="max-w-md mx-auto pb-24 px-4 pt-6">{children}</main>
       <BottomNav />
     </div>

@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { getCurrentProgram, getNextWorkout } from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatWeight } from "@/lib/format";
-import { startWorkout } from "@/app/actions/workout";
 import { createClient } from "@/lib/supabase/server";
 import { getUserTimezone, weekdayInTz } from "@/lib/tz";
+import { StartWorkoutButton } from "./start-workout-button";
 
 const MOTIVATIONS = [
   "Small reps, big gains.",
@@ -127,6 +127,23 @@ export default async function TodayPage() {
   }
 
   const { weekNumber, day } = next;
+
+  if (day.exercises.length === 0) {
+    return (
+      <div className="space-y-6 pt-8">
+        {greeting}
+        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
+          <p>
+            {day.label}: {day.title} has no exercises yet.
+          </p>
+          <Link href="/program" className="btn-primary w-full h-12 text-sm">
+            Add exercises
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const phase = getPhase(weekNumber);
   const isDeload = program.deload_weeks.includes(weekNumber);
   const titleWords = day.title.split(/\s+/);
@@ -195,19 +212,7 @@ export default async function TodayPage() {
         })}
       </ul>
 
-      <form
-        action={async () => {
-          "use server";
-          await startWorkout({ programDayId: day.id, weekNumber });
-        }}
-      >
-        <button
-          type="submit"
-          className="btn-primary w-full h-14 text-base"
-        >
-          Start workout
-        </button>
-      </form>
+      <StartWorkoutButton programDayId={day.id} weekNumber={weekNumber} />
     </div>
   );
 }
