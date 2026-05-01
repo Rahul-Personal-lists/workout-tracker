@@ -34,10 +34,16 @@ export function BottomNav() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex-1 flex flex-col items-center justify-center gap-1 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black",
-                  active ? "text-accent" : "text-foreground-subtle"
+                  "relative flex-1 flex flex-col items-center justify-center gap-1 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+                  active ? "text-accent" : "text-foreground-muted"
                 )}
               >
+                {active ? (
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-b-full bg-accent"
+                  />
+                ) : null}
                 <Icon className="w-5 h-5" strokeWidth={active ? 2.25 : 1.75} />
                 <span>{label}</span>
               </Link>
