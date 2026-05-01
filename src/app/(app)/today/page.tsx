@@ -61,7 +61,7 @@ export default async function TodayPage() {
       <p className="text-xl font-semibold">
         Hi, <span className="text-accent">{name}</span>
       </p>
-      <p className="text-sm text-neutral-400">{motivation}</p>
+      <p className="text-sm text-foreground-muted">{motivation}</p>
     </div>
   );
 
@@ -71,7 +71,7 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
+        <div className="rounded-md border border-border bg-surface p-4 text-sm text-neutral-300 space-y-3">
           <p>You don&apos;t have a program yet.</p>
           <Link
             href="/program"
@@ -88,7 +88,7 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
+        <div className="rounded-md border border-border bg-surface p-4 text-sm text-neutral-300 space-y-3">
           <p>{program.name} has no days yet.</p>
           <Link
             href="/program"
@@ -112,7 +112,7 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm">
+        <div className="rounded-md border border-border bg-surface p-4 text-sm">
           <span aria-hidden="true">🎉</span> You finished all {program.weeks}{" "}
           weeks. Time to plan the next block.
         </div>
@@ -132,7 +132,7 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 space-y-3">
+        <div className="rounded-md border border-border bg-surface p-4 text-sm text-neutral-300 space-y-3">
           <p>
             {day.label}: {day.title} has no exercises yet.
           </p>
@@ -157,7 +157,7 @@ export default async function TodayPage() {
     <div className="space-y-6 pt-8">
       {greeting}
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <p className="text-xs uppercase tracking-wide text-foreground-subtle">
           {phase} · Week {weekNumber}
           {isDeload ? " · Deload" : ""}
         </p>
@@ -165,7 +165,7 @@ export default async function TodayPage() {
           {day.label}: {titleRest ? `${titleRest} ` : ""}
           <em className="font-display italic font-medium">{titleLast}</em>
         </h1>
-        <p className="text-[11px] text-neutral-500 tabular-nums">
+        <p className="text-[11px] text-foreground-subtle tabular-nums">
           ~{estimatedMinutes} min · {day.exercises.length}{" "}
           {day.exercises.length === 1 ? "exercise" : "exercises"}
         </p>
@@ -193,11 +193,11 @@ export default async function TodayPage() {
           return (
             <li
               key={ex.id}
-              className="rounded-md border border-neutral-800 bg-neutral-900 p-3"
+              className="rounded-md border border-border bg-surface p-3"
             >
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-sm">{ex.name}</span>
-                <span className="text-xs text-neutral-400 tabular-nums whitespace-nowrap">
+                <span className="text-xs text-foreground-muted tabular-nums whitespace-nowrap">
                   {ex.sets}×{plannedReps ?? "—"}
                   {plannedWeight !== null
                     ? ` · ${formatWeight(plannedWeight)} lb`
@@ -205,7 +205,7 @@ export default async function TodayPage() {
                 </span>
               </div>
               {hint ? (
-                <p className="mt-1 text-[11px] text-neutral-400">{hint}</p>
+                <p className="mt-1 text-[11px] text-foreground-muted">{hint}</p>
               ) : null}
             </li>
           );
