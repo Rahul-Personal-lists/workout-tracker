@@ -172,22 +172,23 @@ export async function getNextWorkout(
     return { kind: "next", weekNumber: 1, day: program.days[0] };
   }
 
-  const lastDay = program.days.find((d) => d.id === lastFinished.program_day_id);
-  const lastDayNumber = lastDay?.day_number ?? program.days.length;
+  const lastIdx = program.days.findIndex(
+    (d) => d.id === lastFinished.program_day_id
+  );
+  if (lastIdx === -1) {
+    return { kind: "next", weekNumber: 1, day: program.days[0] };
+  }
 
   let nextWeek = lastFinished.week_number;
-  let nextDayNumber = lastDayNumber + 1;
-  if (nextDayNumber > program.days.length) {
-    nextDayNumber = 1;
+  let nextIdx = lastIdx + 1;
+  if (nextIdx >= program.days.length) {
+    nextIdx = 0;
     nextWeek += 1;
   }
 
   if (nextWeek > program.weeks) return { kind: "complete" };
 
-  const day =
-    program.days.find((d) => d.day_number === nextDayNumber) ?? program.days[0];
-
-  return { kind: "next", weekNumber: nextWeek, day };
+  return { kind: "next", weekNumber: nextWeek, day: program.days[nextIdx] };
 }
 
 export async function getCompletedDayIdsForWeek(
