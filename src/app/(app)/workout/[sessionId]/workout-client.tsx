@@ -5,10 +5,21 @@ import { useRouter } from "next/navigation";
 import { Camera, Check, ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
-import { finishWorkout, logSet, uploadSessionPhotos } from "@/app/actions/workout";
+import { finishWorkout, logSet, recordSessionPhotos } from "@/app/actions/workout";
 import { RestTimerBar } from "@/components/rest-timer";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { useRestTimer } from "@/lib/stores/rest-timer";
+import { createClient } from "@/lib/supabase/client";
+
+const PHOTO_BUCKET = "workout-photos";
+const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
+const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"];
+
+function isLikelyImage(file: File): boolean {
+  if (file.type && file.type.startsWith("image/")) return true;
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  return !!ext && ALLOWED_EXTS.includes(ext);
+}
 
 export type SetRow = {
   setNumber: number;
@@ -166,22 +177,66 @@ export function WorkoutClient({
       }
 
       if (photos.length > 0) {
-        const fd = new FormData();
-        fd.set("sessionId", sessionId);
-        photos.forEach((p) => fd.append("photos", p));
-        try {
-          const result = await uploadSessionPhotos(fd);
-          if (result.failed > 0) {
-            const total = result.uploaded + result.failed;
-            const msg =
-              result.uploaded > 0
-                ? `${result.uploaded} of ${total} photos uploaded — ${result.failed} failed${result.firstError ? `: ${result.firstError}` : ""}.`
-                : `Photos didn't upload${result.firstError ? `: ${result.firstError}` : ""}.`;
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          setUploadError("Not signed in — couldn't upload photos.");
+          return;
+        }
+
+        const uploadedPaths: string[] = [];
+        let failed = 0;
+        let firstError: string | null = null;
+
+        for (const file of photos) {
+          try {
+            if (file.size > MAX_PHOTO_BYTES) {
+              const mb = (file.size / 1024 / 1024).toFixed(1);
+              throw new Error(`Photo too large (${mb} MB). Max is 25 MB.`);
+            }
+            if (!isLikelyImage(file)) {
+              throw new Error(
+                `Unsupported file: ${file.name || "(unnamed)"} (${file.type || "unknown type"}).`
+              );
+            }
+            const ext =
+              (file.name.split(".").pop() || "jpg")
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, "") || "jpg";
+            const path = `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`;
+            const contentType = file.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
+            const { error: upErr } = await supabase.storage
+              .from(PHOTO_BUCKET)
+              .upload(path, file, { contentType, upsert: false });
+            if (upErr) throw upErr;
+            uploadedPaths.push(path);
+          } catch (err) {
+            failed += 1;
+            if (firstError === null) {
+              firstError = err instanceof Error ? err.message : "Photo upload failed";
+            }
+          }
+        }
+
+        if (uploadedPaths.length > 0) {
+          try {
+            await recordSessionPhotos({ sessionId, paths: uploadedPaths });
+          } catch (err) {
+            await supabase.storage.from(PHOTO_BUCKET).remove(uploadedPaths);
+            const msg = err instanceof Error ? err.message : "Couldn't save photos";
             setUploadError(msg);
             return;
           }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Photos didn't upload";
+        }
+
+        if (failed > 0) {
+          const total = uploadedPaths.length + failed;
+          const msg =
+            uploadedPaths.length > 0
+              ? `${uploadedPaths.length} of ${total} photos uploaded — ${failed} failed${firstError ? `: ${firstError}` : ""}.`
+              : `Photos didn't upload${firstError ? `: ${firstError}` : ""}.`;
           setUploadError(msg);
           return;
         }

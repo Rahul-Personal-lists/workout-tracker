@@ -179,28 +179,27 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
 }
 
 const PHOTO_BUCKET = "workout-photos";
-const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
 
-function isLikelyImage(file: File): boolean {
-  if (file.type && file.type.startsWith("image/")) return true;
-  // iOS Safari sometimes submits camera files with empty/unknown type — fall back to extension.
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  return !!ext && ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"].includes(ext);
-}
+const RecordPhotosSchema = z.object({
+  sessionId: z.string().uuid(),
+  paths: z.array(z.string().min(1)).min(1).max(6),
+});
 
-export async function uploadSessionPhotos(formData: FormData) {
-  const sessionId = formData.get("sessionId");
-  if (typeof sessionId !== "string") throw new Error("Missing sessionId");
-  z.string().uuid().parse(sessionId);
-
-  const files = formData.getAll("photos").filter((v): v is File => v instanceof File && v.size > 0);
-  if (files.length === 0) return { uploaded: 0, failed: 0, firstError: null };
+export async function recordSessionPhotos(input: z.infer<typeof RecordPhotosSchema>) {
+  const { sessionId, paths } = RecordPhotosSchema.parse(input);
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
+
+  const expectedPrefix = `${user.id}/${sessionId}/`;
+  for (const p of paths) {
+    if (!p.startsWith(expectedPrefix)) {
+      throw new Error("Invalid photo path");
+    }
+  }
 
   const { data: session, error: sessionErr } = await supabase
     .from("workout_sessions")
@@ -210,47 +209,20 @@ export async function uploadSessionPhotos(formData: FormData) {
   if (sessionErr) throw sessionErr;
   if (!session) throw new Error("Session not found");
 
-  let uploaded = 0;
-  let failed = 0;
-  let firstError: string | null = null;
-  for (const file of files) {
-    try {
-      if (file.size > MAX_PHOTO_BYTES) {
-        const mb = (file.size / 1024 / 1024).toFixed(1);
-        throw new Error(`Photo too large (${mb} MB). Max is 25 MB.`);
-      }
-      if (!isLikelyImage(file)) {
-        throw new Error(`Unsupported file: ${file.name || "(unnamed)"} (${file.type || "unknown type"}).`);
-      }
-
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-      const path = `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`;
-      const contentType = file.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
-      const { error: upErr } = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(path, file, { contentType, upsert: false });
-      if (upErr) throw upErr;
-
-      const { error: insErr } = await supabase.from("workout_session_photos").insert({
-        session_id: sessionId,
-        user_id: user.id,
-        storage_path: path,
-      });
-      if (insErr) {
-        await supabase.storage.from(PHOTO_BUCKET).remove([path]);
-        throw insErr;
-      }
-      uploaded += 1;
-    } catch (err) {
-      failed += 1;
-      if (firstError === null) {
-        firstError = err instanceof Error ? err.message : "Photo upload failed";
-      }
-    }
+  const { error: insErr } = await supabase.from("workout_session_photos").insert(
+    paths.map((p) => ({
+      session_id: sessionId,
+      user_id: user.id,
+      storage_path: p,
+    }))
+  );
+  if (insErr) {
+    await supabase.storage.from(PHOTO_BUCKET).remove(paths);
+    throw insErr;
   }
 
-  if (uploaded > 0) revalidatePath(`/history/${sessionId}`);
-  return { uploaded, failed, firstError };
+  revalidatePath(`/history/${sessionId}`);
+  return { recorded: paths.length };
 }
 
 const DeletePhotoSchema = z.object({
