@@ -58,9 +58,9 @@ export default async function TodayPage() {
 
   const greeting = (
     <div className="space-y-1">
-      <h2 className="text-xl font-semibold">
+      <p className="text-xl font-semibold">
         Hi, <span className="text-accent">{name}</span>
-      </h2>
+      </p>
       <p className="text-sm text-neutral-400">{motivation}</p>
     </div>
   );
@@ -75,7 +75,7 @@ export default async function TodayPage() {
           <p>You don&apos;t have a program yet.</p>
           <Link
             href="/program"
-            className="btn-primary w-full h-11 text-sm"
+            className="btn-primary w-full h-12 text-sm"
           >
             Pick a program
           </Link>
@@ -92,7 +92,7 @@ export default async function TodayPage() {
           <p>{program.name} has no days yet.</p>
           <Link
             href="/program"
-            className="btn-primary w-full h-11 text-sm"
+            className="btn-primary w-full h-12 text-sm"
           >
             Set up days
           </Link>
@@ -113,7 +113,8 @@ export default async function TodayPage() {
       <div className="space-y-6 pt-8">
         {greeting}
         <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm">
-          🎉 You finished all {program.weeks} weeks. Time to plan the next block.
+          <span aria-hidden="true">🎉</span> You finished all {program.weeks}{" "}
+          weeks. Time to plan the next block.
         </div>
         <Link
           href="/calendar"
@@ -187,7 +188,7 @@ export default async function TodayPage() {
                 </span>
               </div>
               {hint ? (
-                <p className="mt-1 text-[11px] text-neutral-500">{hint}</p>
+                <p className="mt-1 text-[11px] text-neutral-400">{hint}</p>
               ) : null}
             </li>
           );

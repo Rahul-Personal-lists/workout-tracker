@@ -31,8 +31,6 @@ export const viewport: Viewport = {
   themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 const VALID_THEMES = new Set(["lime", "sky", "amber", "violet", "rose"]);
