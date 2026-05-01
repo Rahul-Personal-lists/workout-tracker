@@ -162,14 +162,14 @@ Solid foundation. The active-state lexicon comment at the top of the file is exc
 
 ### Issues
 
-| # | Issue | Recommendation |
-|---|---|---|
-| DS1 | Hardcoded hex in `btn-secondary` (`#262626`, `#e5e5e5`) and `btn-ghost-add` (`#404040`, `#d4d4d4`, `rgba(23,23,23,…)`) — these are Tailwind neutrals but expressed as raw hex instead of `var(--color-neutral-XXX)`. Drift risk if neutral palette ever shifts. | Either alias them in `@theme` (`--color-surface`, `--color-surface-hover`, `--color-border-default`) and reference, or use Tailwind's built-in CSS variables. |
-| DS2 | No `--focus-ring` token. With O1 to fix, this is the time to introduce one — `--focus-ring: var(--color-accent)`. | Define once, apply in all button utilities. |
-| DS3 | No semantic alias for muted text. `text-neutral-400`, `text-neutral-500` are scattered throughout (and as the audit shows, neutral-500 is borderline on dark surfaces). | Introduce `--color-text-muted` and `--color-text-subtle`, point them at neutral-400 / neutral-500, and migrate gradually. Single point of contrast control if WCAG levels change later. |
-| DS4 | `bg-black` and `text-white` in [(app)/layout.tsx:15](../src/app/(app)/layout.tsx) bypass the `--color-background` / `--color-foreground` tokens defined in `globals.css`. | Use `bg-background text-foreground` so the token chain is honored. |
-| DS5 | Border colors hardcoded as `border-neutral-800` everywhere. | Could be `--color-border` token, but lower priority — the neutral-800 choice is consistent and intentional. |
-| DS6 | Two Tailwind utility libraries in deps: `tailwind-merge` and `clsx` (combined in `cn`). Standard, no issue — flagging because some teams later add `class-variance-authority` for variant systems. `class-variance-authority` is also in deps but unused on /today; if you adopt it, do so deliberately. |
+| # | Issue | Recommendation | Status |
+|---|---|---|---|
+| DS1 | Hardcoded hex in `btn-secondary` (`#262626`, `#e5e5e5`) and `btn-ghost-add` (`#404040`, `#d4d4d4`, `rgba(23,23,23,…)`) — these are Tailwind neutrals but expressed as raw hex instead of `var(--color-neutral-XXX)`. Drift risk if neutral palette ever shifts. | Either alias them in `@theme` (`--color-surface`, `--color-surface-hover`, `--color-border-default`) and reference, or use Tailwind's built-in CSS variables. | ✅ PR #21 — semantic tokens (`--color-surface`, `--color-surface-hover`, `--color-surface-subtle`, `--color-border`, `--color-border-strong`) added; button utilities reference them. |
+| DS2 | No `--focus-ring` token. With O1 to fix, this is the time to introduce one — `--focus-ring: var(--color-accent)`. | Define once, apply in all button utilities. | ✅ PR #21 — `--focus-ring-width` / `--focus-ring-offset` / `--focus-ring-color` added; all three button utilities reference them. |
+| DS3 | No semantic alias for muted text. `text-neutral-400`, `text-neutral-500` are scattered throughout (and as the audit shows, neutral-500 is borderline on dark surfaces). | Introduce `--color-text-muted` and `--color-text-subtle`, point them at neutral-400 / neutral-500, and migrate gradually. Single point of contrast control if WCAG levels change later. | ✅ PR #21 (token + /today migration); PR #22 collapsed `subtle` into `muted` because there's no contrast headroom for a third tier on this dark palette. Other screens (`/program`, `/history`, `/calendar`, `/settings`, `/body`, `/workout/*`) still use raw `text-neutral-*` — migrate per-screen in future a11y sweeps. |
+| DS4 | `bg-black` and `text-white` in [(app)/layout.tsx:15](../src/app/(app)/layout.tsx) bypass the `--color-background` / `--color-foreground` tokens defined in `globals.css`. | Use `bg-background text-foreground` so the token chain is honored. | ✅ PR #20. |
+| DS5 | Border colors hardcoded as `border-neutral-800` everywhere. | Could be `--color-border` token, but lower priority — the neutral-800 choice is consistent and intentional. | Partial — token defined in PR #21, `/today` + bottom-nav migrated. Other screens to follow. |
+| DS6 | Two Tailwind utility libraries in deps: `tailwind-merge` and `clsx` (combined in `cn`). Standard, no issue — flagging because some teams later add `class-variance-authority` for variant systems. `class-variance-authority` is also in deps but unused on /today; if you adopt it, do so deliberately. | | Awareness flag, no action. |
 
 ### Component coverage
 
@@ -232,13 +232,13 @@ Since the screen exists, this is documentation, not a brief. For an LLM coding-a
 | Hover | Implemented on btn-secondary, btn-ghost-add (background lift) | ✅ |
 | Hover on btn-primary | Not defined | ⚠ inconsistent with btn-secondary |
 | Disabled | `opacity: 0.5` via utility | ✅ |
-| Focus-visible | **Not defined** | ❌ see O1 |
-| Loading (form action pending) | No spinner / disabled state on Start workout while `startWorkout` runs | ⚠ user can double-tap |
+| Focus-visible | **Not defined** | ✅ PR #19 (rings on btn utilities + bottom-nav) |
+| Loading (form action pending) | No spinner / disabled state on Start workout while `startWorkout` runs | ✅ PR #20 — extracted to client `<StartWorkoutButton>` using `useTransition`; disables + shows "Starting…" while pending. |
 
 ### Edge cases
 
 - 1-exercise day → "1 exercise" (not "1 exercises") ✅
-- 0 exercises → would render `~5 min · 0 exercises`, then map an empty list, then a Start button. The current empty-day check is at the *program* level (`program.days.length === 0`), not at the *day* level. **Latent gap**: a program with days but a day with zero exercises would render an empty list above the CTA. Defensive fix: add `if (day.exercises.length === 0) { /* prompt to add exercises */ }` before the regular render.
+- 0 exercises → ✅ PR #20 — `/today` now renders a dedicated empty-state card (`"{day.label}: {day.title} has no exercises yet."` + "Add exercises" CTA → `/program`) instead of an empty `<ul>` above an enabled Start button.
 - All weeks complete → 🎉 message + View calendar CTA ✅
 - No active program → empty-state card ✅
 - In-progress session → server-side redirect to `/workout/{sessionId}` ✅
@@ -259,28 +259,51 @@ If you start logging gym friction (even a `notes.md` of "this hurt today"), I ca
 
 ---
 
-## 7. Priority fixes (do these first)
+## 7. Implementation status
 
-Shipped on branch `refactor/today-a11y-design-fixes` (commit `e2c8cd2`, 2026-04-30):
+The audit has been worked through across four PRs. Below is the consolidated status by PR.
 
-1. ✅ **Removed `userScalable: false` and `maximumScale: 1`** in [src/app/layout.tsx](../src/app/layout.tsx). Pinch-zoom restored across the app.
-2. ✅ **Added `:focus-visible` styling** to `btn-primary`, `btn-secondary`, `btn-ghost-add` in [globals.css](../src/app/globals.css) (accent outline with 2px offset), and to bottom-nav `<Link>`s in [bottom-nav.tsx](../src/components/bottom-nav.tsx) (`focus-visible:ring-2 focus-visible:ring-accent` against black offset).
-3. ✅ **Bumped exercise progression hint** to `text-neutral-400` ([today/page.tsx:190](../src/app/(app)/today/page.tsx)). Resolves the 4.16:1 contrast fail.
-4. ✅ **Added `aria-label="Primary"` and `aria-current="page"`** in [bottom-nav.tsx](../src/components/bottom-nav.tsx).
-5. ✅ **Demoted greeting from `<h2>` to `<p>`** ([today/page.tsx:61](../src/app/(app)/today/page.tsx)). Workout `<h1>` is now the first heading on the screen.
+### ✅ PR #19 — `refactor/today-a11y-design-fixes` (2026-04-30)
 
-## 8. Nice-to-haves (when you have a quiet hour)
+Priority fixes:
 
-Shipped in the same commit:
+1. **Removed `userScalable: false` and `maximumScale: 1`** in [src/app/layout.tsx](../src/app/layout.tsx). Pinch-zoom restored. *(P1)*
+2. **`:focus-visible` styling** on `btn-primary`, `btn-secondary`, `btn-ghost-add` in [globals.css](../src/app/globals.css) and on bottom-nav `<Link>`s. *(O1)*
+3. **Progression hint bumped to `text-neutral-400`** ([today/page.tsx:190](../src/app/(app)/today/page.tsx)). Resolves 4.16:1 contrast fail. *(P2)*
+4. **`aria-label="Primary"` + `aria-current="page"`** in [bottom-nav.tsx](../src/components/bottom-nav.tsx). *(R1, R2)*
+5. **Greeting demoted to `<p>`** so the workout `<h1>` is the first heading on the screen. *(U1)*
 
-7. ✅ Bumped empty-state CTAs from `h-11` to `h-12`.
-9. ✅ Wrapped 🎉 in `aria-hidden`.
+Nice-to-haves shipped in the same commit:
 
-Deferred — each is a scope/design decision, not a mechanical fix:
+7. Empty-state CTAs bumped from `h-11` to `h-12`. *(O2)*
+9. 🎉 wrapped in `aria-hidden`. *(P7)*
+
+### ✅ PR #20 — `fix/today-followups`
+
+- **DS4** — `(app)/layout.tsx` uses `bg-background text-foreground` so the token chain is honored.
+- **Loading state on Start workout** — extracted to a client `<StartWorkoutButton>` using `useTransition`; disables + shows "Starting…" while pending. Closes the double-tap window noted in CLAUDE.md "known limitations."
+- **Zero-exercise day guard** — `/today` renders an empty-state card pointing to `/program` instead of an empty `<ul>` above an enabled Start button.
+
+### ✅ PR #21 — `refactor/design-tokens`
+
+- **DS1** — semantic tokens (`--color-surface`, `--color-surface-hover`, `--color-surface-subtle`, `--color-border`, `--color-border-strong`) replace hardcoded hex inside `btn-secondary` / `btn-ghost-add`. Aliased to `var(--color-neutral-XXX)` so the whole app shares one color space.
+- **DS2** — `--focus-ring-width` / `--focus-ring-offset` / `--focus-ring-color` introduced; all three button utilities reference them.
+- **DS3** (token + `/today` migration) — `--color-foreground-muted` / `--color-foreground-subtle` defined; `/today` and bottom-nav JSX migrated. Other screens still on raw `text-neutral-*` and migrate per-screen.
+
+### ✅ PR #22 — `refactor/today-a11y-polish`
+
+- **P4** — collapsed `--color-foreground-subtle` into muted (neutral-400) because the dark palette has no contrast headroom for a third tier. The three borderline 4.68:1 sites (phase overline, time estimate, bottom-nav inactive) move to `text-foreground-muted`.
+- **P6** — bottom-nav active state gets a 2×8px accent bar above the active tab as a non-color signal (no longer hue + stroke-width alone).
+- **O6** — skip-to-main link in `(app)/layout.tsx`. `sr-only` until keyboard focus, then anchored top-left in the accent color. `<main>` has `id="main"`.
+
+### Still deferred — judgment calls, not mechanical fixes
 
 6. **Consolidate Deload signaling** — one banner instead of per-exercise hint repetition. UX call: per-exercise hint reinforces "this set is at 70%" mid-scan, banner is tidier but easier to miss. Revisit the next time you actually hit a deload week and pick what feels right at the gym.
-8. **Add a `card` utility** (`@utility card`) for the four `rounded-md border-neutral-800 bg-neutral-900` occurrences. Premature today — only worth doing once a *second* screen has drifted (different padding, border color, etc.). Trigger: next time you find yourself copy-pasting that classlist.
-10. **Introduce `--color-text-muted` / `--color-text-subtle` tokens** to centralize neutral-400/500 contrast decisions. Pays off when you're already touching multiple muted-text sites — bundle with the next a11y sweep across `/program`, `/history`, `/calendar`.
+8. **Add a `card` utility** (`@utility card`) for the four `rounded-md border-border bg-surface` occurrences. Premature today — only worth doing once a *second* screen has drifted (different padding, border color, etc.). Trigger: next time you find yourself copy-pasting that classlist.
+
+### Still pending — bundled with future per-screen a11y sweeps
+
+- DS3 / DS5 migration of `/program`, `/history`, `/calendar`, `/settings`, `/body`, `/workout/*` from raw `text-neutral-*` / `bg-neutral-900` / `border-neutral-800` to the semantic tokens. Tokens are ready; the work is per-screen QA + class swap.
 
 ---
 
