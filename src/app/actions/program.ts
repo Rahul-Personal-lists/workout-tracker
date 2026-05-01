@@ -346,6 +346,29 @@ export async function archiveProgram(
 }
 
 // ──────────────────────────────────────────────
+// Program-level editing
+// ──────────────────────────────────────────────
+
+const RenameProgramSchema = z.object({
+  programId: z.string().uuid(),
+  name: z.string().min(1).max(80),
+});
+
+export async function renameProgram(
+  input: z.infer<typeof RenameProgramSchema>
+) {
+  const parsed = RenameProgramSchema.parse(input);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("programs")
+    .update({ name: parsed.name })
+    .eq("id", parsed.programId);
+  if (error) throw error;
+  revalidatePath("/program");
+  revalidatePath("/today");
+}
+
+// ──────────────────────────────────────────────
 // Day-level editing
 // ──────────────────────────────────────────────
 

@@ -12,6 +12,7 @@ import { ExerciseAnimation } from "@/components/exercise-animation";
 import { PRESET_PROGRAMS } from "@/lib/starter-program";
 import { ArchiveExerciseButton } from "./archive-button";
 import { DayControls } from "./day-controls";
+import { EditableProgramName } from "./editable-program-name";
 import { ProgramSwitcher } from "./program-switcher";
 import { addDay, seedPresetProgram } from "@/app/actions/program";
 
@@ -100,7 +101,7 @@ export default async function ProgramPage({
   return (
     <div className="space-y-5">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">{program.name}</h1>
+        <EditableProgramName programId={program.id} initialName={program.name} />
         <p className="text-xs text-neutral-500">
           {program.weeks} weeks · deloads on{" "}
           {program.deload_weeks.join(", ") || "none"}
