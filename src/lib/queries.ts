@@ -14,6 +14,7 @@ export type ProgramExercise = {
   note: string | null;
   image_url: string | null;
   archived_at: string | null;
+  progression_weeks: number;
 };
 
 export type ProgramDay = {
@@ -42,7 +43,7 @@ export async function getCurrentProgram(
       days:program_days (
         id, day_number, label, title, archived_at,
         exercises:program_exercises (
-          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at
+          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks
         )
       )
     `;
@@ -189,6 +190,42 @@ export async function getNextWorkout(
   if (nextWeek > program.weeks) return { kind: "complete" };
 
   return { kind: "next", weekNumber: nextWeek, day: program.days[nextIdx] };
+}
+
+// Mirrors UNDO_SKIP_WINDOW_MS in actions/workout.ts.
+const UNDO_SKIP_WINDOW_MS = 5 * 60 * 1000;
+
+export type UndoableSkip = {
+  dayLabel: string;
+  dayTitle: string;
+  expiresAt: number;
+};
+
+export async function getUndoableSkip(): Promise<UndoableSkip | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("workout_sessions")
+    .select("ended_at, program_days ( label, title )")
+    .eq("user_id", user.id)
+    .eq("duration_seconds", 0)
+    .order("ended_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data?.ended_at) return null;
+
+  const expiresAt = new Date(data.ended_at).getTime() + UNDO_SKIP_WINDOW_MS;
+  if (Date.now() >= expiresAt) return null;
+
+  return {
+    dayLabel: data.program_days?.label ?? "—",
+    dayTitle: data.program_days?.title ?? "—",
+    expiresAt,
+  };
 }
 
 export async function getCompletedDayIdsForWeek(
@@ -359,7 +396,7 @@ export async function getSessionContext(
         id, label, title,
         programs!inner ( id, name, weeks, deload_weeks ),
         exercises:program_exercises (
-          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at
+          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks
         )
       )
     `
@@ -588,6 +625,7 @@ export async function getCalendarMonth(
     )
     .gte("started_at", start.toISOString())
     .lt("started_at", end.toISOString())
+    .or("duration_seconds.is.null,duration_seconds.gt.0")
     .order("started_at", { ascending: true });
   if (error) throw error;
 

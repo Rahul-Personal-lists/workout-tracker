@@ -66,6 +66,24 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          display_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          display_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       program_days: {
         Row: {
           archived_at: string | null
@@ -112,6 +130,7 @@ export type Database = {
           note: string | null
           order_index: number
           program_day_id: string
+          progression_weeks: number
           sets: number
           start_weight: number | null
           tracked: boolean
@@ -126,6 +145,7 @@ export type Database = {
           note?: string | null
           order_index: number
           program_day_id: string
+          progression_weeks?: number
           sets: number
           start_weight?: number | null
           tracked?: boolean
@@ -140,6 +160,7 @@ export type Database = {
           note?: string | null
           order_index?: number
           program_day_id?: string
+          progression_weeks?: number
           sets?: number
           start_weight?: number | null
           tracked?: boolean

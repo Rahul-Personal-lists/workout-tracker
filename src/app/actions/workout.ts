@@ -50,6 +50,89 @@ export async function startWorkout(input: z.infer<typeof StartSchema>) {
   redirect(`/workout/${data.id}`);
 }
 
+const SkipRestDaySchema = z.object({
+  programDayId: z.string().uuid(),
+  weekNumber: z.number().int().min(1).max(52),
+});
+
+export async function skipRestDay(input: z.infer<typeof SkipRestDaySchema>) {
+  const { programDayId, weekNumber } = SkipRestDaySchema.parse(input);
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: existing } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .eq("user_id", user.id)
+    .is("ended_at", null)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing) {
+    revalidatePath("/today");
+    redirect(`/workout/${existing.id}`);
+  }
+
+  const { count } = await supabase
+    .from("program_exercises")
+    .select("id", { count: "exact", head: true })
+    .eq("program_day_id", programDayId)
+    .is("archived_at", null);
+  if ((count ?? 0) > 0) throw new Error("Day has exercises — cannot skip");
+
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("workout_sessions").insert({
+    user_id: user.id,
+    program_day_id: programDayId,
+    week_number: weekNumber,
+    started_at: now,
+    ended_at: now,
+  });
+  if (error) throw error;
+
+  revalidatePath("/today");
+  revalidatePath("/calendar");
+  redirect("/today");
+}
+
+// 5-minute window for undoing a rest-day skip.
+const UNDO_SKIP_WINDOW_MS = 5 * 60 * 1000;
+
+export async function undoLastSkip() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: latest } = await supabase
+    .from("workout_sessions")
+    .select("id, ended_at, duration_seconds")
+    .eq("user_id", user.id)
+    .eq("duration_seconds", 0)
+    .order("ended_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!latest?.ended_at) return;
+
+  const age = Date.now() - new Date(latest.ended_at).getTime();
+  if (age > UNDO_SKIP_WINDOW_MS) return;
+
+  const { error } = await supabase
+    .from("workout_sessions")
+    .delete()
+    .eq("id", latest.id);
+  if (error) throw error;
+
+  revalidatePath("/today");
+  revalidatePath("/calendar");
+}
+
 const LogSetSchema = z.object({
   sessionId: z.string().uuid(),
   programExerciseId: z.string().uuid(),

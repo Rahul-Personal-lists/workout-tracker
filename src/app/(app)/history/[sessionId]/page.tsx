@@ -116,7 +116,8 @@ export default async function SessionDetailPage({
             ex.start_weight,
             ex.increment,
             session.week_number,
-            program.deload_weeks
+            program.deload_weeks,
+            ex.progression_weeks,
           );
           const fallbackPlannedReps = getPlannedReps(
             ex.base_reps,

@@ -18,6 +18,7 @@ const AddExerciseSchema = z.object({
   increment: z.number().min(0).max(100),
   tracked: z.boolean(),
   note: z.string().max(120).nullable(),
+  progressionWeeks: z.number().int().min(1).max(8).default(1),
   redirectWeek: z.number().int().min(1).max(52).optional(),
 });
 
@@ -48,6 +49,7 @@ export async function addExerciseToProgram(
     tracked: parsed.tracked,
     note: parsed.note,
     image_url: parsed.imageUrl,
+    progression_weeks: parsed.progressionWeeks,
   });
   if (error) throw error;
 
@@ -153,6 +155,7 @@ async function insertPresetData(
       tracked: ex.tracked,
       note: ex.note ?? null,
       image_url: ex.image_url,
+      progression_weeks: ex.progression_weeks ?? 1,
     }));
     const { error: exErr } = await supabase
       .from("program_exercises")

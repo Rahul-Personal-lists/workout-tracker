@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCurrentProgram, getNextWorkout } from "@/lib/queries";
+import {
+  getCurrentProgram,
+  getNextWorkout,
+  getUndoableSkip,
+} from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatWeight } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getUserTimezone, weekdayInTz } from "@/lib/tz";
 import { StartWorkoutButton } from "./start-workout-button";
+import { skipRestDay, undoLastSkip } from "@/app/actions/workout";
 
 const MOTIVATIONS = [
   "Small reps, big gains.",
@@ -29,7 +34,8 @@ function progressionHint(
   startWeight: number | null,
   increment: number,
   weekNumber: number,
-  deloadWeeks: number[]
+  deloadWeeks: number[],
+  progressionWeeks: number,
 ): string | null {
   if (weekNumber === 1) return "Baseline";
   if (deloadWeeks.includes(weekNumber)) return "Deload · 70%";
@@ -41,8 +47,8 @@ function progressionHint(
     }
   }
   if (prior === 0) return "Baseline";
-  const cur = getPlannedWeight(startWeight, increment, weekNumber, deloadWeeks);
-  const prev = getPlannedWeight(startWeight, increment, prior, deloadWeeks);
+  const cur = getPlannedWeight(startWeight, increment, weekNumber, deloadWeeks, progressionWeeks);
+  const prev = getPlannedWeight(startWeight, increment, prior, deloadWeeks, progressionWeeks);
   if (cur === null || prev === null || cur <= prev) return null;
   return `+${formatWeight(cur - prev)} lb from W${prior}`;
 }
@@ -56,12 +62,31 @@ export default async function TodayPage() {
   const tz = await getUserTimezone();
   const motivation = MOTIVATIONS[weekdayInTz(new Date(), tz) % MOTIVATIONS.length];
 
+  const undoable = await getUndoableSkip();
+
   const greeting = (
-    <div className="space-y-1">
-      <p className="text-xl font-semibold">
-        Hi, <span className="text-accent">{name}</span>
-      </p>
-      <p className="text-sm text-foreground-muted">{motivation}</p>
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <p className="text-xl font-semibold">
+          Hi, <span className="text-accent">{name}</span>
+        </p>
+        <p className="text-sm text-foreground-muted">{motivation}</p>
+      </div>
+      {undoable ? (
+        <form action={undoLastSkip}>
+          <button
+            type="submit"
+            className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2 text-xs text-foreground-muted hover:bg-surface-hover"
+          >
+            <span>
+              Skipped {undoable.dayLabel}: {undoable.dayTitle}
+            </span>
+            <span className="font-medium underline underline-offset-2">
+              Undo
+            </span>
+          </button>
+        </form>
+      ) : null}
     </div>
   );
 
@@ -129,14 +154,28 @@ export default async function TodayPage() {
   const { weekNumber, day } = next;
 
   if (day.exercises.length === 0) {
+    const dayId = day.id;
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-border bg-surface p-4 text-sm text-neutral-300 space-y-3">
+        <div className="rounded-md border border-border bg-surface p-4 text-sm text-foreground-muted space-y-3">
           <p>
             {day.label}: {day.title} has no exercises yet.
           </p>
-          <Link href="/program" className="btn-primary w-full h-12 text-sm">
+          <form
+            action={async () => {
+              "use server";
+              await skipRestDay({ programDayId: dayId, weekNumber });
+            }}
+          >
+            <button type="submit" className="btn-primary w-full h-12 text-sm">
+              Skip — rest day
+            </button>
+          </form>
+          <Link
+            href={`/program/add?day=${dayId}&week=${weekNumber}`}
+            className="btn-secondary w-full h-12 text-sm"
+          >
             Add exercises
           </Link>
         </div>
@@ -177,7 +216,8 @@ export default async function TodayPage() {
             ex.start_weight,
             ex.increment,
             weekNumber,
-            program.deload_weeks
+            program.deload_weeks,
+            ex.progression_weeks,
           );
           const plannedReps = getPlannedReps(
             ex.base_reps,
@@ -188,7 +228,8 @@ export default async function TodayPage() {
             ex.start_weight,
             ex.increment,
             weekNumber,
-            program.deload_weeks
+            program.deload_weeks,
+            ex.progression_weeks,
           );
           return (
             <li

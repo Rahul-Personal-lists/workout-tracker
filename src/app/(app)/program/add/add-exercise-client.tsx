@@ -230,6 +230,7 @@ function ConfigForm({
   const [baseReps, setBaseReps] = useState("10");
   const [startWeight, setStartWeight] = useState("");
   const [increment, setIncrement] = useState("2.5");
+  const [progressionWeeks, setProgressionWeeks] = useState("1");
   const [tracked, setTracked] = useState(false);
   const [note, setNote] = useState("");
   const [submitting, startSubmit] = useTransition();
@@ -243,6 +244,7 @@ function ConfigForm({
     const repsN = baseReps.trim() === "" ? null : parseInt(baseReps, 10);
     const startN = startWeight.trim() === "" ? null : Number(startWeight);
     const incN = Number(increment);
+    const progN = parseInt(progressionWeeks, 10) || 1;
 
     if (!Number.isFinite(setsN) || setsN < 1) {
       setErrorMsg("Sets must be at least 1.");
@@ -250,6 +252,10 @@ function ConfigForm({
     }
     if (!Number.isFinite(incN) || incN < 0) {
       setErrorMsg("Increment must be 0 or greater.");
+      return;
+    }
+    if (progN < 1 || progN > 8) {
+      setErrorMsg("Progress every N weeks must be 1–8.");
       return;
     }
 
@@ -265,6 +271,7 @@ function ConfigForm({
           increment: incN,
           tracked,
           note: note.trim() === "" ? null : note.trim(),
+          progressionWeeks: progN,
           redirectWeek,
         });
       } catch (err) {
@@ -325,13 +332,25 @@ function ConfigForm({
             className={fieldClass}
           />
         </Field>
-        <Field label="Increment / week (lb)" htmlFor="inc">
+        <Field label="Increment (lb)" htmlFor="inc">
           <input
             id="inc"
             type="text"
             inputMode="decimal"
             value={increment}
             onChange={(e) => setIncrement(e.target.value)}
+            className={fieldClass}
+          />
+        </Field>
+        <Field label="Progress every N weeks" htmlFor="prog">
+          <input
+            id="prog"
+            type="text"
+            inputMode="numeric"
+            value={progressionWeeks}
+            onChange={(e) =>
+              setProgressionWeeks(e.target.value.replace(/[^\d]/g, ""))
+            }
             className={fieldClass}
           />
         </Field>

@@ -198,7 +198,8 @@ export default async function ProgramPage({
                   ex.start_weight,
                   ex.increment,
                   selectedWeek,
-                  program.deload_weeks
+                  program.deload_weeks,
+                  ex.progression_weeks,
                 );
                 const r = getPlannedReps(
                   ex.base_reps,

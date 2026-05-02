@@ -39,7 +39,8 @@ export default async function WorkoutPage({
       ex.start_weight,
       ex.increment,
       session.week_number,
-      program.deload_weeks
+      program.deload_weeks,
+      ex.progression_weeks,
     );
     const plannedReps = getPlannedReps(
       ex.base_reps,
