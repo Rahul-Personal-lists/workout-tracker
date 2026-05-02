@@ -26,12 +26,10 @@ export function getPlannedWeight(
     return startWeight + stepsFromStart * increment;
   }
 
-  // Barbell / cable (increment ≥ 10): after a deload, restart from the
-  // previous block's peak instead of continuing the linear ramp.
-  // Dumbbell (increment < 10): keeps the original linear progression.
-  const overlapAdj = increment >= 10 ? deloadsBefore : 0;
+  // After a deload, restart from the previous block's peak instead of
+  // continuing the linear ramp — avoids a big jump on the first working week.
   const steps = Math.floor(
-    Math.max(0, nonDeloadWeeksBefore - overlapAdj) /
+    Math.max(0, nonDeloadWeeksBefore - deloadsBefore) /
       Math.max(1, progressionWeeks),
   );
   return startWeight + increment * steps;
