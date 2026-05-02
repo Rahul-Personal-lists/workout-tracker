@@ -180,7 +180,7 @@ export function DayControls({
   return (
     <>
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] uppercase tracking-wide text-neutral-500">
+        <p className="text-[11px] uppercase tracking-wide text-foreground-muted">
           {initialLabel}
         </p>
         <h2 className="text-sm font-medium truncate">
