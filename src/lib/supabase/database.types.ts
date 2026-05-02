@@ -66,6 +66,24 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          display_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          display_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       program_days: {
         Row: {
           archived_at: string | null

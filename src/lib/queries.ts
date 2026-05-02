@@ -103,6 +103,16 @@ export type ProgramSummary = {
   created_at: string;
 };
 
+export async function getDisplayName(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .maybeSingle();
+  if (error) throw error;
+  return data?.display_name ?? null;
+}
+
 export async function getAllPrograms(): Promise<ProgramSummary[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
