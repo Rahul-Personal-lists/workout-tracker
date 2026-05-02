@@ -59,14 +59,13 @@ async function main() {
     console.log(`Found user ${email} (${user.id}).`);
   }
 
-  // If a program already exists, backfill mutable preset fields by exercise name and exit.
+  // If programs already exist, backfill mutable preset fields by exercise name and exit.
   const { data: existing } = await admin
     .from("programs")
     .select("id")
-    .eq("user_id", user.id)
-    .limit(1);
+    .eq("user_id", user.id);
   if (existing && existing.length > 0) {
-    console.log("User already has a program — backfilling preset fields.");
+    console.log(`User has ${existing.length} program(s) — backfilling preset fields.`);
 
     const allExercises = PROGRAM.days.flatMap((d) => d.exercises);
     const byName = new Map(
@@ -81,32 +80,34 @@ async function main() {
       ]),
     );
 
-    const { data: rows, error: rowsErr } = await admin
-      .from("program_exercises")
-      .select(
-        "id, name, image_url, start_weight, increment, progression_weeks, program_day_id, program_days!inner(program_id)",
-      )
-      .eq("program_days.program_id", existing[0].id);
-    if (rowsErr) throw rowsErr;
-
     let updated = 0;
-    for (const row of rows ?? []) {
-      const target = byName.get(row.name);
-      if (!target) continue;
-      const patch: Record<string, unknown> = {};
-      if (target.image_url && row.image_url !== target.image_url) patch.image_url = target.image_url;
-      if (row.start_weight !== target.start_weight) patch.start_weight = target.start_weight;
-      if (row.increment !== target.increment) patch.increment = target.increment;
-      if (row.progression_weeks !== target.progression_weeks) patch.progression_weeks = target.progression_weeks;
-      if (Object.keys(patch).length === 0) continue;
-      const { error } = await admin
+    for (const prog of existing) {
+      const { data: rows, error: rowsErr } = await admin
         .from("program_exercises")
-        .update(patch)
-        .eq("id", row.id);
-      if (error) throw error;
-      updated += 1;
+        .select(
+          "id, name, image_url, start_weight, increment, progression_weeks, program_day_id, program_days!inner(program_id)",
+        )
+        .eq("program_days.program_id", prog.id);
+      if (rowsErr) throw rowsErr;
+
+      for (const row of rows ?? []) {
+        const target = byName.get(row.name);
+        if (!target) continue;
+        const patch: Record<string, unknown> = {};
+        if (target.image_url && row.image_url !== target.image_url) patch.image_url = target.image_url;
+        if (row.start_weight !== target.start_weight) patch.start_weight = target.start_weight;
+        if (row.increment !== target.increment) patch.increment = target.increment;
+        if (row.progression_weeks !== target.progression_weeks) patch.progression_weeks = target.progression_weeks;
+        if (Object.keys(patch).length === 0) continue;
+        const { error } = await admin
+          .from("program_exercises")
+          .update(patch)
+          .eq("id", row.id);
+        if (error) throw error;
+        updated += 1;
+      }
     }
-    console.log(`Updated ${updated} exercise rows.`);
+    console.log(`Updated ${updated} exercise rows across ${existing.length} program(s).`);
     return;
   }
 
