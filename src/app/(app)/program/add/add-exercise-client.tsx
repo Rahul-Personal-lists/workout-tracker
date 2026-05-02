@@ -14,10 +14,17 @@ type CatalogEntry = {
   force: string | null;
   level: string | null;
   primary: string[];
+  custom?: boolean;
 };
 
 const IMG = (slug: string) =>
   `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${slug}/0.jpg`;
+
+const CUSTOM_IMG = "/icon-192.png";
+
+function imageFor(entry: CatalogEntry) {
+  return entry.custom ? CUSTOM_IMG : IMG(entry.id);
+}
 
 const MUSCLE_GROUPS: { label: string; match: (e: CatalogEntry) => boolean }[] =
   [
@@ -183,7 +190,21 @@ export function AddExerciseClient({
       {catalog === null ? (
         <p className="text-sm text-neutral-500">Loading catalog…</p>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-neutral-500">No matches.</p>
+        <CustomFallback
+          query={query}
+          onPick={(name) =>
+            setSelected({
+              id: "custom",
+              name,
+              equipment: null,
+              category: "custom",
+              force: null,
+              level: null,
+              primary: [],
+              custom: true,
+            })
+          }
+        />
       ) : (
         <ul className="space-y-2">
           {filtered.map((entry) => (
@@ -194,7 +215,7 @@ export function AddExerciseClient({
                 className="w-full flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-2 text-left hover:border-neutral-700"
               >
                 <ExerciseAnimation
-                  url={IMG(entry.id)}
+                  url={imageFor(entry)}
                   alt={entry.name}
                   size={64}
                 />
@@ -226,6 +247,7 @@ function ConfigForm({
   redirectWeek: number;
   onCancel: () => void;
 }) {
+  const [name, setName] = useState(entry.name);
   const [sets, setSets] = useState("3");
   const [baseReps, setBaseReps] = useState("10");
   const [startWeight, setStartWeight] = useState("");
@@ -235,6 +257,8 @@ function ConfigForm({
   const [submitting, startSubmit] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const imgUrl = imageFor(entry);
+
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg(null);
@@ -243,7 +267,12 @@ function ConfigForm({
     const repsN = baseReps.trim() === "" ? null : parseInt(baseReps, 10);
     const startN = startWeight.trim() === "" ? null : Number(startWeight);
     const incN = Number(increment);
+    const trimmedName = entry.custom ? name.trim() : entry.name;
 
+    if (entry.custom && !trimmedName) {
+      setErrorMsg("Name is required.");
+      return;
+    }
     if (!Number.isFinite(setsN) || setsN < 1) {
       setErrorMsg("Sets must be at least 1.");
       return;
@@ -257,8 +286,8 @@ function ConfigForm({
       try {
         await addExerciseToProgram({
           programDayId,
-          name: entry.name,
-          imageUrl: IMG(entry.id),
+          name: trimmedName,
+          imageUrl: imgUrl,
           sets: setsN,
           baseReps: repsN,
           startWeight: startN,
@@ -276,11 +305,17 @@ function ConfigForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 flex items-center gap-3">
-        <ExerciseAnimation url={IMG(entry.id)} alt={entry.name} size={64} />
+        <ExerciseAnimation url={imgUrl} alt={entry.name} size={64} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">{entry.name}</p>
+          <p className="text-sm font-medium">
+            {entry.custom ? "Custom exercise" : entry.name}
+          </p>
           <p className="text-[11px] text-neutral-500 truncate">
-            {[entry.equipment, entry.primary[0]].filter(Boolean).join(" · ")}
+            {entry.custom
+              ? "Using app logo"
+              : [entry.equipment, entry.primary[0]]
+                  .filter(Boolean)
+                  .join(" · ")}
           </p>
         </div>
         <button
@@ -291,6 +326,20 @@ function ConfigForm({
           Change
         </button>
       </div>
+
+      {entry.custom ? (
+        <Field label="Name" htmlFor="name">
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={120}
+            autoFocus
+            className={fieldClass}
+          />
+        </Field>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Sets" htmlFor="sets">
@@ -402,5 +451,38 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+function CustomFallback({
+  query,
+  onPick,
+}: {
+  query: string;
+  onPick: (name: string) => void;
+}) {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return <p className="text-sm text-neutral-500">No matches.</p>;
+  }
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-neutral-500">No matches in catalog.</p>
+      <button
+        type="button"
+        onClick={() => onPick(trimmed)}
+        className="w-full flex items-center gap-3 rounded-lg border border-dashed border-neutral-700 bg-neutral-900 p-3 text-left hover:border-neutral-600"
+      >
+        <ExerciseAnimation url={CUSTOM_IMG} alt="" size={48} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">
+            Use &ldquo;{trimmed}&rdquo; as custom exercise
+          </p>
+          <p className="text-[11px] text-neutral-500">
+            App logo will be used as the picture
+          </p>
+        </div>
+      </button>
+    </div>
   );
 }

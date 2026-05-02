@@ -11,7 +11,7 @@ const MAX_PROGRAMS = 2;
 const AddExerciseSchema = z.object({
   programDayId: z.string().uuid(),
   name: z.string().min(1).max(120),
-  imageUrl: z.string().url().nullable(),
+  imageUrl: z.string().min(1).max(500).nullable(),
   sets: z.number().int().min(1).max(20),
   baseReps: z.number().int().min(0).max(200).nullable(),
   startWeight: z.number().min(0).max(2000).nullable(),
