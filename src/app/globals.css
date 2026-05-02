@@ -36,7 +36,8 @@
   /* Semantic surfaces, borders, foreground tiers.
    * Aliased to Tailwind's neutral palette so the whole app shares one
    * color space (oklch) — previously some hand-rolled hex values were
-   * sRGB and drifted from the utility classes. */
+   * sRGB and drifted from the utility classes.
+   * Defaults below are dark; light mode overrides live in @layer base. */
   --color-surface: var(--color-neutral-900);
   --color-surface-hover: rgba(23, 23, 23, 0.7);
   --color-surface-subtle: rgba(23, 23, 23, 0.4);
@@ -57,6 +58,35 @@
 :root[data-theme="violet"] { --color-accent: #a78bfa; }
 :root[data-theme="rose"]   { --color-accent: #fb7185; }
 
+/* Light mode tokens. Apply when the user explicitly picks Light, or when
+ * Mode = System and the OS prefers light. neutral-400 fails AA on white,
+ * so muted text steps to neutral-600 in light. */
+@layer base {
+  :root[data-color-mode="light"] {
+    --color-background: #fff;
+    --color-foreground: #0a0a0a;
+    --color-surface: var(--color-neutral-100);
+    --color-surface-hover: rgba(245, 245, 245, 0.7);
+    --color-surface-subtle: rgba(245, 245, 245, 0.4);
+    --color-border: var(--color-neutral-200);
+    --color-border-strong: var(--color-neutral-300);
+    --color-foreground-muted: var(--color-neutral-600);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root[data-color-mode="system"] {
+      --color-background: #fff;
+      --color-foreground: #0a0a0a;
+      --color-surface: var(--color-neutral-100);
+      --color-surface-hover: rgba(245, 245, 245, 0.7);
+      --color-surface-subtle: rgba(245, 245, 245, 0.4);
+      --color-border: var(--color-neutral-200);
+      --color-border-strong: var(--color-neutral-300);
+      --color-foreground-muted: var(--color-neutral-600);
+    }
+  }
+}
+
 @keyframes exercise-flip {
   0%,
   40% {
@@ -72,8 +102,8 @@
 }
 
 body {
-  background: #000;
-  color: #fff;
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
   font-synthesis-style: none;
   -webkit-font-smoothing: antialiased;
