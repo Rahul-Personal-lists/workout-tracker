@@ -21,8 +21,6 @@
 }
 
 @theme inline {
-  --color-background: #000;
-  --color-foreground: #fff;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-display: ui-serif, Georgia, "Times New Roman", serif;
@@ -30,6 +28,8 @@
 }
 
 @theme {
+  --color-background: #000;
+  --color-foreground: #fff;
   --color-accent: #a3e635;
   --color-accent-foreground: #000;
 
