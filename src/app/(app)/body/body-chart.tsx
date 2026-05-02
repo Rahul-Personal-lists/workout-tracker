@@ -27,7 +27,7 @@ export function BodyChart({ data }: { data: BodyPoint[] }) {
     <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
       <div className="h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 12, right: 8, bottom: 4, left: -16 }}>
+          <LineChart data={rows} margin={{ top: 12, right: 8, bottom: 4, left: 0 }}>
             <CartesianGrid stroke="#262626" strokeDasharray="3 3" />
             <XAxis
               dataKey="label"
@@ -41,8 +41,8 @@ export function BodyChart({ data }: { data: BodyPoint[] }) {
               tick={{ fontSize: 11 }}
               tickLine={false}
               axisLine={{ stroke: "#262626" }}
-              domain={["auto", "auto"]}
-              width={42}
+              domain={["dataMin - 1", "dataMax + 1"]}
+              width={48}
             />
             <Tooltip
               cursor={{ stroke: "#404040", strokeWidth: 1 }}
