@@ -2,12 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   getCurrentProgram,
+  getDisplayName,
   getNextWorkout,
   getUndoableSkip,
 } from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatWeight } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
 import { getUserTimezone, weekdayInTz } from "@/lib/tz";
 import { StartWorkoutButton } from "./start-workout-button";
 import { skipRestDay, undoLastSkip } from "@/app/actions/workout";
@@ -21,14 +21,6 @@ const MOTIVATIONS = [
   "Make it count today.",
   "Consistency is the lift.",
 ];
-
-function getGreetingName(email: string | undefined) {
-  if (!email) return "there";
-  const local = email.split("@")[0] ?? "";
-  const first = local.split(/[._+-]/)[0] ?? local;
-  if (!first) return "there";
-  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
-}
 
 function progressionHint(
   startWeight: number | null,
@@ -54,11 +46,7 @@ function progressionHint(
 }
 
 export default async function TodayPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const name = getGreetingName(user?.email);
+  const name = await getDisplayName();
   const tz = await getUserTimezone();
   const motivation = MOTIVATIONS[weekdayInTz(new Date(), tz) % MOTIVATIONS.length];
 
@@ -68,7 +56,13 @@ export default async function TodayPage() {
     <div className="space-y-3">
       <div className="space-y-1">
         <p className="text-xl font-semibold">
-          Hi, <span className="text-accent">{name}</span>
+          {name ? (
+            <>
+              Hi, <span className="text-accent">{name}</span>
+            </>
+          ) : (
+            "Hi there"
+          )}
         </p>
         <p className="text-sm text-foreground-muted">{motivation}</p>
       </div>

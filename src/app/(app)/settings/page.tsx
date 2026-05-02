@@ -1,12 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
+import { getDisplayName } from "@/lib/queries";
+import { DisplayNameField } from "./display-name-field";
 import { SignOutButton } from "./sign-out";
 import { ThemePicker } from "./theme-picker";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+    },
+    displayName,
+  ] = await Promise.all([supabase.auth.getUser(), getDisplayName()]);
 
   return (
     <div className="space-y-6">
@@ -15,24 +20,25 @@ export default async function SettingsPage() {
       </header>
 
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">
-          Account
+        <p className="text-xs uppercase tracking-wide text-foreground-muted">
+          Profile
         </p>
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 space-y-1">
-          <p className="text-xs text-neutral-500">Signed in as</p>
+        <DisplayNameField initialName={displayName} />
+        <div className="rounded-md border border-border bg-surface p-4 space-y-1">
+          <p className="text-xs text-foreground-muted">Signed in as</p>
           <p className="text-sm">{user?.email}</p>
         </div>
         <SignOutButton />
       </section>
 
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <p className="text-xs uppercase tracking-wide text-foreground-muted">
           Preferences
         </p>
         <ThemePicker />
       </section>
 
-      <p className="text-center text-[10px] text-neutral-600 tabular-nums pt-4">
+      <p className="text-center text-[10px] text-foreground-muted tabular-nums pt-4">
         v0.1.0
       </p>
     </div>

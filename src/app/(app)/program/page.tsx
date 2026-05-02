@@ -158,7 +158,7 @@ export default async function ProgramPage({
         </div>
       </div>
 
-      <div className="text-xs uppercase tracking-wide text-neutral-500">
+      <div className="text-xs uppercase tracking-wide text-foreground-muted">
         {phase} · Week {selectedWeek}
         {isDeload ? " · Deload" : ""}
         {selectedWeek === currentWeek ? " · Current" : ""}

@@ -13,6 +13,7 @@
     sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas,
     monospace;
+  color-scheme: dark;
 
   /* Focus ring — single point of control for all interactive focus styles. */
   --focus-ring-width: 2px;
@@ -21,8 +22,6 @@
 }
 
 @theme inline {
-  --color-background: #000;
-  --color-foreground: #fff;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-display: ui-serif, Georgia, "Times New Roman", serif;
@@ -30,6 +29,8 @@
 }
 
 @theme {
+  --color-background: #000;
+  --color-foreground: #fff;
   --color-accent: #a3e635;
   --color-accent-foreground: #000;
 
@@ -72,8 +73,8 @@
 }
 
 body {
-  background: #000;
-  color: #fff;
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
   font-synthesis-style: none;
   -webkit-font-smoothing: antialiased;
