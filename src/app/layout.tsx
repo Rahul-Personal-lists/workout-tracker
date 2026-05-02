@@ -28,16 +28,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
+  themeColor: "#000000",
+  colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
 };
 
 const VALID_THEMES = new Set(["lime", "sky", "amber", "violet", "rose"]);
-const VALID_COLOR_MODES = new Set(["system", "light", "dark"]);
 
 export default async function RootLayout({
   children,
@@ -45,15 +42,11 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const stored = cookieStore.get("accent-theme")?.value;
   const theme = stored && VALID_THEMES.has(stored) ? stored : "lime";
-  const storedMode = cookieStore.get("color-mode")?.value;
-  const colorMode =
-    storedMode && VALID_COLOR_MODES.has(storedMode) ? storedMode : "system";
 
   return (
     <html
       lang="en"
       data-theme={theme}
-      data-color-mode={colorMode}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
