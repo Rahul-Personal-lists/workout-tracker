@@ -222,6 +222,40 @@ export async function editSessionDuration(
   revalidatePath("/calendar");
 }
 
+const SessionIdSchema = z.object({ sessionId: z.string().uuid() });
+
+export async function pauseSession(input: z.infer<typeof SessionIdSchema>) {
+  const { sessionId } = SessionIdSchema.parse(input);
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("workout_sessions")
+    .update({ paused_at: new Date().toISOString() })
+    .eq("id", sessionId)
+    .is("ended_at", null)
+    .is("paused_at", null);
+  if (error) throw error;
+
+  revalidatePath("/today");
+  revalidatePath(`/workout/${sessionId}`);
+  redirect("/today");
+}
+
+export async function resumeSession(input: z.infer<typeof SessionIdSchema>) {
+  const { sessionId } = SessionIdSchema.parse(input);
+  const supabase = await createClient();
+
+  // Atomic resume: bumps total_paused_seconds and clears paused_at in one
+  // statement (see resume_session() in 20260504000000_pause_session.sql).
+  const { error } = await supabase.rpc("resume_session", {
+    session_id: sessionId,
+  });
+  if (error) throw error;
+
+  revalidatePath("/today");
+  revalidatePath(`/workout/${sessionId}`);
+}
+
 const FinishSchema = z.object({
   sessionId: z.string().uuid(),
   notes: z.string().optional(),
@@ -235,11 +269,20 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
   // so the user can correct them on a re-finish (e.g. after a flaky-wifi retry).
   const { data: existing, error: getErr } = await supabase
     .from("workout_sessions")
-    .select("ended_at")
+    .select("ended_at, paused_at")
     .eq("id", sessionId)
     .maybeSingle();
   if (getErr) throw getErr;
   if (!existing) throw new Error("Session not found");
+
+  // If finishing while paused, fold the paused interval into total_paused_seconds
+  // first so the generated duration_seconds excludes it.
+  if (existing.paused_at !== null && existing.ended_at === null) {
+    const { error: resumeErr } = await supabase.rpc("resume_session", {
+      session_id: sessionId,
+    });
+    if (resumeErr) throw resumeErr;
+  }
 
   const update: { notes: string | null; ended_at?: string } = {
     notes: notes ?? null,

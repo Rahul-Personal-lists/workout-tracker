@@ -137,6 +137,20 @@ export async function hasInProgressSession(): Promise<boolean> {
   return !!data;
 }
 
+export async function getPausedSession(): Promise<{ id: string } | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .is("ended_at", null)
+    .not("paused_at", "is", null)
+    .order("paused_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
 export type NextWorkout =
   | { kind: "in-progress"; sessionId: string; weekNumber: number; day: ProgramDay }
   | { kind: "next"; weekNumber: number; day: ProgramDay }
@@ -367,7 +381,7 @@ export async function getSession(sessionId: string) {
     .from("workout_sessions")
     .select(
       `
-      id, started_at, ended_at, duration_seconds, week_number, notes, program_day_id
+      id, started_at, ended_at, duration_seconds, week_number, notes, program_day_id, paused_at, total_paused_seconds
     `
     )
     .eq("id", sessionId)
@@ -375,6 +389,37 @@ export async function getSession(sessionId: string) {
 
   if (error) throw error;
   return data;
+}
+
+export type PreviousDayNote = {
+  notes: string;
+  startedAt: string;
+  weekNumber: number;
+};
+
+export async function getPreviousDayNote(
+  programDayId: string,
+  excludeSessionId: string,
+): Promise<PreviousDayNote | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select("notes, started_at, week_number")
+    .eq("program_day_id", programDayId)
+    .neq("id", excludeSessionId)
+    .not("ended_at", "is", null)
+    .not("notes", "is", null)
+    .neq("notes", "")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || !data.notes) return null;
+  return {
+    notes: data.notes,
+    startedAt: data.started_at,
+    weekNumber: data.week_number,
+  };
 }
 
 export type SessionContext = {

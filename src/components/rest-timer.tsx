@@ -12,6 +12,7 @@ import { formatDuration } from "@/lib/format";
 
 export function RestTimerBar() {
   const endsAt = useRestTimer((s) => s.endsAt);
+  const pausedAt = useRestTimer((s) => s.pausedAt);
   const defaultDuration = useRestTimer((s) => s.defaultDuration);
   const setDefaultDuration = useRestTimer((s) => s.setDefaultDuration);
   const adjust = useRestTimer((s) => s.adjust);
@@ -20,20 +21,20 @@ export function RestTimerBar() {
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (endsAt === null) return;
+    if (endsAt === null || pausedAt !== null) return;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
-  }, [endsAt]);
+  }, [endsAt, pausedAt]);
 
   useEffect(() => {
-    if (endsAt === null) return;
+    if (endsAt === null || pausedAt !== null) return;
     if (Date.now() >= endsAt) {
       stop();
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate?.([200, 80, 200]);
       }
     }
-  }, [endsAt, now, stop]);
+  }, [endsAt, pausedAt, now, stop]);
 
   if (endsAt === null) {
     return (
@@ -69,7 +70,9 @@ export function RestTimerBar() {
     );
   }
 
-  const remaining = Math.max(0, Math.ceil((endsAt - now) / 1000));
+  // Freeze the displayed remaining at the moment of pause.
+  const referenceNow = pausedAt ?? now;
+  const remaining = Math.max(0, Math.ceil((endsAt - referenceNow) / 1000));
 
   return (
     <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 flex items-center gap-3">
