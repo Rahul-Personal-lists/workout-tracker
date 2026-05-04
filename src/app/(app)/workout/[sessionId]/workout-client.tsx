@@ -10,6 +10,7 @@ import {
   logSet,
   pauseSession,
   recordSessionPhotos,
+  resumeSession,
 } from "@/app/actions/workout";
 import { RestTimerBar } from "@/components/rest-timer";
 import { ExerciseAnimation } from "@/components/exercise-animation";
@@ -283,12 +284,17 @@ export function WorkoutClient({
 
   function handlePause() {
     pauseRest();
+    // Don't try/catch — pauseSession redirects to /today via Next's
+    // NEXT_REDIRECT error, which must propagate out of the transition.
     startPause(async () => {
-      try {
-        await pauseSession({ sessionId });
-      } catch (err) {
-        console.error("pauseSession failed", err);
-      }
+      await pauseSession({ sessionId });
+    });
+  }
+
+  function handleResume() {
+    resumeRest();
+    startPause(async () => {
+      await resumeSession({ sessionId });
     });
   }
 
@@ -342,14 +348,14 @@ export function WorkoutClient({
         <div className="max-w-md mx-auto flex gap-3">
           <button
             type="button"
-            onClick={handlePause}
-            disabled={pausing || isPaused}
+            onClick={isPaused ? handleResume : handlePause}
+            disabled={pausing}
             className={cn(
               "flex-1 h-14 rounded-md font-medium text-base bg-white text-black transition-colors",
-              (pausing || isPaused) && "opacity-50"
+              pausing && "opacity-50"
             )}
           >
-            {isPaused ? "Paused" : pausing ? "Pausing…" : "Pause"}
+            {pausing ? (isPaused ? "Resuming…" : "Pausing…") : isPaused ? "Resume" : "Pause"}
           </button>
           <button
             type="button"
