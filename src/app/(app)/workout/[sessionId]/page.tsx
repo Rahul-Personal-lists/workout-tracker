@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   getCurrentProgram,
   getLastSessionHints,
+  getPreviousDayNote,
   getSession,
   getSessionLogs,
   type ProgramExercise,
@@ -26,12 +27,13 @@ export default async function WorkoutPage({
   const day = program.days.find((d) => d.id === session.program_day_id);
   if (!day) notFound();
 
-  const [logs, hints] = await Promise.all([
+  const [logs, hints, previousDayNote] = await Promise.all([
     getSessionLogs(sessionId),
     getLastSessionHints(
       day.exercises.map((e) => e.id),
       sessionId
     ),
+    getPreviousDayNote(session.program_day_id, sessionId),
   ]);
 
   const exercises: ExerciseRow[] = day.exercises.map((ex: ProgramExercise) => {
@@ -79,10 +81,13 @@ export default async function WorkoutPage({
     <WorkoutClient
       sessionId={sessionId}
       startedAt={session.started_at}
+      pausedAt={session.paused_at}
+      totalPausedSeconds={session.total_paused_seconds}
       weekNumber={session.week_number}
       dayLabel={day.label}
       dayTitle={day.title}
       exercises={exercises}
+      previousDayNote={previousDayNote}
     />
   );
 }

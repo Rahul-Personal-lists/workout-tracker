@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -300,8 +301,10 @@ export type Database = {
           ended_at: string | null
           id: string
           notes: string | null
+          paused_at: string | null
           program_day_id: string
           started_at: string
+          total_paused_seconds: number
           user_id: string
           week_number: number
         }
@@ -310,8 +313,10 @@ export type Database = {
           ended_at?: string | null
           id?: string
           notes?: string | null
+          paused_at?: string | null
           program_day_id: string
           started_at?: string
+          total_paused_seconds?: number
           user_id: string
           week_number: number
         }
@@ -320,8 +325,10 @@ export type Database = {
           ended_at?: string | null
           id?: string
           notes?: string | null
+          paused_at?: string | null
           program_day_id?: string
           started_at?: string
+          total_paused_seconds?: number
           user_id?: string
           week_number?: number
         }
@@ -340,6 +347,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      resume_session: { Args: { session_id: string }; Returns: undefined }
       swap_day_order: {
         Args: { p_day_a: string; p_day_b: string }
         Returns: undefined

@@ -2,14 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Check, ChevronDown, ChevronUp, Plus, X } from "lucide-react";
+import { Camera, Check, ChevronDown, ChevronUp, Pause, Play, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
-import { finishWorkout, logSet, recordSessionPhotos } from "@/app/actions/workout";
+import {
+  finishWorkout,
+  logSet,
+  pauseSession,
+  recordSessionPhotos,
+  resumeSession,
+} from "@/app/actions/workout";
 import { RestTimerBar } from "@/components/rest-timer";
 import { ExerciseAnimation } from "@/components/exercise-animation";
+import { DayNotePopover } from "@/components/day-note-popover";
 import { useRestTimer } from "@/lib/stores/rest-timer";
 import { createClient } from "@/lib/supabase/client";
+import type { PreviousDayNote } from "@/lib/queries";
 
 const PHOTO_BUCKET = "workout-photos";
 const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
@@ -43,43 +51,68 @@ export type ExerciseRow = {
 type Props = {
   sessionId: string;
   startedAt: string;
+  pausedAt: string | null;
+  totalPausedSeconds: number;
   weekNumber: number;
   dayLabel: string;
   dayTitle: string;
   exercises: ExerciseRow[];
+  previousDayNote: PreviousDayNote | null;
 };
 
 export function WorkoutClient({
   sessionId,
   startedAt,
+  pausedAt,
+  totalPausedSeconds,
   weekNumber,
   dayLabel,
   dayTitle,
   exercises: initialExercises,
+  previousDayNote,
 }: Props) {
   const router = useRouter();
   const [exercises, setExercises] = useState(initialExercises);
   const [elapsed, setElapsed] = useState(0);
   const [finishing, startFinish] = useTransition();
+  const [pausing, startPause] = useTransition();
+  const [resuming, startResume] = useTransition();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [finishedSuccessfully, setFinishedSuccessfully] = useState(false);
   const startRest = useRestTimer((s) => s.start);
+  const pauseRest = useRestTimer((s) => s.pause);
+  const resumeRest = useRestTimer((s) => s.resume);
+
+  const isPaused = pausedAt !== null;
 
   useEffect(() => {
-    const tick = () =>
-      setElapsed(
-        Math.max(
-          0,
-          Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
-        )
-      );
-    tick();
-    const id = setInterval(tick, 1000);
+    function compute() {
+      const startMs = new Date(startedAt).getTime();
+      const pauseStartMs = pausedAt ? new Date(pausedAt).getTime() : null;
+      // Active elapsed = wall clock - already-accumulated paused seconds -
+      // (live paused interval, if currently paused). Freezes at the moment
+      // of pause and resumes from the same value on resume.
+      const base = Math.floor((Date.now() - startMs) / 1000) - totalPausedSeconds;
+      const live =
+        pauseStartMs !== null
+          ? Math.floor((Date.now() - pauseStartMs) / 1000)
+          : 0;
+      setElapsed(Math.max(0, base - live));
+    }
+    compute();
+    if (isPaused) return; // freeze the clock while paused
+    const id = setInterval(compute, 1000);
     return () => clearInterval(id);
-  }, [startedAt]);
+  }, [startedAt, pausedAt, totalPausedSeconds, isPaused]);
+
+  // Keep the rest timer in sync with the workout's pause state.
+  useEffect(() => {
+    if (isPaused) pauseRest();
+    else resumeRest();
+  }, [isPaused, pauseRest, resumeRest]);
 
   const completedCount = useMemo(
     () => exercises.flatMap((e) => e.sets).filter((s) => s.completed).length,
@@ -250,17 +283,61 @@ export function WorkoutClient({
     router.push(`/history/${sessionId}`);
   }
 
+  function handlePause() {
+    pauseRest();
+    startPause(async () => {
+      try {
+        await pauseSession({ sessionId });
+      } catch (err) {
+        console.error("pauseSession failed", err);
+      }
+    });
+  }
+
+  function handleResume() {
+    startResume(async () => {
+      try {
+        await resumeSession({ sessionId });
+        resumeRest();
+        router.refresh();
+      } catch (err) {
+        console.error("resumeSession failed", err);
+      }
+    });
+  }
+
   return (
     <div className="space-y-5">
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-neutral-500">
           Week {weekNumber} · {dayLabel}
         </p>
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold leading-tight">{dayTitle}</h1>
-          <span className="text-sm tabular-nums text-neutral-300">
-            {formatDuration(elapsed)}
-          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-sm tabular-nums text-neutral-300">
+              {formatDuration(elapsed)}
+            </span>
+            {previousDayNote ? (
+              <DayNotePopover
+                notes={previousDayNote.notes}
+                startedAt={previousDayNote.startedAt}
+                weekNumber={previousDayNote.weekNumber}
+              />
+            ) : null}
+            <button
+              type="button"
+              onClick={handlePause}
+              disabled={pausing || isPaused}
+              aria-label="Pause workout"
+              className={cn(
+                "h-8 w-8 rounded-md flex items-center justify-center text-foreground-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                (pausing || isPaused) && "opacity-50"
+              )}
+            >
+              <Pause className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         <p className="text-xs text-neutral-500">
           {completedCount}/{totalSetsCount} sets done
@@ -320,6 +397,35 @@ export function WorkoutClient({
           onConfirm={confirmFinish}
           onSkip={skipAndContinue}
         />
+      ) : null}
+
+      {isPaused ? (
+        <div
+          role="dialog"
+          aria-label="Workout paused"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black/85 px-6 text-center"
+        >
+          <Pause className="w-12 h-12 text-accent" strokeWidth={1.5} />
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">Workout paused</h2>
+            <p className="text-sm text-foreground-muted">
+              Elapsed {formatDuration(elapsed)} · {completedCount}/{totalSetsCount} sets done
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleResume}
+            disabled={resuming}
+            className={cn(
+              "flex items-center justify-center gap-2 h-12 px-8 rounded-md font-medium bg-white text-black",
+              resuming && "opacity-50"
+            )}
+          >
+            <Play className="w-4 h-4" strokeWidth={2.5} />
+            {resuming ? "Resuming…" : "Resume workout"}
+          </button>
+        </div>
       ) : null}
     </div>
   );
