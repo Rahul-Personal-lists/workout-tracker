@@ -152,7 +152,7 @@ export async function getPausedSession(): Promise<{ id: string } | null> {
 }
 
 export type NextWorkout =
-  | { kind: "in-progress"; sessionId: string; weekNumber: number; day: ProgramDay }
+  | { kind: "in-progress"; sessionId: string; weekNumber: number; day: ProgramDay; pausedAt: string | null }
   | { kind: "next"; weekNumber: number; day: ProgramDay }
   | { kind: "complete" };
 
@@ -165,7 +165,7 @@ export async function getNextWorkout(
 
   const { data: inProgress } = await supabase
     .from("workout_sessions")
-    .select("id, week_number, program_day_id")
+    .select("id, week_number, program_day_id, paused_at")
     .in("program_day_id", dayIds)
     .is("ended_at", null)
     .order("started_at", { ascending: false })
@@ -180,6 +180,7 @@ export async function getNextWorkout(
         sessionId: inProgress.id,
         weekNumber: inProgress.week_number,
         day,
+        pausedAt: inProgress.paused_at,
       };
     }
   }

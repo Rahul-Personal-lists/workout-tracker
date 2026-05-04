@@ -123,7 +123,10 @@ export default async function TodayPage() {
   const next = await getNextWorkout(program);
   if (!next) return null;
 
-  if (next.kind === "in-progress") {
+  // A paused session is the user's explicit signal that they stepped away;
+  // don't yank them back. The PausedWorkoutBanner mounted in (app)/layout
+  // already offers a Resume CTA on every route.
+  if (next.kind === "in-progress" && !next.pausedAt) {
     redirect(`/workout/${next.sessionId}`);
   }
 
@@ -247,7 +250,9 @@ export default async function TodayPage() {
         })}
       </ul>
 
-      <StartWorkoutButton programDayId={day.id} weekNumber={weekNumber} />
+      {next.kind === "in-progress" ? null : (
+        <StartWorkoutButton programDayId={day.id} weekNumber={weekNumber} />
+      )}
     </div>
   );
 }
