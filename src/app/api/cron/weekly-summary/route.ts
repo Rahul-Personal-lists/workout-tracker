@@ -18,14 +18,15 @@ export async function POST(req: Request) {
       return new Response("unauthorized", { status: 401 });
     }
 
-    // Two GH Actions cron lines fire each Monday UTC (covering PDT+PST). Only the
-    // one that lands at Sunday evening Vancouver should actually run.
+    // One GH Actions cron line (02:00 UTC Mon) covers both PDT (19:00 Sun) and
+    // PST (18:00 Sun). The Sunday-evening gate guards against off-schedule
+    // invocations and absorbs GH Actions cron drift (often 30 min – several hours).
     const force = new URL(req.url).searchParams.get("force") === "1";
     if (!force) {
       const now = new Date();
       const hour = Number(formatInTimeZone(now, VANCOUVER_TZ, "H"));
       const dow = formatInTimeZone(now, VANCOUVER_TZ, "EEE");
-      if (dow !== "Sun" || hour < 18 || hour > 20) {
+      if (dow !== "Sun" || hour < 17 || hour > 23) {
         return Response.json({
           skipped: "out-of-window",
           observed: { dow, hour },
