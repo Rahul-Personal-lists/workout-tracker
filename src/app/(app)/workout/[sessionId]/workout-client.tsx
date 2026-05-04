@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Check, ChevronDown, ChevronUp, Pause, Play, Plus, X } from "lucide-react";
+import { Camera, Check, ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
 import {
@@ -10,7 +10,6 @@ import {
   logSet,
   pauseSession,
   recordSessionPhotos,
-  resumeSession,
 } from "@/app/actions/workout";
 import { RestTimerBar } from "@/components/rest-timer";
 import { ExerciseAnimation } from "@/components/exercise-animation";
@@ -76,7 +75,6 @@ export function WorkoutClient({
   const [elapsed, setElapsed] = useState(0);
   const [finishing, startFinish] = useTransition();
   const [pausing, startPause] = useTransition();
-  const [resuming, startResume] = useTransition();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
@@ -294,18 +292,6 @@ export function WorkoutClient({
     });
   }
 
-  function handleResume() {
-    startResume(async () => {
-      try {
-        await resumeSession({ sessionId });
-        resumeRest();
-        router.refresh();
-      } catch (err) {
-        console.error("resumeSession failed", err);
-      }
-    });
-  }
-
   return (
     <div className="space-y-5">
       <header className="space-y-1">
@@ -313,11 +299,8 @@ export function WorkoutClient({
           Week {weekNumber} · {dayLabel}
         </p>
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold leading-tight">{dayTitle}</h1>
-          <div className="flex items-center gap-1">
-            <span className="text-sm tabular-nums text-neutral-300">
-              {formatDuration(elapsed)}
-            </span>
+          <h1 className="flex items-center gap-1.5 text-xl font-semibold leading-tight">
+            <span>{dayTitle}</span>
             {previousDayNote ? (
               <DayNotePopover
                 notes={previousDayNote.notes}
@@ -325,19 +308,10 @@ export function WorkoutClient({
                 weekNumber={previousDayNote.weekNumber}
               />
             ) : null}
-            <button
-              type="button"
-              onClick={handlePause}
-              disabled={pausing || isPaused}
-              aria-label="Pause workout"
-              className={cn(
-                "h-8 w-8 rounded-md flex items-center justify-center text-foreground-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                (pausing || isPaused) && "opacity-50"
-              )}
-            >
-              <Pause className="w-4 h-4" />
-            </button>
-          </div>
+          </h1>
+          <span className="text-sm tabular-nums text-neutral-300">
+            {formatDuration(elapsed)}
+          </span>
         </div>
         <p className="text-xs text-neutral-500">
           {completedCount}/{totalSetsCount} sets done
@@ -365,13 +339,24 @@ export function WorkoutClient({
       </ul>
 
       <div className="fixed bottom-0 inset-x-0 z-30 bg-gradient-to-t from-black via-black/95 to-transparent pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] px-4">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md mx-auto flex gap-3">
+          <button
+            type="button"
+            onClick={handlePause}
+            disabled={pausing || isPaused}
+            className={cn(
+              "flex-1 h-14 rounded-md font-medium text-base bg-white text-black transition-colors",
+              (pausing || isPaused) && "opacity-50"
+            )}
+          >
+            {isPaused ? "Paused" : pausing ? "Pausing…" : "Pause"}
+          </button>
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
             disabled={finishing}
             className={cn(
-              "w-full h-14 rounded-md font-medium text-base bg-white text-black transition-colors",
+              "flex-1 h-14 rounded-md font-medium text-base bg-white text-black transition-colors",
               finishing && "opacity-50"
             )}
           >
@@ -397,35 +382,6 @@ export function WorkoutClient({
           onConfirm={confirmFinish}
           onSkip={skipAndContinue}
         />
-      ) : null}
-
-      {isPaused ? (
-        <div
-          role="dialog"
-          aria-label="Workout paused"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black/85 px-6 text-center"
-        >
-          <Pause className="w-12 h-12 text-accent" strokeWidth={1.5} />
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Workout paused</h2>
-            <p className="text-sm text-foreground-muted">
-              Elapsed {formatDuration(elapsed)} · {completedCount}/{totalSetsCount} sets done
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleResume}
-            disabled={resuming}
-            className={cn(
-              "flex items-center justify-center gap-2 h-12 px-8 rounded-md font-medium bg-white text-black",
-              resuming && "opacity-50"
-            )}
-          >
-            <Play className="w-4 h-4" strokeWidth={2.5} />
-            {resuming ? "Resuming…" : "Resume workout"}
-          </button>
-        </div>
       ) : null}
     </div>
   );

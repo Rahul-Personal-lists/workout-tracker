@@ -254,6 +254,7 @@ export async function resumeSession(input: z.infer<typeof SessionIdSchema>) {
 
   revalidatePath("/today");
   revalidatePath(`/workout/${sessionId}`);
+  redirect(`/workout/${sessionId}`);
 }
 
 const FinishSchema = z.object({
