@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Check, ChevronDown, ChevronUp, Plus, X } from "lucide-react";
+import { Camera, Check, ChevronDown, ChevronUp, Pause, Play, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
 import {
@@ -314,6 +314,18 @@ export function WorkoutClient({
                 weekNumber={previousDayNote.weekNumber}
               />
             ) : null}
+            <button
+              type="button"
+              onClick={isPaused ? handleResume : handlePause}
+              disabled={pausing}
+              aria-label={isPaused ? "Resume workout" : "Pause workout"}
+              className={cn(
+                "inline-flex h-6 w-6 items-center justify-center rounded-full text-foreground-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                pausing && "opacity-50"
+              )}
+            >
+              {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+            </button>
           </h1>
           <span className="text-sm tabular-nums text-neutral-300">
             {formatDuration(elapsed)}
@@ -345,24 +357,13 @@ export function WorkoutClient({
       </ul>
 
       <div className="fixed bottom-0 inset-x-0 z-30 bg-gradient-to-t from-black via-black/95 to-transparent pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] px-4">
-        <div className="max-w-md mx-auto flex gap-3">
-          <button
-            type="button"
-            onClick={isPaused ? handleResume : handlePause}
-            disabled={pausing}
-            className={cn(
-              "flex-1 h-14 rounded-md font-medium text-base bg-white text-black transition-colors",
-              pausing && "opacity-50"
-            )}
-          >
-            {pausing ? (isPaused ? "Resuming…" : "Pausing…") : isPaused ? "Resume" : "Pause"}
-          </button>
+        <div className="max-w-md mx-auto">
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
             disabled={finishing}
             className={cn(
-              "flex-1 h-14 rounded-md font-medium text-base bg-white text-black transition-colors",
+              "w-full h-14 rounded-md font-medium text-base bg-white text-black transition-colors",
               finishing && "opacity-50"
             )}
           >
