@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { StickyNote, X } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 
 type Props = {
@@ -12,7 +12,7 @@ type Props = {
 
 export function DayNotePopover({ notes, startedAt, weekNumber }: Props) {
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const wrapRef = useRef<HTMLSpanElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -34,21 +34,21 @@ export function DayNotePopover({ notes, startedAt, weekNumber }: Props) {
   const ago = formatDistanceToNowStrict(new Date(startedAt), { addSuffix: true });
 
   return (
-    <div ref={wrapRef} className="relative">
+    <span ref={wrapRef} className="relative inline-flex">
       <button
         type="button"
         aria-label="Last session note"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="h-8 w-8 -mr-1.5 rounded-md flex items-center justify-center text-foreground-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full text-foreground-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <StickyNote className="w-4 h-4" />
+        <Info className="w-4 h-4" />
       </button>
       {open ? (
         <div
           role="dialog"
           aria-label="Last session note"
-          className="absolute right-0 top-9 z-30 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-surface text-foreground shadow-xl"
+          className="absolute left-0 top-7 z-30 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-surface text-foreground shadow-xl"
         >
           <div className="flex items-start justify-between gap-2 border-b border-border px-3 py-2">
             <p className="text-[11px] uppercase tracking-wide text-foreground-muted">
@@ -66,6 +66,6 @@ export function DayNotePopover({ notes, startedAt, weekNumber }: Props) {
           <p className="px-3 py-2.5 text-sm whitespace-pre-wrap">{notes}</p>
         </div>
       ) : null}
-    </div>
+    </span>
   );
 }
