@@ -1,11 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Camera, Check, ChevronDown, ChevronUp, Pause, Play, Plus, X } from "lucide-react";
+import {
+  Camera,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  EyeOff,
+  Pause,
+  Play,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
 import {
+  deleteSetLog,
   finishWorkout,
   logSet,
   pauseSession,
@@ -15,6 +28,7 @@ import {
 import { RestTimerBar } from "@/components/rest-timer";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { DayNotePopover } from "@/components/day-note-popover";
+import { SwipeRow } from "@/components/swipe-row";
 import { useRestTimer } from "@/lib/stores/rest-timer";
 import { createClient } from "@/lib/supabase/client";
 import type { PreviousDayNote } from "@/lib/queries";
@@ -50,6 +64,7 @@ export type ExerciseRow = {
 
 type Props = {
   sessionId: string;
+  dayId: string;
   startedAt: string;
   pausedAt: string | null;
   totalPausedSeconds: number;
@@ -62,6 +77,7 @@ type Props = {
 
 export function WorkoutClient({
   sessionId,
+  dayId,
   startedAt,
   pausedAt,
   totalPausedSeconds,
@@ -73,6 +89,7 @@ export function WorkoutClient({
 }: Props) {
   const router = useRouter();
   const [exercises, setExercises] = useState(initialExercises);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
   const [elapsed, setElapsed] = useState(0);
   const [finishing, startFinish] = useTransition();
   const [pausing, startPause] = useTransition();
@@ -113,13 +130,19 @@ export function WorkoutClient({
     else resumeRest();
   }, [isPaused, pauseRest, resumeRest]);
 
+  const visibleExercises = useMemo(
+    () => exercises.filter((e) => !hiddenIds.has(e.id)),
+    [exercises, hiddenIds]
+  );
+
   const completedCount = useMemo(
-    () => exercises.flatMap((e) => e.sets).filter((s) => s.completed).length,
-    [exercises]
+    () =>
+      visibleExercises.flatMap((e) => e.sets).filter((s) => s.completed).length,
+    [visibleExercises]
   );
   const totalSetsCount = useMemo(
-    () => exercises.reduce((acc, e) => acc + e.sets.length, 0),
-    [exercises]
+    () => visibleExercises.reduce((acc, e) => acc + e.sets.length, 0),
+    [visibleExercises]
   );
 
   function updateSet(
@@ -162,6 +185,36 @@ export function WorkoutClient({
         };
       })
     );
+  }
+
+  function removeSet(exerciseId: string, setNumber: number) {
+    const snapshot = exercises;
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id !== exerciseId
+          ? ex
+          : { ...ex, sets: ex.sets.filter((s) => s.setNumber !== setNumber) }
+      )
+    );
+    // Always call — the action no-ops if no set_log row exists yet. Set numbers
+    // are not renumbered; logSet upserts on (session, exercise, set_number)
+    // and tolerates gaps.
+    deleteSetLog({
+      sessionId,
+      programExerciseId: exerciseId,
+      setNumber,
+    }).catch((err) => {
+      console.error("deleteSetLog failed", err);
+      setExercises(snapshot);
+    });
+  }
+
+  function hideExercise(id: string) {
+    setHiddenIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
   }
 
   async function persistSet(exercise: ExerciseRow, set: SetRow) {
@@ -299,7 +352,7 @@ export function WorkoutClient({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-28">
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-neutral-500">
           Week {weekNumber} · {dayLabel}
@@ -339,7 +392,7 @@ export function WorkoutClient({
       <RestTimerBar />
 
       <ul className="space-y-3">
-        {exercises.map((ex) => (
+        {visibleExercises.map((ex) => (
           <ExerciseCard
             key={ex.id}
             exercise={ex}
@@ -352,9 +405,18 @@ export function WorkoutClient({
               }
             }}
             onAddSet={() => addSet(ex.id)}
+            onDeleteSet={(setNumber) => removeSet(ex.id, setNumber)}
+            onHide={() => hideExercise(ex.id)}
           />
         ))}
       </ul>
+
+      <Link
+        href={`/program/add?day=${dayId}&week=${weekNumber}&returnTo=/workout/${sessionId}`}
+        className="btn-ghost-add h-12 text-sm"
+      >
+        <Plus className="w-4 h-4" /> Add exercise
+      </Link>
 
       <div className="fixed bottom-0 inset-x-0 z-30 bg-gradient-to-t from-black via-black/95 to-transparent pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] px-4">
         <div className="max-w-md mx-auto">
@@ -557,6 +619,8 @@ function ExerciseCard({
   exercise,
   onChange,
   onAddSet,
+  onDeleteSet,
+  onHide,
 }: {
   exercise: ExerciseRow;
   onChange: (
@@ -565,6 +629,8 @@ function ExerciseCard({
     persist: boolean
   ) => void;
   onAddSet: () => void;
+  onDeleteSet: (setNumber: number) => void;
+  onHide: () => void;
 }) {
   const [zoomed, setZoomed] = useState(false);
   const allComplete =
@@ -585,99 +651,118 @@ function ExerciseCard({
 
   if (allComplete && !expanded) {
     return (
-      <>
-        <li className="rounded-lg border border-neutral-800 bg-neutral-900/60">
-          <button
-            type="button"
-            onClick={() => setExpanded(true)}
-            aria-expanded={false}
-            aria-label={`Expand ${exercise.name}`}
-            className="w-full flex items-center gap-3 p-2.5 text-left"
-          >
-            <ExerciseAnimation
-              url={exercise.imageUrl}
-              alt={exercise.name}
-              size={40}
-            />
-            <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
-              <span className="text-sm font-medium truncate">{exercise.name}</span>
-              <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
-                {plannedSummary}
-                <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
+      <li>
+        <SwipeRow
+          onAction={onHide}
+          actionLabel="Hide"
+          actionTone="neutral"
+          actionIcon={<EyeOff className="w-3.5 h-3.5" />}
+          className="rounded-lg"
+        >
+          <div className="rounded-lg border border-neutral-800 bg-neutral-900/60">
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              aria-expanded={false}
+              aria-label={`Expand ${exercise.name}`}
+              className="w-full flex items-center gap-3 p-2.5 text-left"
+            >
+              <ExerciseAnimation
+                url={exercise.imageUrl}
+                alt={exercise.name}
+                size={40}
+              />
+              <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
+                <span className="text-sm font-medium truncate">{exercise.name}</span>
+                <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                  {plannedSummary}
+                  <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
+                </span>
+              </div>
+              <span className="h-6 w-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <Check className="w-3.5 h-3.5" strokeWidth={3} />
               </span>
-            </div>
-            <span className="h-6 w-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-              <Check className="w-3.5 h-3.5" strokeWidth={3} />
-            </span>
-          </button>
-        </li>
-      </>
+            </button>
+          </div>
+        </SwipeRow>
+      </li>
     );
   }
 
   return (
     <>
-    <li className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 space-y-2">
-      <div className="flex items-start gap-3">
-        {exercise.imageUrl ? (
-          <button
-            type="button"
-            onClick={() => setZoomed(true)}
-            aria-label={`View ${exercise.name} animation`}
-            className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
-          >
-            <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
-          </button>
-        ) : (
-          <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
-        )}
-        <button
-          type="button"
-          onClick={allComplete ? () => setExpanded(false) : undefined}
-          aria-expanded={allComplete ? true : undefined}
-          aria-label={allComplete ? `Collapse ${exercise.name}` : undefined}
-          disabled={!allComplete}
-          className="flex-1 min-w-0 space-y-0.5 text-left disabled:cursor-default"
-        >
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-medium leading-snug">{exercise.name}</h2>
-            <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
-              {plannedSummary}
-              {allComplete ? (
-                <ChevronUp className="w-3.5 h-3.5 text-neutral-500" />
+    <li>
+      <SwipeRow
+        onAction={onHide}
+        actionLabel="Hide"
+        actionTone="neutral"
+        actionIcon={<EyeOff className="w-3.5 h-3.5" />}
+        className="rounded-lg"
+      >
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 space-y-2">
+          <div className="flex items-start gap-3">
+            {exercise.imageUrl ? (
+              <button
+                type="button"
+                onClick={() => setZoomed(true)}
+                aria-label={`View ${exercise.name} animation`}
+                className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+              >
+                <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
+              </button>
+            ) : (
+              <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
+            )}
+            <button
+              type="button"
+              onClick={allComplete ? () => setExpanded(false) : undefined}
+              aria-expanded={allComplete ? true : undefined}
+              aria-label={allComplete ? `Collapse ${exercise.name}` : undefined}
+              disabled={!allComplete}
+              className="flex-1 min-w-0 space-y-0.5 text-left disabled:cursor-default"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <h2 className="text-sm font-medium leading-snug">{exercise.name}</h2>
+                <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                  {plannedSummary}
+                  {allComplete ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-neutral-500" />
+                  ) : null}
+                </span>
+              </div>
+              {exercise.note ? (
+                <p className="text-[11px] text-neutral-500">{exercise.note}</p>
               ) : null}
-            </span>
+            </button>
           </div>
-          {exercise.note ? (
-            <p className="text-[11px] text-neutral-500">{exercise.note}</p>
-          ) : null}
-        </button>
-      </div>
 
-      <div className="space-y-1.5">
-        <div className="grid grid-cols-[1fr_1fr_44px] gap-2 px-2 text-[10px] uppercase tracking-wide text-neutral-500">
-          <span className="text-center">Lb</span>
-          <span className="text-center">Reps</span>
-          <span />
+          <div className="space-y-1.5">
+            <div className="grid grid-cols-[1fr_1fr_44px] gap-2 px-2 text-[10px] uppercase tracking-wide text-neutral-500">
+              <span className="text-center">Lb</span>
+              <span className="text-center">Reps</span>
+              <span />
+            </div>
+            {exercise.sets.map((set) => (
+              <SetInputRow
+                key={set.setNumber}
+                set={set}
+                lastWeight={exercise.lastWeight}
+                lastReps={exercise.lastReps}
+                onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}
+                onDelete={() => onDeleteSet(set.setNumber)}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={onAddSet}
+              className="flex items-center justify-center gap-1.5 w-full h-9 rounded-md border border-dashed border-neutral-700 text-xs text-neutral-400 hover:border-neutral-600 hover:text-neutral-300 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add set
+            </button>
+          </div>
         </div>
-        {exercise.sets.map((set) => (
-          <SetInputRow
-            key={set.setNumber}
-            set={set}
-            lastWeight={exercise.lastWeight}
-            lastReps={exercise.lastReps}
-            onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}
-          />
-        ))}
-        <button
-          type="button"
-          onClick={onAddSet}
-          className="flex items-center justify-center gap-1.5 w-full h-9 rounded-md border border-dashed border-neutral-700 text-xs text-neutral-400 hover:border-neutral-600 hover:text-neutral-300 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add set
-        </button>
-      </div>
+      </SwipeRow>
     </li>
     {zoomed && exercise.imageUrl ? (
       <div
@@ -713,11 +798,13 @@ function SetInputRow({
   lastWeight,
   lastReps,
   onChange,
+  onDelete,
 }: {
   set: SetRow;
   lastWeight: number | null;
   lastReps: number | null;
   onChange: (patch: Partial<SetRow>, persist: boolean) => void;
+  onDelete: () => void;
 }) {
   const [weightStr, setWeightStr] = useState(
     set.actualWeight !== null ? formatWeight(set.actualWeight) : ""
@@ -767,56 +854,64 @@ function SetInputRow({
       : null;
 
   return (
-    <div
-      className={cn(
-        "grid grid-cols-[1fr_1fr_44px] items-center gap-2 rounded-md px-2 py-1.5",
-        set.completed ? "bg-neutral-800/60" : "bg-neutral-950"
-      )}
+    <SwipeRow
+      onAction={onDelete}
+      actionLabel="Delete"
+      actionTone="destructive"
+      actionIcon={<Trash2 className="w-3.5 h-3.5" />}
+      className="rounded-md"
     >
-      <label className="flex flex-col min-w-0">
+      <div
+        className={cn(
+          "grid grid-cols-[1fr_1fr_44px] items-center gap-2 rounded-md px-2 py-1.5",
+          set.completed ? "bg-neutral-800/60" : "bg-neutral-950"
+        )}
+      >
+        <label className="flex flex-col min-w-0">
+          <input
+            type="text"
+            inputMode="decimal"
+            enterKeyHint="next"
+            value={weightStr}
+            onChange={(e) => setWeightStr(e.target.value)}
+            onBlur={commitOnBlur}
+            placeholder="lb"
+            className={cn(
+              "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
+              set.completed && "text-neutral-400"
+            )}
+          />
+          {hint ? (
+            <span className="text-[10px] text-neutral-500 px-1 -mt-0.5">{hint}</span>
+          ) : null}
+        </label>
         <input
           type="text"
-          inputMode="decimal"
-          enterKeyHint="next"
-          value={weightStr}
-          onChange={(e) => setWeightStr(e.target.value)}
+          inputMode="numeric"
+          enterKeyHint="done"
+          value={repsStr}
+          onChange={(e) => setRepsStr(e.target.value.replace(/[^\d]/g, ""))}
           onBlur={commitOnBlur}
-          placeholder="lb"
+          placeholder="reps"
           className={cn(
             "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
             set.completed && "text-neutral-400"
           )}
         />
-        {hint ? (
-          <span className="text-[10px] text-neutral-500 px-1 -mt-0.5">{hint}</span>
-        ) : null}
-      </label>
-      <input
-        type="text"
-        inputMode="numeric"
-        enterKeyHint="done"
-        value={repsStr}
-        onChange={(e) => setRepsStr(e.target.value.replace(/[^\d]/g, ""))}
-        onBlur={commitOnBlur}
-        placeholder="reps"
-        className={cn(
-          "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
-          set.completed && "text-neutral-400"
-        )}
-      />
-      <button
-        type="button"
-        aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
-        onClick={toggleComplete}
-        className={cn(
-          "h-11 w-11 rounded-md flex items-center justify-center border transition-colors",
-          set.completed
-            ? "bg-emerald-500 border-emerald-500 text-black"
-            : "border-neutral-700 text-neutral-500"
-        )}
-      >
-        <Check className="w-5 h-5" strokeWidth={3} />
-      </button>
-    </div>
+        <button
+          type="button"
+          aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
+          onClick={toggleComplete}
+          className={cn(
+            "h-11 w-11 rounded-md flex items-center justify-center border transition-colors",
+            set.completed
+              ? "bg-emerald-500 border-emerald-500 text-black"
+              : "border-neutral-700 text-neutral-500"
+          )}
+        >
+          <Check className="w-5 h-5" strokeWidth={3} />
+        </button>
+      </div>
+    </SwipeRow>
   );
 }

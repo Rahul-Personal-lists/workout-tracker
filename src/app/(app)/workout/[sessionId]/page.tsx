@@ -80,6 +80,7 @@ export default async function WorkoutPage({
   return (
     <WorkoutClient
       sessionId={sessionId}
+      dayId={day.id}
       startedAt={session.started_at}
       pausedAt={session.paused_at}
       totalPausedSeconds={session.total_paused_seconds}

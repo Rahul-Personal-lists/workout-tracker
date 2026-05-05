@@ -189,6 +189,29 @@ export async function editSetLog(input: z.infer<typeof LogSetSchema>) {
   revalidatePath("/calendar");
 }
 
+const DeleteSetLogSchema = z.object({
+  sessionId: z.string().uuid(),
+  programExerciseId: z.string().uuid(),
+  setNumber: z.number().int().min(1),
+});
+
+// Removes a single set_log row by its natural key. No-op if the row was never
+// logged — the swipe-to-delete UI calls this for unlogged rows too.
+export async function deleteSetLog(input: z.infer<typeof DeleteSetLogSchema>) {
+  const parsed = DeleteSetLogSchema.parse(input);
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("set_logs")
+    .delete()
+    .match({
+      session_id: parsed.sessionId,
+      program_exercise_id: parsed.programExerciseId,
+      set_number: parsed.setNumber,
+    });
+  if (error) throw error;
+}
+
 const EditDurationSchema = z.object({
   sessionId: z.string().uuid(),
   durationSeconds: z.number().int().min(0).max(60 * 60 * 24),

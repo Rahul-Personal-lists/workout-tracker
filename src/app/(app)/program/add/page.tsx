@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function AddExercisePage({
   searchParams,
 }: {
-  searchParams: Promise<{ day?: string; week?: string }>;
+  searchParams: Promise<{ day?: string; week?: string; returnTo?: string }>;
 }) {
-  const { day: dayId, week } = await searchParams;
+  const { day: dayId, week, returnTo } = await searchParams;
   if (!dayId) notFound();
 
   const program = await getCurrentProgram();
@@ -19,14 +19,19 @@ export default async function AddExercisePage({
   if (!program || !day) notFound();
 
   const weekNum = week ? parseInt(week, 10) : 1;
+  // Only honor same-origin paths to prevent open-redirect via crafted query.
+  const safeReturnTo =
+    returnTo && /^\/[^/]/.test(returnTo) ? returnTo : null;
+  const backHref = safeReturnTo ?? `/program?week=${weekNum}`;
+  const backLabel = safeReturnTo?.startsWith("/workout/") ? "Workout" : "Program";
 
   return (
     <div className="space-y-5">
       <Link
-        href={`/program?week=${weekNum}`}
+        href={backHref}
         className="inline-flex items-center text-sm text-neutral-400"
       >
-        <ArrowLeft className="w-4 h-4 mr-1" /> Program
+        <ArrowLeft className="w-4 h-4 mr-1" /> {backLabel}
       </Link>
 
       <header className="space-y-1">
@@ -36,7 +41,11 @@ export default async function AddExercisePage({
         <h1 className="text-xl font-semibold leading-tight">{day.title}</h1>
       </header>
 
-      <AddExerciseClient programDayId={day.id} redirectWeek={weekNum} />
+      <AddExerciseClient
+        programDayId={day.id}
+        redirectWeek={weekNum}
+        returnTo={safeReturnTo}
+      />
     </div>
   );
 }
