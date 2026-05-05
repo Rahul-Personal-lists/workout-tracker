@@ -20,6 +20,9 @@ const AddExerciseSchema = z.object({
   note: z.string().max(120).nullable(),
   progressionWeeks: z.number().int().min(1).max(8).default(1),
   redirectWeek: z.number().int().min(1).max(52).optional(),
+  // Same-origin path the caller wants to land on after a successful add.
+  // Used by the mid-workout add flow to bounce back to /workout/[sessionId].
+  returnTo: z.string().regex(/^\/[^/]/).max(200).optional(),
 });
 
 export async function addExerciseToProgram(
@@ -55,10 +58,13 @@ export async function addExerciseToProgram(
 
   revalidatePath("/program");
   revalidatePath("/today");
+  if (parsed.returnTo) {
+    revalidatePath("/workout", "layout");
+  }
 
-  const dest = parsed.redirectWeek
-    ? `/program?week=${parsed.redirectWeek}`
-    : "/program";
+  const dest =
+    parsed.returnTo ??
+    (parsed.redirectWeek ? `/program?week=${parsed.redirectWeek}` : "/program");
   redirect(dest);
 }
 

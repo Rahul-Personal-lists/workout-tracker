@@ -62,9 +62,11 @@ const MUSCLE_GROUPS: { label: string; match: (e: CatalogEntry) => boolean }[] =
 export function AddExerciseClient({
   programDayId,
   redirectWeek,
+  returnTo,
 }: {
   programDayId: string;
   redirectWeek: number;
+  returnTo: string | null;
 }) {
   const [catalog, setCatalog] = useState<CatalogEntry[] | null>(null);
   const [query, setQuery] = useState("");
@@ -131,6 +133,7 @@ export function AddExerciseClient({
         entry={selected}
         programDayId={programDayId}
         redirectWeek={redirectWeek}
+        returnTo={returnTo}
         onCancel={() => setSelected(null)}
       />
     );
@@ -240,11 +243,13 @@ function ConfigForm({
   entry,
   programDayId,
   redirectWeek,
+  returnTo,
   onCancel,
 }: {
   entry: CatalogEntry;
   programDayId: string;
   redirectWeek: number;
+  returnTo: string | null;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(entry.name);
@@ -302,6 +307,7 @@ function ConfigForm({
           note: note.trim() === "" ? null : note.trim(),
           progressionWeeks: progN,
           redirectWeek,
+          returnTo: returnTo ?? undefined,
         });
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Failed to save.");
