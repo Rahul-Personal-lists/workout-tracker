@@ -117,11 +117,13 @@ export function SwipeRow({
         type="button"
         onClick={handleAction}
         aria-label={actionLabel}
+        aria-hidden={!open && !dragging ? true : undefined}
         tabIndex={open ? 0 : -1}
         style={{ width: ACTION_WIDTH }}
         className={cn(
           "absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 text-xs font-medium",
           "outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
+          !open && !dragging && "invisible",
           toneClass
         )}
       >
