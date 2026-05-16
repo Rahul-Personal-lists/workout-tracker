@@ -94,6 +94,7 @@ export default async function TodayPage() {
           <p>You don&apos;t have a program yet.</p>
           <Link
             href="/program"
+            data-tour="today-cta"
             className="btn-primary w-full h-12 text-sm"
           >
             Pick a program
