@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   EyeOff,
+  Image as ImageIcon,
   Pause,
   Play,
   Plus,
@@ -485,7 +486,12 @@ function FinishSheet({
   onConfirm: () => void;
   onSkip: () => void;
 }) {
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
       <div
         className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-4"
@@ -515,10 +521,28 @@ function FinishSheet({
             </div>
           ) : null}
           {photos.length < 6 ? (
-            <label className="flex items-center justify-center gap-2 h-12 rounded-md border border-dashed border-neutral-700 text-sm text-neutral-300">
-              <Camera className="w-4 h-4" />
-              <span>{photos.length === 0 ? "Add photo" : "Add more"}</span>
+            <>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="w-full flex items-center justify-center gap-2 h-12 rounded-md border border-dashed border-neutral-700 text-sm text-neutral-300"
+              >
+                <Camera className="w-4 h-4" />
+                <span>{photos.length === 0 ? "Add photo" : "Add more"}</span>
+              </button>
               <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  onAddPhotos(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+              <input
+                ref={galleryInputRef}
                 type="file"
                 accept="image/*"
                 multiple
@@ -528,7 +552,7 @@ function FinishSheet({
                   e.currentTarget.value = "";
                 }}
               />
-            </label>
+            </>
           ) : null}
         </div>
 
@@ -596,6 +620,55 @@ function FinishSheet({
         )}
       </div>
     </div>
+
+    {pickerOpen ? (
+      <div
+        className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70"
+        onClick={() => setPickerOpen(false)}
+      >
+        <div
+          className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold">Add photo</h2>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              aria-label="Close"
+              className="h-9 w-9 -mr-2 flex items-center justify-center text-neutral-400"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPickerOpen(false);
+              cameraInputRef.current?.click();
+            }}
+            className="w-full flex items-center gap-3 h-12 px-3 rounded-md bg-neutral-900 border border-neutral-800 text-sm text-neutral-100"
+          >
+            <Camera className="w-4 h-4" />
+            <span>Take photo</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPickerOpen(false);
+              galleryInputRef.current?.click();
+            }}
+            className="w-full flex items-center gap-3 h-12 px-3 rounded-md bg-neutral-900 border border-neutral-800 text-sm text-neutral-100"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Choose from library</span>
+          </button>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
 
