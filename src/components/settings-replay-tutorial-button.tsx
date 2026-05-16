@@ -9,7 +9,7 @@ export function SettingsReplayTutorialButton() {
     <button
       type="button"
       onClick={() => {
-        useTutorial.getState().reset();
+        useTutorial.getState().resetAll();
         router.push("/today");
       }}
       className="btn-secondary w-full h-10 text-sm"

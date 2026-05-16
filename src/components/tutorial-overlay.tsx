@@ -4,58 +4,115 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
-import { usePathname } from "next/navigation";
-import { useTutorial, TOTAL_TUTORIAL_STEPS } from "@/lib/stores/tutorial";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  useTutorial,
+  TUTORIAL_STEP_COUNT,
+  type TourId,
+} from "@/lib/stores/tutorial";
 import { cn } from "@/lib/utils";
 
 type Step = {
   target: string;
+  route: string;
   title: string;
   body: string;
 };
 
-const STEPS: Step[] = [
-  {
-    target: "today-cta",
-    title: "Start here",
-    body: "Tap this to pick a program — that's the gate for everything else.",
-  },
-  {
-    target: "nav-program",
-    title: "Program",
-    body: "Edit your weeks, days, and exercises. Swap presets anytime.",
-  },
-  {
-    target: "nav-calendar",
-    title: "Calendar",
-    body: "Tap any past day to review the sets you logged.",
-  },
-  {
-    target: "nav-body",
-    title: "Body",
-    body: "Log body weight and progress photos.",
-  },
-  {
-    target: "nav-settings",
-    title: "Settings",
-    body: "Theme, display name, and sign out live here.",
-  },
-];
+const TOUR_STEPS: Record<TourId, Step[]> = {
+  today: [
+    {
+      target: "today-cta",
+      route: "/today",
+      title: "Start here",
+      body: "Tap this to pick a program — that's the gate for everything else.",
+    },
+    {
+      target: "nav-program",
+      route: "/today",
+      title: "Program",
+      body: "Edit your weeks, days, and exercises. Swap presets anytime.",
+    },
+    {
+      target: "nav-calendar",
+      route: "/today",
+      title: "Calendar",
+      body: "Tap any past day to review the sets you logged.",
+    },
+    {
+      target: "nav-body",
+      route: "/today",
+      title: "Body",
+      body: "Log body weight and progress photos.",
+    },
+    {
+      target: "nav-settings",
+      route: "/today",
+      title: "Settings",
+      body: "Theme, display name, and sign out live here.",
+    },
+  ],
+  createProgram: [
+    {
+      target: "open-new-program",
+      route: "/program",
+      title: "Make a program",
+      body: "Programs live here. Tap Next to walk through building one.",
+    },
+    {
+      target: "np-name",
+      route: "/program/new",
+      title: "Name it",
+      body: "Pick a label you'll recognize. You can rename it later.",
+    },
+    {
+      target: "np-weeks",
+      route: "/program/new",
+      title: "How long?",
+      body: "Total block length, 1–52 weeks. Eight is a solid default.",
+    },
+    {
+      target: "np-deloads",
+      route: "/program/new",
+      title: "Deload weeks",
+      body: "Optional — tap any week to mark it a deload (70% of normal load).",
+    },
+    {
+      target: "np-days",
+      route: "/program/new",
+      title: "Days",
+      body: "One row per training day. The title is what shows on Today.",
+    },
+    {
+      target: "np-create",
+      route: "/program/new",
+      title: "Create",
+      body: "Tap Create to save. You can edit days and exercises after.",
+    },
+  ],
+};
 
 const SWIPE_COMMIT = 50;
 const DRAG_START_THRESHOLD = 8;
 const RING_PADDING = 10;
+const TARGET_RETRY_INTERVAL_MS = 80;
+const TARGET_RETRY_TIMEOUT_MS = 2000;
 
-export function TutorialOverlay() {
+export function TutorialOverlay({ tour }: { tour: TourId }) {
+  const router = useRouter();
   const pathname = usePathname();
-  const hasSeen = useTutorial((s) => s.hasSeen);
-  const step = useTutorial((s) => s.step);
-  const next = useTutorial((s) => s.next);
-  const prev = useTutorial((s) => s.prev);
+  const hasSeen = useTutorial((s) => s.hasSeen[tour]);
+  const step = useTutorial((s) => s.step[tour]);
+  const nextStep = useTutorial((s) => s.next);
+  const prevStep = useTutorial((s) => s.prev);
   const finish = useTutorial((s) => s.finish);
+
+  const steps = TOUR_STEPS[tour];
+  const stepCount = TUTORIAL_STEP_COUNT[tour];
 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
@@ -63,7 +120,15 @@ export function TutorialOverlay() {
     return useTutorial.persist.onFinishHydration(() => setHydrated(true));
   }, []);
 
-  const onTour = hydrated && !hasSeen && pathname === "/today";
+  const tourRoutes = useMemo(
+    () => new Set(steps.map((s) => s.route)),
+    [steps]
+  );
+
+  // Render while the user is on any route used by this tour, so brief
+  // in-tour navigations (e.g. /program → /program/new) don't unmount us.
+  const onTour =
+    hydrated && !hasSeen && tourRoutes.has(pathname);
 
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [viewport, setViewport] = useState<{ w: number; h: number } | null>(
@@ -80,32 +145,84 @@ export function TutorialOverlay() {
       setRect(null);
       return;
     }
-    const selector = `[data-tour="${STEPS[step].target}"]`;
-    const el = document.querySelector<HTMLElement>(selector);
-    if (!el) {
+    const current = steps[step];
+    // If the user is on a tour route but it doesn't match this step's route
+    // (mid-transition), don't try to find a target.
+    if (pathname !== current.route) {
       setRect(null);
       return;
     }
+    const selector = `[data-tour="${current.target}"]`;
 
-    const update = () => {
-      setRect(el.getBoundingClientRect());
-      setViewport({ w: window.innerWidth, h: window.innerHeight });
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let ro: ResizeObserver | null = null;
+    let cleanup: (() => void) | null = null;
+
+    const attach = (el: HTMLElement) => {
+      const update = () => {
+        setRect(el.getBoundingClientRect());
+        setViewport({ w: window.innerWidth, h: window.innerHeight });
+      };
+      update();
+      ro = new ResizeObserver(update);
+      ro.observe(el);
+      window.addEventListener("resize", update);
+      window.addEventListener("scroll", update, {
+        capture: true,
+        passive: true,
+      });
+      cleanup = () => {
+        ro?.disconnect();
+        window.removeEventListener("resize", update);
+        window.removeEventListener("scroll", update, {
+          capture: true,
+        } as EventListenerOptions);
+      };
     };
-    update();
 
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, { capture: true, passive: true });
+    const initial = document.querySelector<HTMLElement>(selector);
+    if (initial) {
+      attach(initial);
+    } else {
+      setRect(null);
+      const startedAt = Date.now();
+      interval = setInterval(() => {
+        if (cancelled) return;
+        const el = document.querySelector<HTMLElement>(selector);
+        if (el) {
+          if (interval) clearInterval(interval);
+          interval = null;
+          attach(el);
+        } else if (Date.now() - startedAt > TARGET_RETRY_TIMEOUT_MS) {
+          if (interval) clearInterval(interval);
+          interval = null;
+        }
+      }, TARGET_RETRY_INTERVAL_MS);
+    }
 
     return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, {
-        capture: true,
-      } as EventListenerOptions);
+      cancelled = true;
+      if (interval) clearInterval(interval);
+      cleanup?.();
     };
-  }, [onTour, step]);
+  }, [onTour, step, pathname, steps]);
+
+  const handleAdvance = useCallback(() => {
+    const nxt = steps[step + 1];
+    nextStep(tour);
+    if (nxt && nxt.route !== pathname) {
+      router.push(nxt.route);
+    }
+  }, [nextStep, pathname, router, step, steps, tour]);
+
+  const handleBack = useCallback(() => {
+    const prv = steps[step - 1];
+    prevStep(tour);
+    if (prv && prv.route !== pathname) {
+      router.push(prv.route);
+    }
+  }, [pathname, prevStep, router, step, steps, tour]);
 
   // Pointer-based swipe on the card.
   const startX = useRef(0);
@@ -144,8 +261,8 @@ export function TutorialOverlay() {
   const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
     if (committed.current === "horizontal") {
       const dx = e.clientX - startX.current;
-      if (dx <= -SWIPE_COMMIT) next();
-      else if (dx >= SWIPE_COMMIT) prev();
+      if (dx <= -SWIPE_COMMIT) handleAdvance();
+      else if (dx >= SWIPE_COMMIT) handleBack();
     }
     committed.current = "none";
     started.current = false;
@@ -156,16 +273,16 @@ export function TutorialOverlay() {
       if (!onTour) return;
       if (e.key === "Escape") {
         e.preventDefault();
-        finish();
+        finish(tour);
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        next();
+        handleAdvance();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
-        prev();
+        handleBack();
       }
     },
-    [onTour, finish, next, prev]
+    [onTour, finish, handleAdvance, handleBack, tour]
   );
 
   useEffect(() => {
@@ -182,9 +299,9 @@ export function TutorialOverlay() {
 
   if (!onTour) return null;
 
-  const last = step === TOTAL_TUTORIAL_STEPS - 1;
+  const last = step === stepCount - 1;
   const first = step === 0;
-  const current = STEPS[step];
+  const current = steps[step];
 
   // Where does the card sit? Pin top if the target is in the lower 45% of the
   // viewport (bottom-nav tabs); otherwise pin bottom.
@@ -214,11 +331,8 @@ export function TutorialOverlay() {
     const ringCx = rect.left + rect.width / 2;
     const ringTop = rect.top - RING_PADDING;
     const ringBottom = rect.bottom + RING_PADDING;
-    // Card is roughly centered horizontally at v.w/2; tip at ring vertically.
     const cardCx = v.w / 2;
     if (cardAtTop) {
-      // Card pinned to top → arrow goes from card bottom (~ 140px) down to the
-      // top of the ring.
       arrow = {
         x1: cardCx,
         y1: 152,
@@ -226,8 +340,6 @@ export function TutorialOverlay() {
         y2: ringTop - 4,
       };
     } else {
-      // Card pinned to bottom → arrow goes from card top (~ v.h - 200) up to
-      // the bottom of the ring.
       arrow = {
         x1: cardCx,
         y1: v.h - 220,
@@ -238,11 +350,7 @@ export function TutorialOverlay() {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50"
-      // Live region for screen-reader announcement of the current step.
-      aria-live="polite"
-    >
+    <div className="fixed inset-0 z-50" aria-live="polite">
       {/* Click-catcher: blocks taps on everything except the card. */}
       <div className="absolute inset-0" aria-hidden="true" />
 
@@ -255,10 +363,7 @@ export function TutorialOverlay() {
           className="animate-pulse-tour"
         />
       ) : (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-black/70"
-        />
+        <div aria-hidden="true" className="absolute inset-0 bg-black/70" />
       )}
 
       {/* Arrow from card to ring. */}
@@ -272,7 +377,7 @@ export function TutorialOverlay() {
         >
           <defs>
             <marker
-              id="tour-arrowhead"
+              id={`tour-arrowhead-${tour}`}
               viewBox="0 0 10 10"
               refX="8"
               refY="5"
@@ -291,7 +396,7 @@ export function TutorialOverlay() {
             stroke="currentColor"
             strokeWidth={2.5}
             strokeLinecap="round"
-            markerEnd="url(#tour-arrowhead)"
+            markerEnd={`url(#tour-arrowhead-${tour})`}
           />
         </svg>
       ) : null}
@@ -301,7 +406,7 @@ export function TutorialOverlay() {
         ref={cardRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="tutorial-title"
+        aria-labelledby={`tutorial-title-${tour}`}
         tabIndex={-1}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -319,10 +424,10 @@ export function TutorialOverlay() {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-xs uppercase tracking-wide text-foreground-muted">
-              Step {step + 1} of {TOTAL_TUTORIAL_STEPS}
+              Step {step + 1} of {stepCount}
             </div>
             <h2
-              id="tutorial-title"
+              id={`tutorial-title-${tour}`}
               className="mt-1 text-base font-semibold text-foreground"
             >
               {current.title}
@@ -330,7 +435,7 @@ export function TutorialOverlay() {
           </div>
           <button
             type="button"
-            onClick={finish}
+            onClick={() => finish(tour)}
             className="-mr-1 -mt-1 shrink-0 rounded-md px-2 py-1 text-xs text-foreground-muted hover:text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             aria-label="Skip tutorial"
           >
@@ -340,18 +445,13 @@ export function TutorialOverlay() {
         <p className="mt-2 text-sm text-foreground-muted">{current.body}</p>
 
         <div className="mt-4 flex items-center justify-between">
-          <div
-            className="flex items-center gap-1.5"
-            aria-hidden="true"
-          >
-            {STEPS.map((_, i) => (
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            {steps.map((_, i) => (
               <span
                 key={i}
                 className={cn(
                   "h-1.5 rounded-full transition-all",
-                  i === step
-                    ? "w-4 bg-accent"
-                    : "w-1.5 bg-border-strong"
+                  i === step ? "w-4 bg-accent" : "w-1.5 bg-border-strong"
                 )}
               />
             ))}
@@ -359,7 +459,7 @@ export function TutorialOverlay() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={prev}
+              onClick={handleBack}
               disabled={first}
               className="btn-secondary h-9 px-3 text-sm"
             >
@@ -367,7 +467,7 @@ export function TutorialOverlay() {
             </button>
             <button
               type="button"
-              onClick={next}
+              onClick={handleAdvance}
               className="btn-primary h-9 px-3 text-sm"
             >
               {last ? "Done" : "Next"}
