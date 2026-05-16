@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -127,6 +126,7 @@ export type Database = {
           id: string
           image_url: string | null
           increment: number
+          kind: string
           name: string
           note: string | null
           order_index: number
@@ -134,6 +134,7 @@ export type Database = {
           progression_weeks: number
           sets: number
           start_weight: number | null
+          target_seconds: number | null
           tracked: boolean
         }
         Insert: {
@@ -142,6 +143,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           increment?: number
+          kind?: string
           name: string
           note?: string | null
           order_index: number
@@ -149,6 +151,7 @@ export type Database = {
           progression_weeks?: number
           sets: number
           start_weight?: number | null
+          target_seconds?: number | null
           tracked?: boolean
         }
         Update: {
@@ -157,6 +160,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           increment?: number
+          kind?: string
           name?: string
           note?: string | null
           order_index?: number
@@ -164,6 +168,7 @@ export type Database = {
           progression_weeks?: number
           sets?: number
           start_weight?: number | null
+          target_seconds?: number | null
           tracked?: boolean
         }
         Relationships: [
@@ -212,11 +217,13 @@ export type Database = {
       set_logs: {
         Row: {
           actual_reps: number | null
+          actual_seconds: number | null
           actual_weight: number | null
           completed: boolean
           id: string
           logged_at: string
           planned_reps: number | null
+          planned_seconds: number | null
           planned_weight: number | null
           program_exercise_id: string
           session_id: string
@@ -224,11 +231,13 @@ export type Database = {
         }
         Insert: {
           actual_reps?: number | null
+          actual_seconds?: number | null
           actual_weight?: number | null
           completed?: boolean
           id?: string
           logged_at?: string
           planned_reps?: number | null
+          planned_seconds?: number | null
           planned_weight?: number | null
           program_exercise_id: string
           session_id: string
@@ -236,11 +245,13 @@ export type Database = {
         }
         Update: {
           actual_reps?: number | null
+          actual_seconds?: number | null
           actual_weight?: number | null
           completed?: boolean
           id?: string
           logged_at?: string
           planned_reps?: number | null
+          planned_seconds?: number | null
           planned_weight?: number | null
           program_exercise_id?: string
           session_id?: string

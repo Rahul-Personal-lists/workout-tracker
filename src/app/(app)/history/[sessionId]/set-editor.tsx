@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { editSetLog } from "@/app/actions/workout";
-import { formatWeight } from "@/lib/format";
+import { formatDuration, formatWeight, parseDuration } from "@/lib/format";
 
 type Props = {
   sessionId: string;
@@ -14,6 +14,8 @@ type Props = {
   plannedReps: number | null;
   actualWeight: number | null;
   actualReps: number | null;
+  plannedSeconds: number | null;
+  actualSeconds: number | null;
   completed: boolean;
 };
 
@@ -25,8 +27,11 @@ export function EditableSetRow({
   plannedReps,
   actualWeight,
   actualReps,
+  plannedSeconds,
+  actualSeconds,
   completed,
 }: Props) {
+  const isTime = plannedSeconds !== null || actualSeconds !== null;
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -36,9 +41,38 @@ export function EditableSetRow({
   const [reps, setReps] = useState(
     actualReps !== null ? String(actualReps) : ""
   );
+  const [duration, setDuration] = useState(
+    actualSeconds !== null ? formatDuration(actualSeconds) : ""
+  );
   const [done, setDone] = useState(completed);
 
   function save() {
+    if (isTime) {
+      const trimmed = duration.trim();
+      const sec = trimmed === "" ? null : parseDuration(trimmed);
+      if (trimmed !== "" && sec === null) return;
+      startTransition(async () => {
+        try {
+          await editSetLog({
+            sessionId,
+            programExerciseId,
+            setNumber,
+            plannedWeight: null,
+            plannedReps: null,
+            actualWeight: null,
+            actualReps: null,
+            plannedSeconds,
+            actualSeconds: sec,
+            completed: done,
+          });
+          setEditing(false);
+        } catch (err) {
+          alert(err instanceof Error ? err.message : "Could not save.");
+        }
+      });
+      return;
+    }
+
     const w = weight.trim() === "" ? null : Number(weight);
     const r = reps.trim() === "" ? null : Number(reps);
     if (w !== null && (!Number.isFinite(w) || w < 0)) return;
@@ -53,6 +87,8 @@ export function EditableSetRow({
           plannedReps,
           actualWeight: w,
           actualReps: r,
+          plannedSeconds: null,
+          actualSeconds: null,
           completed: done,
         });
         setEditing(false);
@@ -65,6 +101,7 @@ export function EditableSetRow({
   function cancel() {
     setWeight(actualWeight !== null ? String(actualWeight) : "");
     setReps(actualReps !== null ? String(actualReps) : "");
+    setDuration(actualSeconds !== null ? formatDuration(actualSeconds) : "");
     setDone(completed);
     setEditing(false);
   }
@@ -74,23 +111,36 @@ export function EditableSetRow({
       <div className="grid grid-cols-[24px_1fr_auto] items-center gap-2 text-sm">
         <span className="text-neutral-500 tabular-nums">{setNumber}</span>
         <div className="flex items-center gap-1.5">
-          <input
-            aria-label="Weight (lb)"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value.replace(/[^\d.]/g, "").slice(0, 6))}
-            inputMode="decimal"
-            placeholder="lb"
-            className="h-8 w-16 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
-          />
-          <span className="text-neutral-500 text-xs">×</span>
-          <input
-            aria-label="Reps"
-            value={reps}
-            onChange={(e) => setReps(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
-            inputMode="numeric"
-            placeholder="reps"
-            className="h-8 w-14 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
-          />
+          {isTime ? (
+            <input
+              aria-label="Duration (mm:ss)"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              inputMode="numeric"
+              placeholder="mm:ss"
+              className="h-8 w-20 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
+            />
+          ) : (
+            <>
+              <input
+                aria-label="Weight (lb)"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value.replace(/[^\d.]/g, "").slice(0, 6))}
+                inputMode="decimal"
+                placeholder="lb"
+                className="h-8 w-16 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
+              />
+              <span className="text-neutral-500 text-xs">×</span>
+              <input
+                aria-label="Reps"
+                value={reps}
+                onChange={(e) => setReps(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
+                inputMode="numeric"
+                placeholder="reps"
+                className="h-8 w-14 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
+              />
+            </>
+          )}
           <label className="ml-1 inline-flex items-center gap-1 text-[11px] text-neutral-400">
             <input
               type="checkbox"
@@ -121,6 +171,44 @@ export function EditableSetRow({
           </button>
         </div>
       </div>
+    );
+  }
+
+  if (isTime) {
+    const hasActual = actualSeconds !== null;
+    const matchesPlan =
+      hasActual && plannedSeconds !== null && actualSeconds === plannedSeconds;
+    const exceeds =
+      hasActual && plannedSeconds !== null && actualSeconds! > plannedSeconds;
+    const showPlanned = plannedSeconds !== null && !matchesPlan;
+    const dimmed = !completed && !hasActual;
+
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className={cn(
+          "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-neutral-800/40",
+          dimmed && "text-neutral-500"
+        )}
+      >
+        <span className="text-neutral-600 tabular-nums">{setNumber}</span>
+        <span className={cn("tabular-nums", !dimmed && "font-medium")}>
+          {hasActual ? formatDuration(actualSeconds!) : "—"}
+        </span>
+        <span className="text-[11px] text-neutral-500 tabular-nums">
+          {showPlanned ? (
+            <>
+              {hasActual ? (
+                <span className={exceeds ? "text-accent" : "text-neutral-500"}>
+                  {exceeds ? "↑" : "↓"}{" "}
+                </span>
+              ) : null}
+              planned {formatDuration(plannedSeconds!)}
+            </>
+          ) : null}
+        </span>
+      </button>
     );
   }
 

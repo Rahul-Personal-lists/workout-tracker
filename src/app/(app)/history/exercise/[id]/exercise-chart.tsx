@@ -10,14 +10,21 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatDuration } from "@/lib/format";
 
 export type ChartPoint = {
   date: string;
-  weight: number;
+  value: number;
   reps: number | null;
 };
 
-export function ExerciseChart({ points }: { points: ChartPoint[] }) {
+export function ExerciseChart({
+  points,
+  isTime = false,
+}: {
+  points: ChartPoint[];
+  isTime?: boolean;
+}) {
   const data = points.map((p) => ({
     ...p,
     ts: new Date(p.date).getTime(),
@@ -44,6 +51,7 @@ export function ExerciseChart({ points }: { points: ChartPoint[] }) {
               axisLine={{ stroke: "#262626" }}
               domain={["auto", "auto"]}
               width={42}
+              tickFormatter={(v: number) => (isTime ? formatDuration(v) : String(v))}
             />
             <Tooltip
               cursor={{ stroke: "#404040", strokeWidth: 1 }}
@@ -55,13 +63,16 @@ export function ExerciseChart({ points }: { points: ChartPoint[] }) {
               }}
               labelStyle={{ color: "#a3a3a3" }}
               formatter={(value: number, _name, payload) => {
+                if (isTime) {
+                  return [formatDuration(value), "Top time"];
+                }
                 const reps = payload?.payload?.reps;
                 return [`${value} lb${reps ? ` × ${reps}` : ""}`, "Top set"];
               }}
             />
             <Line
               type="monotone"
-              dataKey="weight"
+              dataKey="value"
               stroke="#10b981"
               strokeWidth={2}
               dot={{ fill: "#10b981", r: 3 }}

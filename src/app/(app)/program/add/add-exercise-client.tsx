@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { addExerciseToProgram } from "@/app/actions/program";
+import { parseDuration } from "@/lib/format";
 
 type CatalogEntry = {
   id: string;
@@ -253,11 +254,17 @@ function ConfigForm({
   onCancel: () => void;
 }) {
   const [name, setName] = useState(entry.name);
-  const [sets, setSets] = useState("3");
+  const [kind, setKind] = useState<"reps" | "time">(
+    entry.category === "cardio" ? "time" : "reps"
+  );
+  const [sets, setSets] = useState(entry.category === "cardio" ? "1" : "3");
   const [baseReps, setBaseReps] = useState("10");
   const [startWeight, setStartWeight] = useState("");
   const [increment, setIncrement] = useState("2.5");
   const [progressionWeeks, setProgressionWeeks] = useState("1");
+  const [duration, setDuration] = useState(
+    entry.category === "cardio" ? "10:00" : "1:00"
+  );
   const [tracked, setTracked] = useState(false);
   const [note, setNote] = useState("");
   const [submitting, startSubmit] = useTransition();
@@ -270,11 +277,8 @@ function ConfigForm({
     setErrorMsg(null);
 
     const setsN = parseInt(sets, 10);
-    const repsN = baseReps.trim() === "" ? null : parseInt(baseReps, 10);
-    const startN = startWeight.trim() === "" ? null : Number(startWeight);
-    const incN = Number(increment);
-    const progN = parseInt(progressionWeeks, 10) || 1;
     const trimmedName = entry.custom ? name.trim() : entry.name;
+    const progN = parseInt(progressionWeeks, 10) || 1;
 
     if (entry.custom && !trimmedName) {
       setErrorMsg("Name is required.");
@@ -284,13 +288,30 @@ function ConfigForm({
       setErrorMsg("Sets must be at least 1.");
       return;
     }
-    if (!Number.isFinite(incN) || incN < 0) {
-      setErrorMsg("Increment must be 0 or greater.");
-      return;
-    }
-    if (progN < 1 || progN > 8) {
-      setErrorMsg("Progress every N weeks must be 1–8.");
-      return;
+
+    let repsN: number | null = null;
+    let startN: number | null = null;
+    let incN = 0;
+    let targetSecondsN: number | null = null;
+
+    if (kind === "time") {
+      targetSecondsN = parseDuration(duration);
+      if (targetSecondsN === null) {
+        setErrorMsg("Duration must be a positive time like 1:30 or 90.");
+        return;
+      }
+    } else {
+      repsN = baseReps.trim() === "" ? null : parseInt(baseReps, 10);
+      startN = startWeight.trim() === "" ? null : Number(startWeight);
+      incN = Number(increment);
+      if (!Number.isFinite(incN) || incN < 0) {
+        setErrorMsg("Increment must be 0 or greater.");
+        return;
+      }
+      if (progN < 1 || progN > 8) {
+        setErrorMsg("Progress every N weeks must be 1–8.");
+        return;
+      }
     }
 
     startSubmit(async () => {
@@ -306,6 +327,8 @@ function ConfigForm({
           tracked,
           note: note.trim() === "" ? null : note.trim(),
           progressionWeeks: progN,
+          kind,
+          targetSeconds: targetSecondsN,
           redirectWeek,
           returnTo: returnTo ?? undefined,
         });
@@ -354,6 +377,29 @@ function ConfigForm({
         </Field>
       ) : null}
 
+      <div className="space-y-1">
+        <span className="block text-[11px] uppercase tracking-wide text-neutral-500">
+          Track as
+        </span>
+        <div className="grid grid-cols-2 gap-1 rounded-md bg-neutral-900 border border-neutral-800 p-1">
+          {(["reps", "time"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setKind(k)}
+              className={cn(
+                "h-9 rounded text-sm font-medium transition-colors",
+                kind === k
+                  ? "bg-accent text-accent-foreground"
+                  : "text-neutral-400 hover:text-neutral-200"
+              )}
+            >
+              {k === "reps" ? "Reps + weight" : "Time"}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <Field label="Sets" htmlFor="sets">
           <input
@@ -365,50 +411,66 @@ function ConfigForm({
             className={fieldClass}
           />
         </Field>
-        <Field label="Reps (blank for time)" htmlFor="reps">
-          <input
-            id="reps"
-            type="text"
-            inputMode="numeric"
-            value={baseReps}
-            onChange={(e) => setBaseReps(e.target.value.replace(/[^\d]/g, ""))}
-            placeholder="—"
-            className={fieldClass}
-          />
-        </Field>
-        <Field label="Start weight (lb, blank=BW)" htmlFor="weight">
-          <input
-            id="weight"
-            type="text"
-            inputMode="decimal"
-            value={startWeight}
-            onChange={(e) => setStartWeight(e.target.value)}
-            placeholder="—"
-            className={fieldClass}
-          />
-        </Field>
-        <Field label="Increment (lb)" htmlFor="inc">
-          <input
-            id="inc"
-            type="text"
-            inputMode="decimal"
-            value={increment}
-            onChange={(e) => setIncrement(e.target.value)}
-            className={fieldClass}
-          />
-        </Field>
-        <Field label="Progress every N weeks" htmlFor="prog">
-          <input
-            id="prog"
-            type="text"
-            inputMode="numeric"
-            value={progressionWeeks}
-            onChange={(e) =>
-              setProgressionWeeks(e.target.value.replace(/[^\d]/g, ""))
-            }
-            className={fieldClass}
-          />
-        </Field>
+        {kind === "time" ? (
+          <Field label="Duration (mm:ss)" htmlFor="duration">
+            <input
+              id="duration"
+              type="text"
+              inputMode="numeric"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="1:00"
+              className={fieldClass}
+            />
+          </Field>
+        ) : (
+          <>
+            <Field label="Reps" htmlFor="reps">
+              <input
+                id="reps"
+                type="text"
+                inputMode="numeric"
+                value={baseReps}
+                onChange={(e) => setBaseReps(e.target.value.replace(/[^\d]/g, ""))}
+                placeholder="—"
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Start weight (lb, blank=BW)" htmlFor="weight">
+              <input
+                id="weight"
+                type="text"
+                inputMode="decimal"
+                value={startWeight}
+                onChange={(e) => setStartWeight(e.target.value)}
+                placeholder="—"
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Increment (lb)" htmlFor="inc">
+              <input
+                id="inc"
+                type="text"
+                inputMode="decimal"
+                value={increment}
+                onChange={(e) => setIncrement(e.target.value)}
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Progress every N weeks" htmlFor="prog">
+              <input
+                id="prog"
+                type="text"
+                inputMode="numeric"
+                value={progressionWeeks}
+                onChange={(e) =>
+                  setProgressionWeeks(e.target.value.replace(/[^\d]/g, ""))
+                }
+                className={fieldClass}
+              />
+            </Field>
+          </>
+        )}
       </div>
 
       <Field label="Note (optional)" htmlFor="note">

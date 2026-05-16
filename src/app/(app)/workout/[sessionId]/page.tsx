@@ -7,7 +7,7 @@ import {
   getSessionLogs,
   type ProgramExercise,
 } from "@/lib/queries";
-import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
+import { getPlannedReps, getPlannedSeconds, getPlannedWeight } from "@/lib/progression";
 import { WorkoutClient, type ExerciseRow } from "./workout-client";
 
 export default async function WorkoutPage({
@@ -37,18 +37,30 @@ export default async function WorkoutPage({
   ]);
 
   const exercises: ExerciseRow[] = day.exercises.map((ex: ProgramExercise) => {
-    const plannedWeight = getPlannedWeight(
-      ex.start_weight,
-      ex.increment,
-      session.week_number,
-      program.deload_weeks,
-      ex.progression_weeks,
-    );
-    const plannedReps = getPlannedReps(
-      ex.base_reps,
-      session.week_number,
-      program.deload_weeks
-    );
+    const isTime = ex.kind === "time";
+    const plannedWeight = isTime
+      ? null
+      : getPlannedWeight(
+          ex.start_weight,
+          ex.increment,
+          session.week_number,
+          program.deload_weeks,
+          ex.progression_weeks,
+        );
+    const plannedReps = isTime
+      ? null
+      : getPlannedReps(
+          ex.base_reps,
+          session.week_number,
+          program.deload_weeks
+        );
+    const plannedSeconds = isTime
+      ? getPlannedSeconds(
+          ex.target_seconds,
+          session.week_number,
+          program.deload_weeks
+        )
+      : null;
 
     const existing = logs.filter((l) => l.program_exercise_id === ex.id);
     const maxLogged = existing.reduce((m, l) => Math.max(m, l.set_number), 0);
@@ -58,8 +70,9 @@ export default async function WorkoutPage({
       const log = existing.find((l) => l.set_number === setNumber);
       return {
         setNumber,
-        actualWeight: log?.actual_weight ?? plannedWeight,
-        actualReps: log?.actual_reps ?? plannedReps,
+        actualWeight: isTime ? null : log?.actual_weight ?? plannedWeight,
+        actualReps: isTime ? null : log?.actual_reps ?? plannedReps,
+        actualSeconds: isTime ? log?.actual_seconds ?? plannedSeconds : null,
         completed: log?.completed ?? false,
       };
     });
@@ -69,10 +82,13 @@ export default async function WorkoutPage({
       name: ex.name,
       note: ex.note,
       imageUrl: ex.image_url,
+      kind: ex.kind,
       plannedWeight,
       plannedReps,
-      lastWeight: hints[ex.id]?.actual_weight ?? null,
-      lastReps: hints[ex.id]?.actual_reps ?? null,
+      plannedSeconds,
+      lastWeight: isTime ? null : hints[ex.id]?.actual_weight ?? null,
+      lastReps: isTime ? null : hints[ex.id]?.actual_reps ?? null,
+      lastSeconds: isTime ? hints[ex.id]?.actual_seconds ?? null : null,
       sets,
     };
   });

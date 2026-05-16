@@ -13,6 +13,8 @@ export type StarterExercise = {
   image_url: string | null;
   note?: string;
   progression_weeks?: number;
+  kind?: "reps" | "time";
+  target_seconds?: number | null;
 };
 
 export type StarterDay = {
@@ -69,7 +71,7 @@ const PRESET_STARTER_12WK: StarterProgram = {
         { name: "DB Reverse Lunge",          sets: 3, base_reps: 10, increment: 5,   start_weight: 15,   tracked: false, image_url: IMG("Dumbbell_Rear_Lunge"),                         note: "per side" },
         { name: "DB Hip Thrust",             sets: 3, base_reps: 12, increment: 5,   start_weight: 35,   tracked: false, image_url: IMG("Barbell_Hip_Thrust") },
         { name: "Standing Calf Raises (DB)", sets: 4, base_reps: 15, increment: 5,   start_weight: 30,   tracked: false, image_url: IMG("Standing_Calf_Raises") },
-        { name: "Plank",                     sets: 3, base_reps: null, increment: 0, start_weight: null, tracked: false, image_url: IMG("Plank"),                                       note: "45 sec hold" },
+        { name: "Plank",                     sets: 3, base_reps: null, increment: 0, start_weight: null, tracked: false, image_url: IMG("Plank"),                                       kind: "time", target_seconds: 45 },
       ],
     },
     {
@@ -194,7 +196,7 @@ const PRESET_UPPER_LOWER_8WK: StarterProgram = {
         { name: "Bulgarian Split Squat",  sets: 3, base_reps: 10, increment: 10,  start_weight: 20, tracked: false, image_url: IMG("One_Leg_Barbell_Squat"), note: "per side, DB" },
         { name: "DB Stiff-Leg Deadlift",  sets: 3, base_reps: 12, increment: 5,   start_weight: 35, tracked: false, image_url: IMG("Stiff-Legged_Dumbbell_Deadlift") },
         { name: "DB Hip Thrust",          sets: 3, base_reps: 12, increment: 5,   start_weight: 35, tracked: false, image_url: IMG("Barbell_Hip_Thrust") },
-        { name: "Plank",                  sets: 3, base_reps: null, increment: 0, start_weight: null, tracked: false, image_url: IMG("Plank"),                note: "45 sec hold" },
+        { name: "Plank",                  sets: 3, base_reps: null, increment: 0, start_weight: null, tracked: false, image_url: IMG("Plank"),                kind: "time", target_seconds: 45 },
       ],
     },
   ],

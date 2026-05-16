@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getExerciseHistory } from "@/lib/queries";
+import { formatDuration } from "@/lib/format";
 import { ExerciseChart, type ChartPoint } from "./exercise-chart";
 
 export const dynamic = "force-dynamic";
@@ -15,18 +16,21 @@ export default async function ExerciseHistoryPage({
   const history = await getExerciseHistory(id);
   if (!history) notFound();
 
+  const isTime = history.kind === "time";
+
   const bySession = new Map<
     string,
-    { date: string; topWeight: number; topReps: number | null }
+    { date: string; value: number; reps: number | null }
   >();
   for (const p of history.points) {
-    if (p.actual_weight === null) continue;
+    const value = isTime ? p.actual_seconds : p.actual_weight;
+    if (value === null) continue;
     const slot = bySession.get(p.session_id);
-    if (!slot || p.actual_weight > slot.topWeight) {
+    if (!slot || value > slot.value) {
       bySession.set(p.session_id, {
         date: p.logged_at,
-        topWeight: p.actual_weight,
-        topReps: p.actual_reps,
+        value,
+        reps: isTime ? null : p.actual_reps,
       });
     }
   }
@@ -35,14 +39,13 @@ export default async function ExerciseHistoryPage({
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((p) => ({
       date: p.date,
-      weight: p.topWeight,
-      reps: p.topReps,
+      value: p.value,
+      reps: p.reps,
     }));
 
   const latest = points[points.length - 1];
   const first = points[0];
-  const delta =
-    latest && first ? latest.weight - first.weight : null;
+  const delta = latest && first ? latest.value - first.value : null;
 
   return (
     <div className="space-y-6">
@@ -61,13 +64,20 @@ export default async function ExerciseHistoryPage({
         {points.length > 0 ? (
           <div className="flex gap-4 pt-1 text-sm tabular-nums">
             <span className="text-neutral-300">
-              Latest: <span className="font-medium">{latest!.weight} lb</span>
-              {latest!.reps !== null ? ` × ${latest!.reps}` : ""}
+              Latest:{" "}
+              <span className="font-medium">
+                {isTime
+                  ? formatDuration(latest!.value)
+                  : `${latest!.value} lb`}
+              </span>
+              {!isTime && latest!.reps !== null ? ` × ${latest!.reps}` : ""}
             </span>
             {delta !== null && delta !== 0 ? (
               <span className={delta > 0 ? "text-emerald-400" : "text-red-400"}>
-                {delta > 0 ? "+" : ""}
-                {delta} lb
+                {delta > 0 ? "+" : "-"}
+                {isTime
+                  ? formatDuration(Math.abs(delta))
+                  : `${Math.abs(delta)} lb`}
               </span>
             ) : null}
           </div>
@@ -79,7 +89,7 @@ export default async function ExerciseHistoryPage({
           No completed sets yet. Once you log this exercise, the line shows up here.
         </div>
       ) : (
-        <ExerciseChart points={points} />
+        <ExerciseChart points={points} isTime={isTime} />
       )}
     </div>
   );

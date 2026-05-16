@@ -46,6 +46,14 @@ export function getPlannedReps(
   return baseReps;
 }
 
+export function getPlannedSeconds(
+  targetSeconds: number | null,
+  _weekNumber: number,
+  _deloadWeeks: number[],
+): number | null {
+  return targetSeconds;
+}
+
 export type Phase = "Foundation" | "Build" | "Peak";
 
 export function getPhase(week: number): Phase {
