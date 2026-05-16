@@ -32,6 +32,7 @@ export function BottomNav() {
             <li key={href} className="flex">
               <Link
                 href={href}
+                data-tour={`nav-${href.slice(1)}`}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative flex-1 flex flex-col items-center justify-center gap-1 text-[11px] outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black",

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/bottom-nav";
 import { InstallPrompt } from "@/components/install-prompt";
 import { PausedWorkoutBanner } from "@/components/paused-workout-banner";
+import { TutorialOverlay } from "@/components/tutorial-overlay";
 
 export default async function AppLayout({
   children,
@@ -30,6 +31,7 @@ export default async function AppLayout({
         {children}
       </main>
       <BottomNav />
+      <TutorialOverlay />
     </div>
   );
 }

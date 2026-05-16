@@ -27,6 +27,7 @@ export function StartWorkoutButton({
       type="button"
       onClick={onClick}
       disabled={pending}
+      data-tour="today-cta"
       className="btn-primary w-full h-14 text-base"
     >
       {pending ? "Starting…" : "Start workout"}

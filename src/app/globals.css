@@ -27,6 +27,7 @@
   --font-display: ui-serif, Georgia, "Times New Roman", serif;
   --animate-exercise-flip: exercise-flip 1.6s ease-in-out infinite;
   --animate-slide-down: slide-down 0.3s ease-out;
+  --animate-pulse-tour: pulse-tour 1.6s ease-in-out infinite;
 }
 
 @theme {
@@ -75,6 +76,21 @@
   }
   100% {
     opacity: 1;
+  }
+}
+
+/* Spotlight + pulse for the first-login tutorial. The huge spread shadow
+ * dims everything outside the ring; the inner shadow is the accent halo. */
+@keyframes pulse-tour {
+  0%, 100% {
+    box-shadow:
+      0 0 0 9999px rgba(0, 0, 0, 0.72),
+      0 0 0 3px var(--color-accent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9999px rgba(0, 0, 0, 0.72),
+      0 0 0 7px var(--color-accent);
   }
 }
 
