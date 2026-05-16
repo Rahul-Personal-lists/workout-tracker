@@ -15,7 +15,17 @@ export type ProgramExercise = {
   image_url: string | null;
   archived_at: string | null;
   progression_weeks: number;
+  kind: "reps" | "time";
+  target_seconds: number | null;
 };
+
+// DB stores `kind` as a CHECK-constrained text column, so generated types widen
+// it to `string`. Narrow back to the literal union we expose.
+function normalizeExerciseKind<T extends { kind: string }>(
+  ex: T
+): Omit<T, "kind"> & { kind: "reps" | "time" } {
+  return { ...ex, kind: ex.kind === "time" ? "time" : "reps" };
+}
 
 export type ProgramDay = {
   id: string;
@@ -43,7 +53,7 @@ export async function getCurrentProgram(
       days:program_days (
         id, day_number, label, title, archived_at,
         exercises:program_exercises (
-          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks
+          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds
         )
       )
     `;
@@ -83,7 +93,8 @@ export async function getCurrentProgram(
       exercises: (d.exercises ?? [])
         .filter((ex) => opts.includeArchived || ex.archived_at === null)
         .slice()
-        .sort((a, b) => a.order_index - b.order_index),
+        .sort((a, b) => a.order_index - b.order_index)
+        .map(normalizeExerciseKind),
     }))
     .sort((a, b) => a.day_number - b.day_number);
 
@@ -311,6 +322,8 @@ export type SetLog = {
   planned_reps: number | null;
   actual_weight: number | null;
   actual_reps: number | null;
+  planned_seconds: number | null;
+  actual_seconds: number | null;
   completed: boolean;
 };
 
@@ -319,7 +332,7 @@ export async function getSessionLogs(sessionId: string): Promise<SetLog[]> {
   const { data, error } = await supabase
     .from("set_logs")
     .select(
-      "id, program_exercise_id, set_number, planned_weight, planned_reps, actual_weight, actual_reps, completed"
+      "id, program_exercise_id, set_number, planned_weight, planned_reps, actual_weight, actual_reps, planned_seconds, actual_seconds, completed"
     )
     .eq("session_id", sessionId)
     .order("set_number", { ascending: true });
@@ -331,6 +344,7 @@ export type LastSessionHint = {
   program_exercise_id: string;
   actual_weight: number | null;
   actual_reps: number | null;
+  actual_seconds: number | null;
   logged_at: string;
 };
 
@@ -344,7 +358,7 @@ export async function getLastSessionHints(
   const { data, error } = await supabase
     .from("set_logs")
     .select(
-      "program_exercise_id, actual_weight, actual_reps, logged_at, session_id, completed"
+      "program_exercise_id, actual_weight, actual_reps, actual_seconds, logged_at, session_id, completed"
     )
     .in("program_exercise_id", exerciseIds)
     .eq("completed", true)
@@ -360,6 +374,7 @@ export async function getLastSessionHints(
       program_exercise_id: row.program_exercise_id,
       actual_weight: row.actual_weight,
       actual_reps: row.actual_reps,
+      actual_seconds: row.actual_seconds,
       logged_at: row.logged_at,
     };
   }
@@ -452,7 +467,7 @@ export async function getSessionContext(
         id, label, title,
         programs!inner ( id, name, weeks, deload_weeks ),
         exercises:program_exercises (
-          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks
+          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds
         )
       )
     `
@@ -486,7 +501,8 @@ export async function getSessionContext(
       title: d.title,
       exercises: (d.exercises ?? [])
         .slice()
-        .sort((a, b) => a.order_index - b.order_index),
+        .sort((a, b) => a.order_index - b.order_index)
+        .map(normalizeExerciseKind),
     },
   };
 }
@@ -558,6 +574,8 @@ export type ExerciseHistoryPoint = {
   actual_reps: number | null;
   planned_weight: number | null;
   planned_reps: number | null;
+  actual_seconds: number | null;
+  planned_seconds: number | null;
 };
 
 export type SessionPhoto = {
@@ -615,12 +633,17 @@ export async function getBodyLogs(): Promise<BodyLogRow[]> {
 
 export async function getExerciseHistory(
   programExerciseId: string
-): Promise<{ name: string; points: ExerciseHistoryPoint[] } | null> {
+): Promise<{
+  name: string;
+  kind: "reps" | "time";
+  target_seconds: number | null;
+  points: ExerciseHistoryPoint[];
+} | null> {
   const supabase = await createClient();
 
   const { data: ex, error: exErr } = await supabase
     .from("program_exercises")
-    .select("id, name")
+    .select("id, name, kind, target_seconds")
     .eq("id", programExerciseId)
     .maybeSingle();
   if (exErr) throw exErr;
@@ -629,7 +652,7 @@ export async function getExerciseHistory(
   const { data: rows, error } = await supabase
     .from("set_logs")
     .select(
-      "session_id, set_number, actual_weight, actual_reps, planned_weight, planned_reps, logged_at, completed"
+      "session_id, set_number, actual_weight, actual_reps, planned_weight, planned_reps, actual_seconds, planned_seconds, logged_at, completed"
     )
     .eq("program_exercise_id", programExerciseId)
     .eq("completed", true)
@@ -638,6 +661,8 @@ export async function getExerciseHistory(
 
   return {
     name: ex.name,
+    kind: (ex.kind ?? "reps") as "reps" | "time",
+    target_seconds: ex.target_seconds,
     points: (rows ?? []).map((r) => ({
       session_id: r.session_id,
       logged_at: r.logged_at,
@@ -646,6 +671,8 @@ export async function getExerciseHistory(
       actual_reps: r.actual_reps,
       planned_weight: r.planned_weight,
       planned_reps: r.planned_reps,
+      actual_seconds: r.actual_seconds,
+      planned_seconds: r.planned_seconds,
     })),
   };
 }

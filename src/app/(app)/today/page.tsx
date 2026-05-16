@@ -7,7 +7,7 @@ import {
   getUndoableSkip,
 } from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
-import { formatWeight } from "@/lib/format";
+import { formatDuration, formatWeight } from "@/lib/format";
 import { getUserTimezone, weekdayInTz } from "@/lib/tz";
 import { StartWorkoutButton } from "./start-workout-button";
 import { skipRestDay, undoLastSkip } from "@/app/actions/workout";
@@ -229,6 +229,7 @@ export default async function TodayPage() {
             program.deload_weeks,
             ex.progression_weeks,
           );
+          const isTime = ex.kind === "time";
           return (
             <li
               key={ex.id}
@@ -237,13 +238,19 @@ export default async function TodayPage() {
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-sm">{ex.name}</span>
                 <span className="text-xs text-foreground-muted tabular-nums whitespace-nowrap">
-                  {ex.sets}×{plannedReps ?? "—"}
-                  {plannedWeight !== null
-                    ? ` · ${formatWeight(plannedWeight)} lb`
-                    : ""}
+                  {isTime
+                    ? `${ex.sets} × ${ex.target_seconds !== null ? formatDuration(ex.target_seconds) : "—"}`
+                    : (
+                        <>
+                          {ex.sets}×{plannedReps ?? "—"}
+                          {plannedWeight !== null
+                            ? ` · ${formatWeight(plannedWeight)} lb`
+                            : ""}
+                        </>
+                      )}
                 </span>
               </div>
-              {hint ? (
+              {!isTime && hint ? (
                 <p className="mt-1 text-[11px] text-foreground-muted">{hint}</p>
               ) : null}
             </li>

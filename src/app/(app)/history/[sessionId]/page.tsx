@@ -12,9 +12,9 @@ import { DurationEditor } from "./duration-editor";
 import { EditableSetRow } from "./set-editor";
 import { DeleteSessionButton } from "./delete-session";
 import { RedoSessionButton } from "./redo-session";
-import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
+import { getPlannedReps, getPlannedSeconds, getPlannedWeight } from "@/lib/progression";
 import { formatDateInTz, getUserTimezone } from "@/lib/tz";
-import { formatWeight } from "@/lib/format";
+import { formatDuration, formatWeight } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -113,18 +113,30 @@ export default async function SessionDetailPage({
           const exLogs = logs
             .filter((l) => l.program_exercise_id === ex.id)
             .sort((a, b) => a.set_number - b.set_number);
-          const fallbackPlannedWeight = getPlannedWeight(
-            ex.start_weight,
-            ex.increment,
-            session.week_number,
-            program.deload_weeks,
-            ex.progression_weeks,
-          );
-          const fallbackPlannedReps = getPlannedReps(
-            ex.base_reps,
-            session.week_number,
-            program.deload_weeks
-          );
+          const isTime = ex.kind === "time";
+          const fallbackPlannedWeight = isTime
+            ? null
+            : getPlannedWeight(
+                ex.start_weight,
+                ex.increment,
+                session.week_number,
+                program.deload_weeks,
+                ex.progression_weeks,
+              );
+          const fallbackPlannedReps = isTime
+            ? null
+            : getPlannedReps(
+                ex.base_reps,
+                session.week_number,
+                program.deload_weeks
+              );
+          const fallbackPlannedSeconds = isTime
+            ? getPlannedSeconds(
+                ex.target_seconds,
+                session.week_number,
+                program.deload_weeks
+              )
+            : null;
           const expected = Array.from({ length: ex.sets }, (_, i) => {
             const setNumber = i + 1;
             const existing = exLogs.find((l) => l.set_number === setNumber);
@@ -135,21 +147,33 @@ export default async function SessionDetailPage({
               set_number: setNumber,
               planned_weight: fallbackPlannedWeight,
               planned_reps: fallbackPlannedReps,
+              planned_seconds: fallbackPlannedSeconds,
               actual_weight: null,
               actual_reps: null,
+              actual_seconds: null,
               completed: false,
             };
           });
 
-          const topSet = exLogs.reduce<(typeof exLogs)[number] | null>((best, l) => {
-            if (!l.completed || l.actual_weight === null || l.actual_reps === null) return best;
-            if (!best) return l;
-            const bw = best.actual_weight ?? 0;
-            const br = best.actual_reps ?? 0;
-            if (l.actual_weight > bw) return l;
-            if (l.actual_weight === bw && l.actual_reps > br) return l;
-            return best;
-          }, null);
+          const topSet = isTime
+            ? null
+            : exLogs.reduce<(typeof exLogs)[number] | null>((best, l) => {
+                if (!l.completed || l.actual_weight === null || l.actual_reps === null) return best;
+                if (!best) return l;
+                const bw = best.actual_weight ?? 0;
+                const br = best.actual_reps ?? 0;
+                if (l.actual_weight > bw) return l;
+                if (l.actual_weight === bw && l.actual_reps > br) return l;
+                return best;
+              }, null);
+
+          const topTime = isTime
+            ? exLogs.reduce<number | null>((best, l) => {
+                if (!l.completed || l.actual_seconds === null) return best;
+                if (best === null || l.actual_seconds > best) return l.actual_seconds;
+                return best;
+              }, null)
+            : null;
 
           return (
             <li
@@ -162,6 +186,14 @@ export default async function SessionDetailPage({
               >
                 <span className="text-sm font-medium flex-1 min-w-0 truncate">{ex.name}</span>
                 {(() => {
+                  if (isTime) {
+                    if (topTime === null) return null;
+                    return (
+                      <span className="text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                        Top today · {formatDuration(topTime)}
+                      </span>
+                    );
+                  }
                   if (!topSet) return null;
                   const todayW = topSet.actual_weight as number;
                   const todayR = topSet.actual_reps as number;
@@ -195,6 +227,8 @@ export default async function SessionDetailPage({
                       plannedReps={s.planned_reps}
                       actualWeight={s.actual_weight}
                       actualReps={s.actual_reps}
+                      plannedSeconds={s.planned_seconds ?? null}
+                      actualSeconds={s.actual_seconds ?? null}
                       completed={s.completed}
                     />
                   ))

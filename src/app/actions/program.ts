@@ -19,6 +19,8 @@ const AddExerciseSchema = z.object({
   tracked: z.boolean(),
   note: z.string().max(120).nullable(),
   progressionWeeks: z.number().int().min(1).max(8).default(1),
+  kind: z.enum(["reps", "time"]).default("reps"),
+  targetSeconds: z.number().int().positive().max(36000).nullable().default(null),
   redirectWeek: z.number().int().min(1).max(52).optional(),
   // Same-origin path the caller wants to land on after a successful add.
   // Used by the mid-workout add flow to bounce back to /workout/[sessionId].
@@ -41,18 +43,21 @@ export async function addExerciseToProgram(
   if (maxErr) throw maxErr;
   const nextIndex = (maxRow?.order_index ?? -1) + 1;
 
+  const isTime = parsed.kind === "time";
   const { error } = await supabase.from("program_exercises").insert({
     program_day_id: parsed.programDayId,
     order_index: nextIndex,
     name: parsed.name,
     sets: parsed.sets,
-    base_reps: parsed.baseReps,
-    start_weight: parsed.startWeight,
-    increment: parsed.increment,
+    base_reps: isTime ? null : parsed.baseReps,
+    start_weight: isTime ? null : parsed.startWeight,
+    increment: isTime ? 0 : parsed.increment,
     tracked: parsed.tracked,
     note: parsed.note,
     image_url: parsed.imageUrl,
     progression_weeks: parsed.progressionWeeks,
+    kind: parsed.kind,
+    target_seconds: isTime ? parsed.targetSeconds : null,
   });
   if (error) throw error;
 
@@ -162,6 +167,8 @@ async function insertPresetData(
       note: ex.note ?? null,
       image_url: ex.image_url,
       progression_weeks: ex.progression_weeks ?? 1,
+      kind: ex.kind ?? "reps",
+      target_seconds: ex.target_seconds ?? null,
     }));
     const { error: exErr } = await supabase
       .from("program_exercises")

@@ -141,6 +141,8 @@ const LogSetSchema = z.object({
   plannedReps: z.number().int().nullable(),
   actualWeight: z.number().nullable(),
   actualReps: z.number().int().nullable(),
+  plannedSeconds: z.number().int().positive().max(36000).nullable().default(null),
+  actualSeconds: z.number().int().positive().max(36000).nullable().default(null),
   completed: z.boolean(),
 });
 
@@ -157,6 +159,8 @@ export async function logSet(input: z.infer<typeof LogSetSchema>) {
       planned_reps: parsed.plannedReps,
       actual_weight: parsed.actualWeight,
       actual_reps: parsed.actualReps,
+      planned_seconds: parsed.plannedSeconds,
+      actual_seconds: parsed.actualSeconds,
       completed: parsed.completed,
       logged_at: new Date().toISOString(),
     },
@@ -178,6 +182,8 @@ export async function editSetLog(input: z.infer<typeof LogSetSchema>) {
       planned_reps: parsed.plannedReps,
       actual_weight: parsed.actualWeight,
       actual_reps: parsed.actualReps,
+      planned_seconds: parsed.plannedSeconds,
+      actual_seconds: parsed.actualSeconds,
       completed: parsed.completed,
       logged_at: new Date().toISOString(),
     },

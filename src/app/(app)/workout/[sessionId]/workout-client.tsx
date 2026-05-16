@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDuration, formatWeight } from "@/lib/format";
+import { formatDuration, formatWeight, parseDuration } from "@/lib/format";
 import {
   deleteSetLog,
   finishWorkout,
@@ -48,6 +48,7 @@ export type SetRow = {
   setNumber: number;
   actualWeight: number | null;
   actualReps: number | null;
+  actualSeconds: number | null;
   completed: boolean;
 };
 
@@ -56,10 +57,13 @@ export type ExerciseRow = {
   name: string;
   note: string | null;
   imageUrl: string | null;
+  kind: "reps" | "time";
   plannedWeight: number | null;
   plannedReps: number | null;
+  plannedSeconds: number | null;
   lastWeight: number | null;
   lastReps: number | null;
+  lastSeconds: number | null;
   sets: SetRow[];
 };
 
@@ -180,6 +184,7 @@ export function WorkoutClient({
               setNumber: nextNumber,
               actualWeight: last?.actualWeight ?? ex.plannedWeight,
               actualReps: last?.actualReps ?? ex.plannedReps,
+              actualSeconds: last?.actualSeconds ?? ex.plannedSeconds,
               completed: false,
             },
           ],
@@ -219,15 +224,18 @@ export function WorkoutClient({
   }
 
   async function persistSet(exercise: ExerciseRow, set: SetRow) {
+    const isTime = exercise.kind === "time";
     try {
       await logSet({
         sessionId,
         programExerciseId: exercise.id,
         setNumber: set.setNumber,
-        plannedWeight: exercise.plannedWeight,
-        plannedReps: exercise.plannedReps,
-        actualWeight: set.actualWeight,
-        actualReps: set.actualReps,
+        plannedWeight: isTime ? null : exercise.plannedWeight,
+        plannedReps: isTime ? null : exercise.plannedReps,
+        actualWeight: isTime ? null : set.actualWeight,
+        actualReps: isTime ? null : set.actualReps,
+        plannedSeconds: isTime ? exercise.plannedSeconds : null,
+        actualSeconds: isTime ? set.actualSeconds : null,
         completed: set.completed,
       });
     } catch (err) {
@@ -720,8 +728,10 @@ function ExerciseCard({
     }
   }, [allComplete]);
 
-  const plannedSummary =
-    exercise.plannedWeight !== null
+  const isTime = exercise.kind === "time";
+  const plannedSummary = isTime
+    ? `${exercise.sets.length} × ${exercise.plannedSeconds !== null ? formatDuration(exercise.plannedSeconds) : "—"}`
+    : exercise.plannedWeight !== null
       ? `${exercise.sets.length}×${exercise.plannedReps ?? "—"} · ${formatWeight(exercise.plannedWeight)} lb`
       : `${exercise.sets.length}×${exercise.plannedReps ?? "—"}`;
 
@@ -813,21 +823,45 @@ function ExerciseCard({
           </div>
 
           <div className="space-y-1.5">
-            <div className="grid grid-cols-[1fr_1fr_44px] gap-2 px-2 text-[10px] uppercase tracking-wide text-neutral-500">
-              <span className="text-center">Lb</span>
-              <span className="text-center">Reps</span>
+            <div
+              className={cn(
+                "grid gap-2 px-2 text-[10px] uppercase tracking-wide text-neutral-500",
+                isTime
+                  ? "grid-cols-[1fr_44px]"
+                  : "grid-cols-[1fr_1fr_44px]"
+              )}
+            >
+              {isTime ? (
+                <span className="text-center">Time</span>
+              ) : (
+                <>
+                  <span className="text-center">Lb</span>
+                  <span className="text-center">Reps</span>
+                </>
+              )}
               <span />
             </div>
-            {exercise.sets.map((set) => (
-              <SetInputRow
-                key={set.setNumber}
-                set={set}
-                lastWeight={exercise.lastWeight}
-                lastReps={exercise.lastReps}
-                onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}
-                onDelete={() => onDeleteSet(set.setNumber)}
-              />
-            ))}
+            {exercise.sets.map((set) =>
+              isTime ? (
+                <TimeSetInputRow
+                  key={set.setNumber}
+                  set={set}
+                  plannedSeconds={exercise.plannedSeconds}
+                  lastSeconds={exercise.lastSeconds}
+                  onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}
+                  onDelete={() => onDeleteSet(set.setNumber)}
+                />
+              ) : (
+                <SetInputRow
+                  key={set.setNumber}
+                  set={set}
+                  lastWeight={exercise.lastWeight}
+                  lastReps={exercise.lastReps}
+                  onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}
+                  onDelete={() => onDeleteSet(set.setNumber)}
+                />
+              )
+            )}
             <button
               type="button"
               onClick={onAddSet}
@@ -974,6 +1008,97 @@ function SetInputRow({
             set.completed && "text-neutral-400"
           )}
         />
+        <button
+          type="button"
+          aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
+          onClick={toggleComplete}
+          className={cn(
+            "h-11 w-11 rounded-md flex items-center justify-center border transition-colors",
+            set.completed
+              ? "bg-emerald-500 border-emerald-500 text-black"
+              : "border-neutral-700 text-neutral-500"
+          )}
+        >
+          <Check className="w-5 h-5" strokeWidth={3} />
+        </button>
+      </div>
+    </SwipeRow>
+  );
+}
+
+function TimeSetInputRow({
+  set,
+  plannedSeconds,
+  lastSeconds,
+  onChange,
+  onDelete,
+}: {
+  set: SetRow;
+  plannedSeconds: number | null;
+  lastSeconds: number | null;
+  onChange: (patch: Partial<SetRow>, persist: boolean) => void;
+  onDelete: () => void;
+}) {
+  const [durationStr, setDurationStr] = useState(
+    set.actualSeconds !== null ? formatDuration(set.actualSeconds) : ""
+  );
+  const durationStrRef = useRef(durationStr);
+  useEffect(() => {
+    durationStrRef.current = durationStr;
+  }, [durationStr]);
+
+  function commitOnBlur() {
+    const parsed = parseDuration(durationStrRef.current);
+    if (parsed !== set.actualSeconds) {
+      onChange({ actualSeconds: parsed }, set.completed);
+    }
+  }
+
+  function toggleComplete() {
+    const next = !set.completed;
+    const parsed = parseDuration(durationStrRef.current);
+    onChange({ completed: next, actualSeconds: parsed }, true);
+  }
+
+  const placeholder =
+    plannedSeconds !== null ? formatDuration(plannedSeconds) : "mm:ss";
+  const hint =
+    !set.completed && lastSeconds !== null
+      ? `last: ${formatDuration(lastSeconds)}`
+      : null;
+
+  return (
+    <SwipeRow
+      onAction={onDelete}
+      actionLabel="Delete"
+      actionTone="destructive"
+      actionIcon={<Trash2 className="w-3.5 h-3.5" />}
+      className="rounded-md"
+    >
+      <div
+        className={cn(
+          "grid grid-cols-[1fr_44px] items-center gap-2 rounded-md px-2 py-1.5",
+          set.completed ? "bg-neutral-800/60" : "bg-neutral-950"
+        )}
+      >
+        <label className="flex flex-col min-w-0">
+          <input
+            type="text"
+            inputMode="numeric"
+            enterKeyHint="done"
+            value={durationStr}
+            onChange={(e) => setDurationStr(e.target.value)}
+            onBlur={commitOnBlur}
+            placeholder={placeholder}
+            className={cn(
+              "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
+              set.completed && "text-neutral-400"
+            )}
+          />
+          {hint ? (
+            <span className="text-[10px] text-neutral-500 px-1 -mt-0.5">{hint}</span>
+          ) : null}
+        </label>
         <button
           type="button"
           aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
