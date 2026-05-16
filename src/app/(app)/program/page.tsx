@@ -72,6 +72,7 @@ export default async function ProgramPage({
         </ul>
         <Link
           href="/program/new"
+          data-tour="open-new-program"
           className="btn-ghost-add h-12 px-3 text-sm"
         >
           <Plus className="w-4 h-4" /> Create blank program
@@ -118,6 +119,7 @@ export default async function ProgramPage({
           {canAddProgram ? (
             <Link
               href="/program/new"
+              data-tour="open-new-program"
               className="btn-secondary h-9 px-3 text-xs"
             >
               <Plus className="w-3.5 h-3.5" /> New program

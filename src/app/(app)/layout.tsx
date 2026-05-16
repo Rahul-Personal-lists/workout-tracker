@@ -31,7 +31,8 @@ export default async function AppLayout({
         {children}
       </main>
       <BottomNav />
-      <TutorialOverlay />
+      <TutorialOverlay tour="today" />
+      <TutorialOverlay tour="createProgram" />
     </div>
   );
 }

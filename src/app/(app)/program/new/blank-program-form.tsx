@@ -136,6 +136,7 @@ export function BlankProgramForm() {
       <Field label="Name" htmlFor="name">
         <input
           id="name"
+          data-tour="np-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -147,6 +148,7 @@ export function BlankProgramForm() {
       <Field label="Weeks" htmlFor="weeks">
         <input
           id="weeks"
+          data-tour="np-weeks"
           type="text"
           inputMode="numeric"
           value={weeks}
@@ -160,7 +162,7 @@ export function BlankProgramForm() {
           Deload weeks
         </span>
         {weeksN > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
+          <div data-tour="np-deloads" className="flex flex-wrap gap-1.5">
             {Array.from({ length: weeksN }, (_, i) => i + 1).map((w) => {
               const active = deloadSet.has(w);
               return (
@@ -202,7 +204,7 @@ export function BlankProgramForm() {
             <Plus className="w-3.5 h-3.5" /> Add day
           </button>
         </div>
-        <ul className="space-y-2">
+        <ul data-tour="np-days" className="space-y-2">
           {days.map((d, i) => (
             <li
               key={i}
@@ -255,6 +257,7 @@ export function BlankProgramForm() {
       <button
         type="submit"
         disabled={pending}
+        data-tour="np-create"
         className="btn-primary w-full h-11 text-sm"
       >
         {pending ? "Creating…" : "Create program"}
