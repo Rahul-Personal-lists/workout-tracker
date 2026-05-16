@@ -391,6 +391,10 @@ export function WorkoutClient({
 
       <RestTimerBar />
 
+      <p className="text-[11px] text-foreground-muted">
+        Tip: swipe a set left to delete it.
+      </p>
+
       <ul className="space-y-3">
         {visibleExercises.map((ex) => (
           <ExerciseCard
@@ -517,7 +521,6 @@ function FinishSheet({
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 multiple
                 className="hidden"
                 onChange={(e) => {
