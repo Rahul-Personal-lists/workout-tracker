@@ -3,7 +3,7 @@ import { getDisplayName } from "@/lib/queries";
 import { DisplayNameField } from "./display-name-field";
 import { SignOutButton } from "./sign-out";
 import { ThemePicker } from "./theme-picker";
-import { SettingsReplayTutorialButton } from "@/components/settings-replay-tutorial-button";
+import { SettingsReplayTutorials } from "@/components/settings-replay-tutorials";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -37,7 +37,7 @@ export default async function SettingsPage() {
           Preferences
         </p>
         <ThemePicker />
-        <SettingsReplayTutorialButton />
+        <SettingsReplayTutorials />
       </section>
 
       <p className="text-center text-[10px] text-foreground-muted tabular-nums pt-4">
