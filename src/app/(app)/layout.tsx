@@ -4,6 +4,8 @@ import { BottomNav } from "@/components/bottom-nav";
 import { InstallPrompt } from "@/components/install-prompt";
 import { PausedWorkoutBanner } from "@/components/paused-workout-banner";
 import { TutorialOverlay } from "@/components/tutorial-overlay";
+import { OnboardingPicker } from "@/components/onboarding-picker";
+import { OnboardingRedirector } from "@/components/onboarding-redirector";
 
 export default async function AppLayout({
   children,
@@ -33,6 +35,8 @@ export default async function AppLayout({
       <BottomNav />
       <TutorialOverlay tour="today" />
       <TutorialOverlay tour="createProgram" />
+      <OnboardingPicker />
+      <OnboardingRedirector />
     </div>
   );
 }

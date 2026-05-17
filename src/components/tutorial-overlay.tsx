@@ -105,7 +105,7 @@ const TARGET_RETRY_TIMEOUT_MS = 2000;
 export function TutorialOverlay({ tour }: { tour: TourId }) {
   const router = useRouter();
   const pathname = usePathname();
-  const hasSeen = useTutorial((s) => s.hasSeen[tour]);
+  const autoStart = useTutorial((s) => s.autoStart[tour]);
   const step = useTutorial((s) => s.step[tour]);
   const nextStep = useTutorial((s) => s.next);
   const prevStep = useTutorial((s) => s.prev);
@@ -127,8 +127,7 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
 
   // Render while the user is on any route used by this tour, so brief
   // in-tour navigations (e.g. /program → /program/new) don't unmount us.
-  const onTour =
-    hydrated && !hasSeen && tourRoutes.has(pathname);
+  const onTour = hydrated && autoStart && tourRoutes.has(pathname);
 
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [viewport, setViewport] = useState<{ w: number; h: number } | null>(
