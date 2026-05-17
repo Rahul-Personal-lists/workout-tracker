@@ -101,6 +101,8 @@ const DRAG_START_THRESHOLD = 8;
 const RING_PADDING = 10;
 const TARGET_RETRY_INTERVAL_MS = 80;
 const TARGET_RETRY_TIMEOUT_MS = 2000;
+const CARD_SAFE_MARGIN = 16;
+const CARD_TO_RING_GAP = 28;
 
 export function TutorialOverlay({ tour }: { tour: TourId }) {
   const router = useRouter();
@@ -291,6 +293,18 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
   }, [onTour, handleKey]);
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const [cardHeight, setCardHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!onTour || !cardRef.current) return;
+    const node = cardRef.current;
+    const update = () => setCardHeight(node.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, [onTour, step]);
+
   useEffect(() => {
     if (!onTour) return;
     cardRef.current?.focus();
@@ -310,6 +324,21 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
   };
   const cardAtTop = rect ? rect.top > v.h * 0.55 : false;
 
+  // Sit the card near the spotlight (above or below by CARD_TO_RING_GAP), so
+  // the arrow stays short regardless of where the target is in the viewport.
+  // When we don't have a rect yet, leave cardTop null and fall back to the
+  // CSS safe-area positioning on the card.
+  let cardTop: number | null = null;
+  if (rect && cardHeight) {
+    const desired = cardAtTop
+      ? rect.top - CARD_TO_RING_GAP - cardHeight
+      : rect.bottom + CARD_TO_RING_GAP;
+    cardTop = Math.max(
+      CARD_SAFE_MARGIN,
+      Math.min(desired, v.h - cardHeight - CARD_SAFE_MARGIN)
+    );
+  }
+
   // Ring geometry.
   let ringStyle: React.CSSProperties | null = null;
   if (rect) {
@@ -325,8 +354,9 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
   }
 
   // Arrow from the card's near edge midpoint to the ring's far edge midpoint.
+  // Since the card is positioned next to the target, this is naturally short.
   let arrow: { x1: number; y1: number; x2: number; y2: number } | null = null;
-  if (rect) {
+  if (rect && cardTop !== null) {
     const ringCx = rect.left + rect.width / 2;
     const ringTop = rect.top - RING_PADDING;
     const ringBottom = rect.bottom + RING_PADDING;
@@ -334,14 +364,14 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
     if (cardAtTop) {
       arrow = {
         x1: cardCx,
-        y1: 152,
+        y1: cardTop + cardHeight + 4,
         x2: ringCx,
         y2: ringTop - 4,
       };
     } else {
       arrow = {
         x1: cardCx,
-        y1: v.h - 220,
+        y1: cardTop - 4,
         x2: ringCx,
         y2: ringBottom + 4,
       };
@@ -411,13 +441,18 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        style={{ touchAction: "pan-y" }}
+        style={{
+          touchAction: "pan-y",
+          ...(cardTop !== null ? { top: `${cardTop}px` } : {}),
+        }}
         className={cn(
           "fixed left-4 right-4 mx-auto max-w-sm rounded-xl border border-border bg-surface p-4 shadow-2xl outline-none animate-slide-down",
           "focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
-          cardAtTop
-            ? "top-[max(env(safe-area-inset-top),1rem)]"
-            : "bottom-[max(env(safe-area-inset-bottom),1rem)]"
+          // Fallback only when we don't have a measured rect yet.
+          cardTop === null &&
+            (cardAtTop
+              ? "top-[max(env(safe-area-inset-top),1rem)]"
+              : "bottom-[max(env(safe-area-inset-bottom),1rem)]")
         )}
       >
         <div className="flex items-start justify-between gap-3">
