@@ -4,6 +4,7 @@ export function getPlannedWeight(
   weekNumber: number,
   deloadWeeks: number[],
   progressionWeeks: number = 1,
+  peakTaper: boolean = false,
 ): number | null {
   if (startWeight === null) return null;
 
@@ -15,7 +16,25 @@ export function getPlannedWeight(
 
   if (deloadWeeks.includes(weekNumber)) {
     if (increment <= 0) return startWeight;
-    // Deload always uses the linear (non-overlap) ramp as its basis so the
+    if (peakTaper) {
+      // Peak-taper deload: return to the weight of the first work week of
+      // the current block (the week immediately after the most recent
+      // earlier deload, or W1). Matches the reps semantic — the deload
+      // is conceptually "back off to where this block started."
+      const earlierDeloads = deloadWeeks.filter((d) => d < weekNumber);
+      const prevDeload =
+        earlierDeloads.length > 0 ? Math.max(...earlierDeloads) : 0;
+      // Recurse into a non-deload week; peakTaper isn't passed because the
+      // recursion target is always a work week.
+      return getPlannedWeight(
+        startWeight,
+        increment,
+        prevDeload + 1,
+        deloadWeeks,
+        progressionWeeks,
+      );
+    }
+    // Default deload: 70% of the linear (non-overlap) ramp, so the
     // deload weight is consistent regardless of overlap mode.
     const normalWeight = startWeight + increment * linearSteps;
     const deloadRaw = normalWeight * 0.7;

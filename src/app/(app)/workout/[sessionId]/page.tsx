@@ -46,6 +46,7 @@ export default async function WorkoutPage({
           session.week_number,
           program.deload_weeks,
           ex.progression_weeks,
+          ex.peak_taper,
         );
     const plannedReps = isTime
       ? null

@@ -122,6 +122,7 @@ export default async function SessionDetailPage({
                 session.week_number,
                 program.deload_weeks,
                 ex.progression_weeks,
+                ex.peak_taper,
               );
           const fallbackPlannedReps = isTime
             ? null
