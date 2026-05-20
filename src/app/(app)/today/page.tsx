@@ -220,7 +220,8 @@ export default async function TodayPage() {
           const plannedReps = getPlannedReps(
             ex.base_reps,
             weekNumber,
-            program.deload_weeks
+            program.deload_weeks,
+            ex.peak_taper,
           );
           const hint = progressionHint(
             ex.start_weight,

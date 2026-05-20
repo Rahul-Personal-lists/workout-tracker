@@ -52,7 +52,8 @@ export default async function WorkoutPage({
       : getPlannedReps(
           ex.base_reps,
           session.week_number,
-          program.deload_weeks
+          program.deload_weeks,
+          ex.peak_taper,
         );
     const plannedSeconds = isTime
       ? getPlannedSeconds(

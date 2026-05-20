@@ -169,6 +169,7 @@ async function insertPresetData(
       progression_weeks: ex.progression_weeks ?? 1,
       kind: ex.kind ?? "reps",
       target_seconds: ex.target_seconds ?? null,
+      peak_taper: ex.peak_taper ?? false,
     }));
     const { error: exErr } = await supabase
       .from("program_exercises")

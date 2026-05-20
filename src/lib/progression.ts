@@ -38,10 +38,16 @@ export function getPlannedWeight(
 export function getPlannedReps(
   baseReps: number | null,
   weekNumber: number,
-  deloadWeeks: number[]
+  deloadWeeks: number[],
+  peakTaper: boolean = false,
 ): number | null {
   if (baseReps === null) return null;
   if (deloadWeeks.includes(weekNumber)) return baseReps;
+  if (peakTaper) {
+    if (weekNumber === 7 || weekNumber === 9) return Math.max(1, baseReps - 2);
+    if (weekNumber === 10) return Math.max(1, baseReps - 4);
+    if (weekNumber === 11) return Math.max(1, baseReps - 6);
+  }
   if (weekNumber >= 9 && baseReps === 5) return 6;
   return baseReps;
 }
