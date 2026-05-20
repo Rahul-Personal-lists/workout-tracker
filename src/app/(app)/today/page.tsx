@@ -28,9 +28,10 @@ function progressionHint(
   weekNumber: number,
   deloadWeeks: number[],
   progressionWeeks: number,
+  peakTaper: boolean,
 ): string | null {
   if (weekNumber === 1) return "Baseline";
-  if (deloadWeeks.includes(weekNumber)) return "Deload · 70%";
+  if (deloadWeeks.includes(weekNumber)) return peakTaper ? "Deload" : "Deload · 70%";
   let prior = 0;
   for (let w = weekNumber - 1; w >= 1; w--) {
     if (!deloadWeeks.includes(w)) {
@@ -39,8 +40,8 @@ function progressionHint(
     }
   }
   if (prior === 0) return "Baseline";
-  const cur = getPlannedWeight(startWeight, increment, weekNumber, deloadWeeks, progressionWeeks);
-  const prev = getPlannedWeight(startWeight, increment, prior, deloadWeeks, progressionWeeks);
+  const cur = getPlannedWeight(startWeight, increment, weekNumber, deloadWeeks, progressionWeeks, peakTaper);
+  const prev = getPlannedWeight(startWeight, increment, prior, deloadWeeks, progressionWeeks, peakTaper);
   if (cur === null || prev === null || cur <= prev) return null;
   return `+${formatWeight(cur - prev)} lb from W${prior}`;
 }
@@ -216,6 +217,7 @@ export default async function TodayPage() {
             weekNumber,
             program.deload_weeks,
             ex.progression_weeks,
+            ex.peak_taper,
           );
           const plannedReps = getPlannedReps(
             ex.base_reps,
@@ -229,6 +231,7 @@ export default async function TodayPage() {
             weekNumber,
             program.deload_weeks,
             ex.progression_weeks,
+            ex.peak_taper,
           );
           const isTime = ex.kind === "time";
           return (

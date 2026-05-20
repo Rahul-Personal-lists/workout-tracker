@@ -202,6 +202,7 @@ export default async function ProgramPage({
                   selectedWeek,
                   program.deload_weeks,
                   ex.progression_weeks,
+                  ex.peak_taper,
                 );
                 const r = getPlannedReps(
                   ex.base_reps,
