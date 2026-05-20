@@ -16,12 +16,13 @@ export function getPlannedWeight(
 
   if (deloadWeeks.includes(weekNumber)) {
     if (increment <= 0) return startWeight;
-    if (peakTaper) {
-      // Peak-taper deload: return to the weight of the first work week of
-      // the current block (the week immediately after the most recent
-      // earlier deload, or W1). Matches the reps semantic — the deload
-      // is conceptually "back off to where this block started."
-      const earlierDeloads = deloadWeeks.filter((d) => d < weekNumber);
+    const earlierDeloads = deloadWeeks.filter((d) => d < weekNumber);
+    // Final deload of a multi-deload program is a "retest" of the most recent
+    // block start, not a back-off — applies to every exercise.
+    const isFinalMultiDeload =
+      earlierDeloads.length > 0 &&
+      !deloadWeeks.some((d) => d > weekNumber);
+    if (peakTaper || isFinalMultiDeload) {
       const prevDeload =
         earlierDeloads.length > 0 ? Math.max(...earlierDeloads) : 0;
       // Recurse into a non-deload week; peakTaper isn't passed because the
@@ -61,7 +62,17 @@ export function getPlannedReps(
   peakTaper: boolean = false,
 ): number | null {
   if (baseReps === null) return null;
-  if (deloadWeeks.includes(weekNumber)) return baseReps;
+  if (deloadWeeks.includes(weekNumber)) {
+    const earlierDeloads = deloadWeeks.filter((d) => d < weekNumber);
+    const isFinalMultiDeload =
+      earlierDeloads.length > 0 &&
+      !deloadWeeks.some((d) => d > weekNumber);
+    if (isFinalMultiDeload) {
+      const prevDeload = Math.max(...earlierDeloads);
+      return getPlannedReps(baseReps, prevDeload + 1, deloadWeeks, peakTaper);
+    }
+    return baseReps;
+  }
   if (peakTaper) {
     if (weekNumber === 7 || weekNumber === 9) return Math.max(1, baseReps - 2);
     if (weekNumber === 10) return Math.max(1, baseReps - 4);
