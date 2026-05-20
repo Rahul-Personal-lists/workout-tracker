@@ -130,6 +130,7 @@ export type Database = {
           name: string
           note: string | null
           order_index: number
+          peak_taper: boolean
           program_day_id: string
           progression_weeks: number
           sets: number
@@ -147,6 +148,7 @@ export type Database = {
           name: string
           note?: string | null
           order_index: number
+          peak_taper?: boolean
           program_day_id: string
           progression_weeks?: number
           sets: number
@@ -164,6 +166,7 @@ export type Database = {
           name?: string
           note?: string | null
           order_index?: number
+          peak_taper?: boolean
           program_day_id?: string
           progression_weeks?: number
           sets?: number

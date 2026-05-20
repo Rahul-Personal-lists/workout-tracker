@@ -17,6 +17,7 @@ export type ProgramExercise = {
   progression_weeks: number;
   kind: "reps" | "time";
   target_seconds: number | null;
+  peak_taper: boolean;
 };
 
 // DB stores `kind` as a CHECK-constrained text column, so generated types widen
@@ -53,7 +54,7 @@ export async function getCurrentProgram(
       days:program_days (
         id, day_number, label, title, archived_at,
         exercises:program_exercises (
-          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds
+          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds, peak_taper
         )
       )
     `;
@@ -467,7 +468,7 @@ export async function getSessionContext(
         id, label, title,
         programs!inner ( id, name, weeks, deload_weeks ),
         exercises:program_exercises (
-          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds
+          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds, peak_taper
         )
       )
     `
