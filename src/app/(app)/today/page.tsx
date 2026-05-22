@@ -47,11 +47,13 @@ function progressionHint(
 }
 
 export default async function TodayPage() {
-  const name = await getDisplayName();
-  const tz = await getUserTimezone();
+  const [name, tz, undoable, program] = await Promise.all([
+    getDisplayName(),
+    getUserTimezone(),
+    getUndoableSkip(),
+    getCurrentProgram(),
+  ]);
   const motivation = MOTIVATIONS[weekdayInTz(new Date(), tz) % MOTIVATIONS.length];
-
-  const undoable = await getUndoableSkip();
 
   const greeting = (
     <div className="space-y-3">
@@ -84,8 +86,6 @@ export default async function TodayPage() {
       ) : null}
     </div>
   );
-
-  const program = await getCurrentProgram();
 
   if (!program) {
     return (
