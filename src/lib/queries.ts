@@ -265,21 +265,6 @@ export async function getUndoableSkip(): Promise<UndoableSkip | null> {
   };
 }
 
-export async function getCompletedDayIdsForWeek(
-  programId: string,
-  weekNumber: number
-): Promise<Set<string>> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("workout_sessions")
-    .select("program_day_id, program_days!inner(program_id)")
-    .eq("week_number", weekNumber)
-    .eq("program_days.program_id", programId)
-    .not("ended_at", "is", null);
-  if (error) throw error;
-  return new Set((data ?? []).map((r) => r.program_day_id));
-}
-
 export type TopSet = { weight: number; reps: number };
 
 // All-time best top-set per exercise across every completed log.
