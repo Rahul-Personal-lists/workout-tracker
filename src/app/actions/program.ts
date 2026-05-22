@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, requireUser } from "@/lib/supabase/server";
 import { getPreset, type StarterProgram } from "@/lib/starter-program";
 
 const MAX_PROGRAMS = 2;
@@ -187,11 +187,7 @@ export async function seedPresetProgram(
   const preset = getPreset(presetId);
   if (!preset) throw new Error(`Unknown preset: ${presetId}`);
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   await assertSlotAvailable(supabase);
   await demoteActivePrograms(supabase, user.id);
@@ -235,11 +231,7 @@ export async function createBlankProgram(
   input: z.infer<typeof CreateBlankSchema>
 ) {
   const parsed = CreateBlankSchema.parse(input);
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const validDeloads = parsed.deloadWeeks.filter((w) => w >= 1 && w <= parsed.weeks);
 
@@ -279,11 +271,7 @@ export async function setActiveProgram(
   input: z.infer<typeof ProgramIdSchema>
 ) {
   const { programId } = ProgramIdSchema.parse(input);
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const { data: inProgress, error: ipErr } = await supabase
     .from("workout_sessions")
@@ -312,11 +300,7 @@ export async function archiveProgram(
   input: z.infer<typeof ProgramIdSchema>
 ) {
   const { programId } = ProgramIdSchema.parse(input);
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const { data: target, error: tErr } = await supabase
     .from("programs")

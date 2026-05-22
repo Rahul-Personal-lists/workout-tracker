@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, requireUser } from "@/lib/supabase/server";
 
 const StartSchema = z.object({
   programDayId: z.string().uuid(),
@@ -12,12 +12,7 @@ const StartSchema = z.object({
 
 export async function startWorkout(input: z.infer<typeof StartSchema>) {
   const { programDayId, weekNumber } = StartSchema.parse(input);
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   // If an in-progress session already exists, send the user to it instead
   // of creating a duplicate. Page-level redirects already cover the happy
@@ -57,12 +52,7 @@ const SkipRestDaySchema = z.object({
 
 export async function skipRestDay(input: z.infer<typeof SkipRestDaySchema>) {
   const { programDayId, weekNumber } = SkipRestDaySchema.parse(input);
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const { data: existing } = await supabase
     .from("workout_sessions")
@@ -103,12 +93,7 @@ export async function skipRestDay(input: z.infer<typeof SkipRestDaySchema>) {
 const UNDO_SKIP_WINDOW_MS = 5 * 60 * 1000;
 
 export async function undoLastSkip() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const { data: latest } = await supabase
     .from("workout_sessions")
@@ -343,12 +328,7 @@ const RecordPhotosSchema = z.object({
 
 export async function recordSessionPhotos(input: z.infer<typeof RecordPhotosSchema>) {
   const { sessionId, paths } = RecordPhotosSchema.parse(input);
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const expectedPrefix = `${user.id}/${sessionId}/`;
   for (const p of paths) {

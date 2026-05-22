@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 
 const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date");
 
@@ -15,12 +15,7 @@ const UpsertSchema = z.object({
 
 export async function upsertBodyLog(input: z.infer<typeof UpsertSchema>) {
   const parsed = UpsertSchema.parse(input);
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const { error } = await supabase.from("body_logs").upsert(
     {
@@ -42,12 +37,7 @@ const DeleteSchema = z.object({ date: DateSchema });
 
 export async function deleteBodyLog(input: z.infer<typeof DeleteSchema>) {
   const { date } = DeleteSchema.parse(input);
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const { error } = await supabase
     .from("body_logs")

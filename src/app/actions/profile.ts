@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/server";
 
 const SetDisplayNameSchema = z.object({
   name: z.string().trim().min(1).max(40),
@@ -12,11 +12,7 @@ export async function setDisplayName(
   input: z.infer<typeof SetDisplayNameSchema>
 ) {
   const { name } = SetDisplayNameSchema.parse(input);
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
+  const { supabase, user } = await requireUser();
 
   const { error } = await supabase
     .from("profiles")

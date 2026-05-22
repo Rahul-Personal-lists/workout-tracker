@@ -28,3 +28,14 @@ export async function createClient() {
     }
   );
 }
+
+// Server-action helper: middleware already gates unauthenticated requests, so
+// a missing user here means the session expired mid-flight — surface as error.
+export async function requireUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  return { supabase, user };
+}
