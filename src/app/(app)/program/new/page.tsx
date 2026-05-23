@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { BlankProgramForm } from "./blank-program-form";
+import { PresetList } from "../preset-list";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,23 @@ export default function NewProgramPage() {
         </Link>
         <h1 className="text-2xl font-semibold">New program</h1>
         <p className="text-xs text-neutral-500">
-          Set the structure here. Add exercises after.
+          Pick a template or build your own.
         </p>
       </header>
-      <BlankProgramForm />
+
+      <section className="space-y-2">
+        <h2 className="text-[11px] uppercase tracking-wide text-neutral-500">
+          Start from a template
+        </h2>
+        <PresetList />
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-[11px] uppercase tracking-wide text-neutral-500">
+          Or build your own
+        </h2>
+        <BlankProgramForm />
+      </section>
     </div>
   );
 }
