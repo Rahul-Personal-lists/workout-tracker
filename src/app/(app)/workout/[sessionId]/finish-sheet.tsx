@@ -1,0 +1,217 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { Camera, Image as ImageIcon, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { PhotoThumb } from "./photo-thumb";
+
+export function FinishSheet({
+  photos,
+  notes,
+  finishing,
+  uploadError,
+  finishedSuccessfully,
+  onAddPhotos,
+  onRemovePhoto,
+  onChangeNotes,
+  onClose,
+  onConfirm,
+  onSkip,
+}: {
+  photos: File[];
+  notes: string;
+  finishing: boolean;
+  uploadError: string | null;
+  finishedSuccessfully: boolean;
+  onAddPhotos: (list: FileList | null) => void;
+  onRemovePhoto: (idx: number) => void;
+  onChangeNotes: (v: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+  onSkip: () => void;
+}) {
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  return (
+    <>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
+      <div
+        className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Finish workout</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-9 w-9 -mr-2 flex items-center justify-center text-neutral-400"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs uppercase tracking-wide text-neutral-500">
+            Photos (optional)
+          </label>
+          {photos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {photos.map((file, i) => (
+                <PhotoThumb key={i} file={file} onRemove={() => onRemovePhoto(i)} />
+              ))}
+            </div>
+          ) : null}
+          {photos.length < 6 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="w-full flex items-center justify-center gap-2 h-12 rounded-md border border-dashed border-neutral-700 text-sm text-neutral-300"
+              >
+                <Camera className="w-4 h-4" />
+                <span>{photos.length === 0 ? "Add photo" : "Add more"}</span>
+              </button>
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  onAddPhotos(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  onAddPhotos(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </>
+          ) : null}
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs uppercase tracking-wide text-neutral-500">
+            Notes (optional)
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => onChangeNotes(e.target.value)}
+            rows={2}
+            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:border-neutral-600"
+            placeholder="Felt strong, bumped weight on…"
+          />
+        </div>
+
+        {uploadError ? (
+          <p className="rounded-md border border-red-500/40 bg-red-500/10 text-red-300 text-xs px-3 py-2">
+            {finishedSuccessfully ? (
+              <>
+                <span className="text-emerald-300">Your workout and notes are saved.</span>{" "}
+              </>
+            ) : null}
+            {uploadError}
+          </p>
+        ) : null}
+
+        {finishedSuccessfully && uploadError ? (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onSkip}
+              disabled={finishing}
+              className={cn(
+                "h-12 rounded-md font-medium bg-neutral-800 text-neutral-100",
+                finishing && "opacity-50"
+              )}
+            >
+              Skip & continue
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={finishing}
+              className={cn(
+                "h-12 rounded-md font-medium bg-emerald-500 text-black",
+                finishing && "opacity-50"
+              )}
+            >
+              {finishing ? "Retrying…" : "Retry"}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={finishing}
+            className={cn(
+              "w-full h-12 rounded-md font-medium bg-emerald-500 text-black",
+              finishing && "opacity-50"
+            )}
+          >
+            {finishing ? "Finishing…" : "Finish workout"}
+          </button>
+        )}
+      </div>
+    </div>
+
+    {pickerOpen ? (
+      <div
+        className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70"
+        onClick={() => setPickerOpen(false)}
+      >
+        <div
+          className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold">Add photo</h2>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              aria-label="Close"
+              className="h-9 w-9 -mr-2 flex items-center justify-center text-neutral-400"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPickerOpen(false);
+              cameraInputRef.current?.click();
+            }}
+            className="w-full flex items-center gap-3 h-12 px-3 rounded-md bg-neutral-900 border border-neutral-800 text-sm text-neutral-100"
+          >
+            <Camera className="w-4 h-4" />
+            <span>Take photo</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPickerOpen(false);
+              galleryInputRef.current?.click();
+            }}
+            className="w-full flex items-center gap-3 h-12 px-3 rounded-md bg-neutral-900 border border-neutral-800 text-sm text-neutral-100"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Choose from library</span>
+          </button>
+        </div>
+      </div>
+    ) : null}
+    </>
+  );
+}

@@ -8,7 +8,8 @@ import {
   type ProgramExercise,
 } from "@/lib/queries";
 import { getPlannedReps, getPlannedSeconds, getPlannedWeight } from "@/lib/progression";
-import { WorkoutClient, type ExerciseRow } from "./workout-client";
+import { WorkoutClient } from "./workout-client";
+import type { ExerciseRow } from "./types";
 
 export default async function WorkoutPage({
   params,
