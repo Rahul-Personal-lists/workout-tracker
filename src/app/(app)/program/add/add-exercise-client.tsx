@@ -254,8 +254,9 @@ function ConfigForm({
   onCancel: () => void;
 }) {
   const [name, setName] = useState(entry.name);
+  const isTimeDefault = entry.category === "cardio" || entry.force === "static";
   const [kind, setKind] = useState<"reps" | "time">(
-    entry.category === "cardio" ? "time" : "reps"
+    isTimeDefault ? "time" : "reps"
   );
   const [sets, setSets] = useState(entry.category === "cardio" ? "1" : "3");
   const [baseReps, setBaseReps] = useState("10");
