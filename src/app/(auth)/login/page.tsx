@@ -4,21 +4,23 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LogoKettlePop } from "@/components/logo-kettle-pop";
 
+type Status = "idle" | "sending" | "sent" | "verifying";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<Status>("idle");
+  const [resending, setResending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const err = new URLSearchParams(window.location.search).get("error");
+    if (err) setErrorMsg(err);
   }, []);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus("sending");
-    setErrorMsg(null);
-
+  async function sendMagicLink() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -26,13 +28,48 @@ export default function LoginPage() {
         emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
     });
+    return error;
+  }
 
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg(null);
+    const error = await sendMagicLink();
     if (error) {
-      setStatus("error");
+      setStatus("idle");
       setErrorMsg(error.message);
       return;
     }
     setStatus("sent");
+  }
+
+  async function onVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("verifying");
+    setErrorMsg(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: "email",
+    });
+    if (error) {
+      setStatus("sent");
+      setErrorMsg(error.message);
+      return;
+    }
+    // Hard navigation so the proxy middleware picks up the new auth cookies.
+    window.location.href = "/today";
+  }
+
+  async function resend() {
+    setResending(true);
+    setErrorMsg(null);
+    setCode("");
+    const error = await sendMagicLink();
+    setResending(false);
+    if (error) setErrorMsg(error.message);
   }
 
   return (
@@ -51,10 +88,43 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold text-center">Welcome to Workout Tracker</h1>
         </div>
 
-        {status === "sent" ? (
-          <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm">
-            Check <span className="font-medium">{email}</span> for the sign-in link.
-          </div>
+        {status === "sent" || status === "verifying" ? (
+          <form onSubmit={onVerifyOtp} className="space-y-4">
+            <p className="text-sm text-neutral-300">
+              Check <span className="font-medium">{email}</span> for the link, or enter the 6-digit code below.
+            </p>
+            <input
+              type="text"
+              required
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              placeholder="123456"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 px-4 text-lg tracking-[0.4em] text-center outline-none focus:border-neutral-600"
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={status === "verifying" || code.length !== 6}
+              className="w-full h-12 rounded-md bg-white text-black font-medium disabled:opacity-50"
+            >
+              {status === "verifying" ? "Verifying…" : "Verify code"}
+            </button>
+            {errorMsg ? (
+              <p className="text-sm text-red-400">{errorMsg}</p>
+            ) : null}
+            <button
+              type="button"
+              onClick={resend}
+              disabled={resending}
+              className="w-full text-sm text-neutral-400 hover:text-neutral-200 disabled:opacity-50"
+            >
+              {resending ? "Sending…" : "Send a new code"}
+            </button>
+          </form>
         ) : mounted ? (
           <form onSubmit={onSubmit} className="space-y-4">
             <input
