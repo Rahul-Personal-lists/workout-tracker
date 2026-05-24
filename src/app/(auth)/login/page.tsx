@@ -20,14 +20,9 @@ export default function LoginPage() {
     if (err) setErrorMsg(err);
   }, []);
 
-  async function sendMagicLink() {
+  async function sendCode() {
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-      },
-    });
+    const { error } = await supabase.auth.signInWithOtp({ email });
     return error;
   }
 
@@ -35,7 +30,7 @@ export default function LoginPage() {
     e.preventDefault();
     setStatus("sending");
     setErrorMsg(null);
-    const error = await sendMagicLink();
+    const error = await sendCode();
     if (error) {
       setStatus("idle");
       setErrorMsg(error.message);
@@ -67,7 +62,7 @@ export default function LoginPage() {
     setResending(true);
     setErrorMsg(null);
     setCode("");
-    const error = await sendMagicLink();
+    const error = await sendCode();
     setResending(false);
     if (error) setErrorMsg(error.message);
   }
@@ -91,7 +86,7 @@ export default function LoginPage() {
         {status === "sent" || status === "verifying" ? (
           <form onSubmit={onVerifyOtp} className="space-y-4">
             <p className="text-sm text-neutral-300">
-              Check <span className="font-medium">{email}</span> for the link, or enter the 6-digit code below.
+              We sent a 6-digit code to <span className="font-medium">{email}</span>. Enter it below.
             </p>
             <input
               type="text"
@@ -142,7 +137,7 @@ export default function LoginPage() {
               disabled={status === "sending"}
               className="w-full h-12 rounded-md bg-white text-black font-medium disabled:opacity-50"
             >
-              {status === "sending" ? "Sending…" : "Send magic link"}
+              {status === "sending" ? "Sending…" : "Send code"}
             </button>
             {errorMsg ? (
               <p className="text-sm text-red-400">{errorMsg}</p>
