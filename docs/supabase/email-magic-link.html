@@ -1,0 +1,25 @@
+<!--
+  Supabase "Magic Link" email template — OTP-only.
+
+  Paste into: https://supabase.com/dashboard/project/stwmtvigdbtmmedevqip/auth/templates
+  Pick "Magic Link" → replace the Message (HTML) body → Save.
+
+  This template intentionally omits {{ .ConfirmationURL }} so the email shows
+  only a 6-digit code. Background: clicking a magic link in the iOS PWA bounces
+  the browser context and loses auth (see PR #51). The login page handles
+  verifyOtp with type: "email", so the code below is the entire sign-in flow.
+
+  Supabase still generates the link server-side using the project Site URL — we
+  just don't surface it. No app code depends on the link being rendered.
+
+  Template variables: {{ .Token }} = 6-digit OTP.
+-->
+<h2>Your sign-in code</h2>
+
+<p>Enter this 6-digit code in Workout Tracker:</p>
+
+<p style="font-size:32px;letter-spacing:10px;font-weight:700;font-family:ui-monospace,Menlo,monospace;">
+  {{ .Token }}
+</p>
+
+<p style="color:#888;font-size:12px;">This code expires shortly. If you didn't request this, you can ignore this email.</p>
