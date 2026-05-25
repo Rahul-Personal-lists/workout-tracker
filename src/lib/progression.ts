@@ -35,15 +35,22 @@ export function getPlannedWeight(
         progressionWeeks,
       );
     }
-    // Default deload: 70% of the linear (non-overlap) ramp, so the
-    // deload weight is consistent regardless of overlap mode.
+    // Default deload: 70% of the linear (non-overlap) ramp, snapped to the
+    // nearest increment step, then capped at one step below the previous
+    // working week so the deload is always strictly lower than what you just
+    // lifted — round-half-up can otherwise land on the same step as W{N-1}.
     const normalWeight = startWeight + increment * linearSteps;
     const deloadRaw = normalWeight * 0.7;
-    const stepsFromStart = Math.max(
+    const rawSteps = Math.max(
       0,
       Math.round((deloadRaw - startWeight) / increment),
     );
-    return startWeight + stepsFromStart * increment;
+    const prevWorkSteps = Math.floor(
+      Math.max(0, nonDeloadWeeksBefore - 1 - deloadsBefore) /
+        Math.max(1, progressionWeeks),
+    );
+    const cappedSteps = Math.max(0, Math.min(rawSteps, prevWorkSteps - 1));
+    return startWeight + cappedSteps * increment;
   }
 
   // After a deload, restart from the previous block's peak instead of
