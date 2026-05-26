@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, requireUser } from "@/lib/supabase/server";
+import { reapStaleSession } from "@/lib/sessions";
 
 const StartSchema = z.object({
   programDayId: z.string().uuid(),
@@ -14,20 +15,10 @@ export async function startWorkout(input: z.infer<typeof StartSchema>) {
   const { programDayId, weekNumber } = StartSchema.parse(input);
   const { supabase, user } = await requireUser();
 
-  // If an in-progress session already exists, send the user to it instead
-  // of creating a duplicate. Page-level redirects already cover the happy
-  // path; this is the action-side guard for double-tap or stale-cache races.
-  const { data: existing } = await supabase
-    .from("workout_sessions")
-    .select("id")
-    .eq("user_id", user.id)
-    .is("ended_at", null)
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (existing) {
+  const resumeId = await reapStaleSession(supabase, user.id);
+  if (resumeId) {
     revalidatePath("/today");
-    redirect(`/workout/${existing.id}`);
+    redirect(`/workout/${resumeId}`);
   }
 
   const { data, error } = await supabase
@@ -54,17 +45,10 @@ export async function skipRestDay(input: z.infer<typeof SkipRestDaySchema>) {
   const { programDayId, weekNumber } = SkipRestDaySchema.parse(input);
   const { supabase, user } = await requireUser();
 
-  const { data: existing } = await supabase
-    .from("workout_sessions")
-    .select("id")
-    .eq("user_id", user.id)
-    .is("ended_at", null)
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (existing) {
+  const resumeId = await reapStaleSession(supabase, user.id);
+  if (resumeId) {
     revalidatePath("/today");
-    redirect(`/workout/${existing.id}`);
+    redirect(`/workout/${resumeId}`);
   }
 
   const { count } = await supabase

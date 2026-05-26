@@ -8,6 +8,8 @@ import {
 } from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatDuration, formatWeight } from "@/lib/format";
+import { reapStaleSession } from "@/lib/sessions";
+import { createClient } from "@/lib/supabase/server";
 import { getUserTimezone, weekdayInTz } from "@/lib/tz";
 import { StartWorkoutButton } from "./start-workout-button";
 import { skipRestDay, undoLastSkip } from "@/app/actions/workout";
@@ -47,6 +49,10 @@ function progressionHint(
 }
 
 export default async function TodayPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) await reapStaleSession(supabase, user.id);
+
   const [name, tz, undoable, program] = await Promise.all([
     getDisplayName(),
     getUserTimezone(),
