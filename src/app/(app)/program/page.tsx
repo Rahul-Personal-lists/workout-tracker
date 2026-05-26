@@ -139,9 +139,7 @@ export default async function ProgramPage({
         <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
           <p className="font-medium text-neutral-100">No exercises yet.</p>
           <p className="text-neutral-400 mt-1">
-            Add them per day below — tap the{" "}
-            <span aria-hidden>⋯</span>
-            <span className="sr-only">menu</span> on a day to add exercises.
+            Tap <span className="text-neutral-200">+ Add exercise</span> on any day below to get started.
           </p>
         </div>
       ) : null}
@@ -207,6 +205,14 @@ export default async function ProgramPage({
                 </li>
               ) : null}
             </ul>
+            <div className="px-3 pb-3 pt-1">
+              <Link
+                href={`/program/add?day=${day.id}&week=${selectedWeek}`}
+                className="btn-ghost-add h-9 text-xs"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add exercise
+              </Link>
+            </div>
           </li>
           );
         })}

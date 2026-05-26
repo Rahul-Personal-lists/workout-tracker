@@ -107,6 +107,31 @@ npm run typecheck
 
 The seed script auto-creates the auth user (admin API) if missing, and on re-run only updates `image_url` for existing rows by exercise name.
 
+## Previewing auth-gated pages (for Claude)
+
+Every `(app)/*` route is behind the magic-link OTP gate in [src/middleware.ts](src/middleware.ts). To verify a change in `preview_*` tools, log in once per session — don't redo this for every navigation:
+
+1. `preview_start` → `next-dev`, then navigate to `/login`.
+2. Fill email via React-aware input event (a plain `preview_fill` won't update React state):
+   ```js
+   const i = document.querySelector('input[type=email]');
+   const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+   set.call(i, 'rahul@satel.ca');
+   i.dispatchEvent(new Event('input', { bubbles: true }));
+   document.querySelector('form').requestSubmit();
+   ```
+3. Ask Rahul for the 6-digit code that hits his inbox.
+4. Verify via @supabase/ssr's `createBrowserClient` so cookies land in the format the SSR middleware reads (the page's own `verifyOtp` would also work, but it triggers a hard nav to `/today` that loses focus):
+   ```js
+   const { createBrowserClient } = await import('https://esm.sh/@supabase/ssr@0.10');
+   const sb = createBrowserClient('<NEXT_PUBLIC_SUPABASE_URL>', '<NEXT_PUBLIC_SUPABASE_ANON_KEY>');
+   await sb.auth.verifyOtp({ email: 'rahul@satel.ca', token: '<otp>', type: 'email' });
+   ```
+   Pull the URL/anon key from `.env.local`.
+5. `window.location.assign('http://localhost:3000/<route>')` — cookies are now set.
+
+Watch out: Supabase rate-limits `signInWithOtp` (~60s between sends). If the form posts twice quickly you'll see "you can only request this after N seconds" — wait it out instead of spamming Send code.
+
 ## Known limitations / deferred
 
 - **Offline write queue.** Decided to ship without it; revisit if connection actually drops at the gym. Plan was IndexedDB queue on `logSet` calls + flush on reconnect.
