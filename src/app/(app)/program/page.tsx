@@ -9,7 +9,7 @@ import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { formatWeight } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
-import { ArchiveExerciseButton } from "./archive-button";
+import { ExerciseControls } from "./exercise-controls";
 import { DayControls } from "./day-controls";
 import { EditableProgramName } from "./editable-program-name";
 import { ProgramSwitcher } from "./program-switcher";
@@ -162,7 +162,7 @@ export default async function ProgramPage({
               />
             </header>
             <ul className="px-3 py-2 space-y-1.5">
-              {day.exercises.map((ex) => {
+              {day.exercises.map((ex, exIdx) => {
                 const w = getPlannedWeight(
                   ex.start_weight,
                   ex.increment,
@@ -195,7 +195,11 @@ export default async function ProgramPage({
                       {ex.sets}×{r ?? "—"}
                       {w !== null ? ` · ${formatWeight(w)} lb` : ""}
                     </span>
-                    <ArchiveExerciseButton exerciseId={ex.id} />
+                    <ExerciseControls
+                      exerciseId={ex.id}
+                      isFirst={exIdx === 0}
+                      isLast={exIdx === day.exercises.length - 1}
+                    />
                   </li>
                 );
               })}

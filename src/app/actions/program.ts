@@ -109,6 +109,52 @@ export async function unarchiveExerciseFromProgram(
   revalidatePath("/today");
 }
 
+const ReorderExerciseSchema = z.object({
+  exerciseId: z.string().uuid(),
+  direction: z.enum(["up", "down"]),
+});
+
+export async function reorderExercise(
+  input: z.infer<typeof ReorderExerciseSchema>
+) {
+  const { exerciseId, direction } = ReorderExerciseSchema.parse(input);
+  const supabase = await createClient();
+
+  const { data: target, error: tErr } = await supabase
+    .from("program_exercises")
+    .select("id, program_day_id, order_index")
+    .eq("id", exerciseId)
+    .single();
+  if (tErr || !target) throw tErr ?? new Error("Exercise not found");
+
+  const { data: siblings, error: sErr } = await supabase
+    .from("program_exercises")
+    .select("id, order_index")
+    .eq("program_day_id", target.program_day_id)
+    .is("archived_at", null)
+    .order("order_index", { ascending: true });
+  if (sErr) throw sErr;
+
+  const idx = siblings.findIndex((e) => e.id === exerciseId);
+  const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (neighborIdx < 0 || neighborIdx >= siblings.length) return;
+
+  const neighbor = siblings[neighborIdx];
+  const { error: e1 } = await supabase
+    .from("program_exercises")
+    .update({ order_index: neighbor.order_index })
+    .eq("id", target.id);
+  if (e1) throw e1;
+  const { error: e2 } = await supabase
+    .from("program_exercises")
+    .update({ order_index: target.order_index })
+    .eq("id", neighbor.id);
+  if (e2) throw e2;
+
+  revalidatePath("/program");
+  revalidatePath("/today");
+}
+
 // ──────────────────────────────────────────────
 // Program creation / activation / archive
 // ──────────────────────────────────────────────
