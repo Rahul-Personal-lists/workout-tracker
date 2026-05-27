@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ListChecks, Plus } from "lucide-react";
 import {
   getAllPrograms,
   getCurrentProgram,
@@ -136,11 +136,18 @@ export default async function ProgramPage({
       </div>
 
       {programIsEmpty ? (
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-foreground-muted">
-          <p className="font-medium text-foreground">No exercises yet.</p>
-          <p className="text-foreground-muted mt-1">
-            Tap <span className="text-foreground">+ Add exercise</span> on any day below to get started.
-          </p>
+        <div className="rounded-2xl border border-border bg-surface p-5 text-center space-y-3">
+          <ListChecks
+            aria-hidden="true"
+            strokeWidth={1.5}
+            className="w-10 h-10 text-foreground-muted mx-auto"
+          />
+          <div className="space-y-1">
+            <p className="font-medium">No exercises yet</p>
+            <p className="text-sm text-foreground-muted">
+              Tap <span className="text-foreground">+ Add exercise</span> on any day below to get started.
+            </p>
+          </div>
         </div>
       ) : null}
 

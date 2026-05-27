@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, TrendingUp } from "lucide-react";
 import { upsertBodyLog, deleteBodyLog } from "@/app/actions/body";
 import type { BodyLogRow } from "@/lib/queries";
 import { cn } from "@/lib/utils";
@@ -223,9 +223,16 @@ export function BodyClient({ initialLogs }: { initialLogs: BodyLogRow[] }) {
           <BodyChart data={recent} />
         </div>
       ) : (
-        <p className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-4 text-center text-sm text-neutral-400">
-          Log a few days to see trends.
-        </p>
+        <div className="rounded-2xl border border-border bg-surface p-6 text-center space-y-3">
+          <TrendingUp
+            aria-hidden="true"
+            strokeWidth={1.5}
+            className="w-10 h-10 text-foreground-muted mx-auto"
+          />
+          <p className="text-sm text-foreground-muted">
+            Log a few days to see trends.
+          </p>
+        </div>
       )}
 
       <section className="space-y-2">
@@ -233,7 +240,7 @@ export function BodyClient({ initialLogs }: { initialLogs: BodyLogRow[] }) {
           History
         </h2>
         {logs.length === 0 ? (
-          <p className="text-sm text-neutral-500">No entries yet.</p>
+          <p className="text-sm text-foreground-muted">No entries yet.</p>
         ) : (
           <ul className="rounded-lg border border-neutral-800 bg-neutral-900 divide-y divide-neutral-800">
             {logs.map((l) => (

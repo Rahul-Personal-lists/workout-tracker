@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LineChart } from "lucide-react";
 import { getExerciseHistory } from "@/lib/queries";
 import { formatDuration } from "@/lib/format";
 import { ExerciseChart, type ChartPoint } from "./exercise-chart";
@@ -85,8 +85,18 @@ export default async function ExerciseHistoryPage({
       </header>
 
       {points.length === 0 ? (
-        <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-400">
-          No completed sets yet. Once you log this exercise, the line shows up here.
+        <div className="rounded-2xl border border-border bg-surface p-6 text-center space-y-3">
+          <LineChart
+            aria-hidden="true"
+            strokeWidth={1.5}
+            className="w-10 h-10 text-foreground-muted mx-auto"
+          />
+          <div className="space-y-1">
+            <p className="font-medium">No data yet</p>
+            <p className="text-sm text-foreground-muted">
+              Once you log this exercise, the line shows up here.
+            </p>
+          </div>
         </div>
       ) : (
         <ExerciseChart points={points} isTime={isTime} />

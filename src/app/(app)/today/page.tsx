@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CalendarDays, Coffee, Dumbbell, Trophy } from "lucide-react";
 import {
   getCurrentProgram,
   getDisplayName,
@@ -97,8 +98,18 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-foreground-muted space-y-3">
-          <p>You don&apos;t have a program yet.</p>
+        <div className="rounded-2xl border border-border bg-surface p-6 text-center space-y-4">
+          <Dumbbell
+            aria-hidden="true"
+            strokeWidth={1.5}
+            className="w-12 h-12 text-foreground-muted mx-auto"
+          />
+          <div className="space-y-1">
+            <p className="font-medium">Start with a program</p>
+            <p className="text-sm text-foreground-muted">
+              Pick a template or build your own.
+            </p>
+          </div>
           <Link
             href="/program"
             data-tour="today-cta"
@@ -115,8 +126,18 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-foreground-muted space-y-3">
-          <p>{program.name} has no days yet.</p>
+        <div className="rounded-2xl border border-border bg-surface p-6 text-center space-y-4">
+          <CalendarDays
+            aria-hidden="true"
+            strokeWidth={1.5}
+            className="w-12 h-12 text-foreground-muted mx-auto"
+          />
+          <div className="space-y-1">
+            <p className="font-medium">Add days to {program.name}</p>
+            <p className="text-sm text-foreground-muted">
+              Set up the training days you want to follow.
+            </p>
+          </div>
           <Link
             href="/program"
             className="btn-primary w-full h-12 text-sm"
@@ -142,16 +163,25 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm">
-          <span aria-hidden="true">🎉</span> You finished all {program.weeks}{" "}
-          weeks. Time to plan the next block.
+        <div className="rounded-2xl border border-border bg-surface p-6 text-center space-y-4">
+          <Trophy
+            aria-hidden="true"
+            strokeWidth={1.5}
+            className="w-12 h-12 text-accent mx-auto"
+          />
+          <div className="space-y-1">
+            <p className="font-medium">You did it!</p>
+            <p className="text-sm text-foreground-muted">
+              Finished all {program.weeks} weeks. Time to plan the next block.
+            </p>
+          </div>
+          <Link
+            href="/calendar"
+            className="btn-secondary w-full h-12 text-sm"
+          >
+            View calendar
+          </Link>
         </div>
-        <Link
-          href="/calendar"
-          className="btn-secondary w-full h-12 text-sm"
-        >
-          View calendar
-        </Link>
       </div>
     );
   }
@@ -163,26 +193,36 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-foreground-muted space-y-3">
-          <p>
-            {day.label}: {day.title} has no exercises yet.
-          </p>
-          <form
-            action={async () => {
-              "use server";
-              await skipRestDay({ programDayId: dayId, weekNumber });
-            }}
-          >
-            <button type="submit" className="btn-primary w-full h-12 text-sm">
-              Skip — rest day
-            </button>
-          </form>
-          <Link
-            href={`/program/add?day=${dayId}&week=${weekNumber}`}
-            className="btn-secondary w-full h-12 text-sm"
-          >
-            Add exercises
-          </Link>
+        <div className="rounded-2xl border border-border bg-surface p-6 text-center space-y-4">
+          <Coffee
+            aria-hidden="true"
+            strokeWidth={1.5}
+            className="w-12 h-12 text-foreground-muted mx-auto"
+          />
+          <div className="space-y-1">
+            <p className="font-medium">Rest day?</p>
+            <p className="text-sm text-foreground-muted">
+              {day.label}: {day.title} has no exercises planned.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <form
+              action={async () => {
+                "use server";
+                await skipRestDay({ programDayId: dayId, weekNumber });
+              }}
+            >
+              <button type="submit" className="btn-primary w-full h-12 text-sm">
+                Skip — rest day
+              </button>
+            </form>
+            <Link
+              href={`/program/add?day=${dayId}&week=${weekNumber}`}
+              className="btn-secondary w-full h-12 text-sm"
+            >
+              Add exercises
+            </Link>
+          </div>
         </div>
       </div>
     );
