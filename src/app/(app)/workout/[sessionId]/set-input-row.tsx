@@ -56,6 +56,9 @@ export function SetInputRow({
     const parsedR = repsStrRef.current.trim() === "" ? null : parseInt(repsStrRef.current, 10);
     const validW = Number.isFinite(parsedW as number) ? (parsedW as number) : null;
     const validR = Number.isFinite(parsedR as number) ? (parsedR as number) : null;
+    if (next && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate?.(15);
+    }
     onChange(
       { completed: next, actualWeight: validW, actualReps: validR },
       true
@@ -127,7 +130,15 @@ export function SetInputRow({
               : "border-border-strong text-neutral-500"
           )}
         >
-          <Check className="w-5 h-5" strokeWidth={3} />
+          <span
+            key={String(set.completed)}
+            className={cn(
+              "flex items-center justify-center",
+              set.completed && "animate-set-check"
+            )}
+          >
+            <Check className="w-5 h-5" strokeWidth={3} />
+          </span>
         </button>
       </div>
     </SwipeRow>

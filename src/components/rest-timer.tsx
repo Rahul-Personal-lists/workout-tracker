@@ -73,9 +73,15 @@ export function RestTimerBar() {
   // Freeze the displayed remaining at the moment of pause.
   const referenceNow = pausedAt ?? now;
   const remaining = Math.max(0, Math.ceil((endsAt - referenceNow) / 1000));
+  const isEnding = pausedAt === null && remaining > 0 && remaining < 5;
 
   return (
-    <div className="rounded-2xl border border-accent/40 bg-accent/10 px-3 py-2 flex items-center gap-3">
+    <div
+      className={cn(
+        "rounded-2xl border border-accent/40 bg-accent/10 px-3 py-2 flex items-center gap-3",
+        isEnding && "animate-pulse"
+      )}
+    >
       <span className="text-xs uppercase tracking-wide text-accent">Rest</span>
       <span className="text-lg font-semibold tabular-nums text-accent flex-1 text-center">
         {formatDuration(remaining)}

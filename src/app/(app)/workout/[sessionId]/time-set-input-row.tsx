@@ -75,12 +75,18 @@ export function TimeSetInputRow({
     setEndsAt(null);
     setTargetSec(null);
     setDurationStr(formatDuration(elapsed));
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate?.(15);
+    }
     onChange({ completed: true, actualSeconds: elapsed }, true);
   }
 
   function toggleComplete() {
     const next = !set.completed;
     const parsed = parseDuration(durationStrRef.current);
+    if (next && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate?.(15);
+    }
     onChange({ completed: next, actualSeconds: parsed }, true);
   }
 
@@ -174,7 +180,15 @@ export function TimeSetInputRow({
                   : "border-border-strong text-neutral-500"
               )}
             >
-              <Check className="w-5 h-5" strokeWidth={3} />
+              <span
+                key={String(set.completed)}
+                className={cn(
+                  "flex items-center justify-center",
+                  set.completed && "animate-set-check"
+                )}
+              >
+                <Check className="w-5 h-5" strokeWidth={3} />
+              </span>
             </button>
           </>
         )}
