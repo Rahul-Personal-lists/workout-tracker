@@ -1,4 +1,5 @@
 @AGENTS.md
+@.claude/sessions.md
 
 # Workout Tracker — project memory
 
