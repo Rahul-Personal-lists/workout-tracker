@@ -109,28 +109,41 @@ The seed script auto-creates the auth user (admin API) if missing, and on re-run
 
 ## Previewing auth-gated pages (for Claude)
 
-Every `(app)/*` route is behind the magic-link OTP gate in [src/middleware.ts](src/middleware.ts). To verify a change in `preview_*` tools, log in once per session — don't redo this for every navigation:
+Every `(app)/*` route is behind the magic-link OTP gate in [src/middleware.ts](src/middleware.ts).
 
-1. `preview_start` → `next-dev`, then navigate to `/login`.
-2. Fill email via React-aware input event (a plain `preview_fill` won't update React state):
-   ```js
-   const i = document.querySelector('input[type=email]');
-   const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-   set.call(i, 'rahul@satel.ca');
-   i.dispatchEvent(new Event('input', { bubbles: true }));
-   document.querySelector('form').requestSubmit();
+**Use the test account `claude-test@example.com` for any verification that touches workout/program/session data.** Rahul's real account (`rahul@satel.ca`) tracks his actual program — starting a workout, skipping rest days, or reordering exercises there mutates real data he needs at the gym. The test account is a throwaway with the same seeded 12-week program, so all flows render identically.
+
+To authenticate the preview browser:
+
+1. `preview_start` → `next-dev`.
+2. Generate an OTP server-side (no email is sent):
+   ```bash
+   npx tsx scripts/test-otp.ts  # defaults to claude-test@example.com
    ```
-3. Ask Rahul for the 6-digit code that hits his inbox.
-4. Verify via @supabase/ssr's `createBrowserClient` so cookies land in the format the SSR middleware reads (the page's own `verifyOtp` would also work, but it triggers a hard nav to `/today` that loses focus):
+3. Set cookies via `@supabase/ssr`'s `createBrowserClient` (pulls URL/anon from `.env.local`):
    ```js
+   // Clear any prior session first if you're switching accounts.
+   document.cookie.split(';').forEach(c => {
+     const name = c.split('=')[0].trim();
+     if (name.startsWith('sb-')) document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+   });
    const { createBrowserClient } = await import('https://esm.sh/@supabase/ssr@0.10');
    const sb = createBrowserClient('<NEXT_PUBLIC_SUPABASE_URL>', '<NEXT_PUBLIC_SUPABASE_ANON_KEY>');
-   await sb.auth.verifyOtp({ email: 'rahul@satel.ca', token: '<otp>', type: 'email' });
+   await sb.auth.verifyOtp({ email: 'claude-test@example.com', token: '<otp>', type: 'email' });
    ```
-   Pull the URL/anon key from `.env.local`.
-5. `window.location.assign('http://localhost:3000/<route>')` — cookies are now set.
+4. `window.location.assign('http://localhost:3000/<route>')` — cookies are now set.
 
-Watch out: Supabase rate-limits `signInWithOtp` (~60s between sends). If the form posts twice quickly you'll see "you can only request this after N seconds" — wait it out instead of spamming Send code.
+If a flow specifically needs Rahul's real history (e.g. verifying a UI bug only on his data), ask him for the OTP that hits his inbox after submitting the login form — but **clean up any sessions you create** before ending the turn (use service-role to delete the session row by id).
+
+Re-rendering React-controlled inputs from `preview_eval` needs the native setter, not `.value =`:
+```js
+const i = document.querySelector('input[type=email]');
+const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+set.call(i, 'foo@bar.com');
+i.dispatchEvent(new Event('input', { bubbles: true }));
+```
+
+Watch out: Supabase rate-limits `signInWithOtp` (~60s between sends). The `scripts/test-otp.ts` admin path doesn't trigger that, so prefer it.
 
 ## Known limitations / deferred
 
