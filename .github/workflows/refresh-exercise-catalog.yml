@@ -1,0 +1,56 @@
+name: Refresh exercise catalog
+
+on:
+  schedule:
+    # Monday 03:00 UTC — 1 hour after the weekly-summary cron to avoid concurrent load.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Upstream git ref to fetch from (default: main)"
+        required: false
+        default: "main"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh catalog
+        env:
+          REF: ${{ github.event.inputs.ref || 'main' }}
+        run: |
+          npm run refresh-catalog -- --ref "$REF" --no-db --force | tee refresh-report.txt
+
+      - name: Build PR body
+        run: |
+          {
+            echo "Automated weekly refresh of \`public/data/exercises-catalog.json\` from [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db)."
+            echo
+            echo '```'
+            cat refresh-report.txt
+            echo '```'
+            echo
+            echo "If the report flags **primary[] changed** or **removed**, re-run \`npm run refresh-catalog\` locally (with Supabase env vars) to see the full DB-reference audit before merging."
+          } > pr-body.md
+
+      - name: Open PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/refresh-exercise-catalog
+          commit-message: "chore: refresh exercise catalog"
+          title: "chore: refresh exercise catalog"
+          body-path: pr-body.md
+          delete-branch: true
