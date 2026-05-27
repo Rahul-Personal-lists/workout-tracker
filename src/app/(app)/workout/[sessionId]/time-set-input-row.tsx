@@ -107,9 +107,9 @@ export function TimeSetInputRow({
         className={cn(
           "grid items-center gap-2 rounded-md px-2 py-1.5",
           running
-            ? "grid-cols-[1fr_44px]"
-            : "grid-cols-[1fr_44px_44px]",
-          set.completed && !running ? "bg-neutral-800/60" : "bg-neutral-950"
+            ? "grid-cols-[1fr_56px]"
+            : "grid-cols-[1fr_56px_56px]",
+          set.completed && !running ? "bg-neutral-800/60" : "bg-background"
         )}
       >
         <label className="flex flex-col min-w-0">
@@ -118,7 +118,7 @@ export function TimeSetInputRow({
               role="timer"
               aria-live="polite"
               aria-label={`Time remaining ${formatDuration(remaining)}`}
-              className="w-full min-w-0 h-11 flex items-center justify-center text-xl font-semibold tabular-nums text-emerald-400"
+              className="w-full min-w-0 h-14 flex items-center justify-center text-3xl font-semibold tabular-nums text-accent"
             >
               {formatDuration(remaining)}
             </div>
@@ -132,8 +132,10 @@ export function TimeSetInputRow({
               onBlur={commitOnBlur}
               placeholder={placeholder}
               className={cn(
-                "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
-                set.completed && "text-neutral-400"
+                "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+                set.completed
+                  ? "text-base text-foreground-muted"
+                  : "text-2xl font-semibold"
               )}
             />
           )}
@@ -146,7 +148,7 @@ export function TimeSetInputRow({
             type="button"
             aria-label="Stop timer"
             onClick={stopCountdown}
-            className="h-11 w-11 rounded-md flex items-center justify-center bg-emerald-500 border border-emerald-500 text-black"
+            className="h-14 w-14 rounded-xl flex items-center justify-center bg-emerald-500 border border-emerald-500 text-black"
           >
             <Square className="w-4 h-4" fill="currentColor" strokeWidth={0} />
           </button>
@@ -157,7 +159,7 @@ export function TimeSetInputRow({
               aria-label="Start timer"
               onClick={startCountdown}
               disabled={!canStart}
-              className="h-11 w-11 rounded-md flex items-center justify-center border border-neutral-700 text-neutral-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="h-14 w-14 rounded-xl flex items-center justify-center border border-border-strong text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Play className="w-4 h-4" fill="currentColor" strokeWidth={0} />
             </button>
@@ -166,10 +168,10 @@ export function TimeSetInputRow({
               aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
               onClick={toggleComplete}
               className={cn(
-                "h-11 w-11 rounded-md flex items-center justify-center border transition-colors",
+                "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors",
                 set.completed
                   ? "bg-emerald-500 border-emerald-500 text-black"
-                  : "border-neutral-700 text-neutral-500"
+                  : "border-border-strong text-neutral-500"
               )}
             >
               <Check className="w-5 h-5" strokeWidth={3} />

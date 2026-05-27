@@ -159,8 +159,8 @@ export function ExerciseCard({
               className={cn(
                 "grid gap-2 px-2 text-[10px] uppercase tracking-wide text-neutral-500",
                 isTime
-                  ? "grid-cols-[1fr_44px]"
-                  : "grid-cols-[1fr_1fr_44px]"
+                  ? "grid-cols-[1fr_56px]"
+                  : "grid-cols-[1fr_1fr_56px]"
               )}
             >
               {isTime ? (
