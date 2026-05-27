@@ -14,6 +14,7 @@ import {
   recordSessionPhotos,
   resumeSession,
 } from "@/app/actions/workout";
+import { reorderExercise } from "@/app/actions/program";
 import { RestTimerBar } from "@/components/rest-timer";
 import { DayNotePopover } from "@/components/day-note-popover";
 import { useRestTimer } from "@/lib/stores/rest-timer";
@@ -177,6 +178,23 @@ export function WorkoutClient({
       setNumber,
     }).catch((err) => {
       console.error("deleteSetLog failed", err);
+      setExercises(snapshot);
+    });
+  }
+
+  function reorderExerciseLocal(id: string, direction: "up" | "down") {
+    const snapshot = exercises;
+    setExercises((prev) => {
+      const idx = prev.findIndex((e) => e.id === id);
+      const step = direction === "up" ? -1 : 1;
+      const neighborIdx = idx + step;
+      if (idx === -1 || neighborIdx < 0 || neighborIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[neighborIdx]] = [next[neighborIdx], next[idx]];
+      return next;
+    });
+    reorderExercise({ exerciseId: id, direction }).catch((err) => {
+      console.error("reorder failed", err);
       setExercises(snapshot);
     });
   }
@@ -371,10 +389,12 @@ export function WorkoutClient({
       </p>
 
       <ul className="space-y-3">
-        {visibleExercises.map((ex) => (
+        {visibleExercises.map((ex, idx) => (
           <ExerciseCard
             key={ex.id}
             exercise={ex}
+            isFirst={idx === 0}
+            isLast={idx === visibleExercises.length - 1}
             onChange={(setNumber, patch, persist) => {
               const prev = ex.sets.find((s) => s.setNumber === setNumber);
               updateSet(ex.id, setNumber, patch);
@@ -386,6 +406,7 @@ export function WorkoutClient({
             onAddSet={() => addSet(ex.id)}
             onDeleteSet={(setNumber) => removeSet(ex.id, setNumber)}
             onHide={() => hideExercise(ex.id)}
+            onReorder={(direction) => reorderExerciseLocal(ex.id, direction)}
           />
         ))}
       </ul>

@@ -9,9 +9,20 @@ type Props = {
   exerciseId: string;
   isFirst: boolean;
   isLast: boolean;
+  showRemove?: boolean;
+  // If provided, replaces the default reorderExercise server call. The
+  // workout view uses this to swap local state optimistically before the
+  // server roundtrip, since the workout page doesn't auto-revalidate.
+  onReorder?: (direction: "up" | "down") => void;
 };
 
-export function ExerciseControls({ exerciseId, isFirst, isLast }: Props) {
+export function ExerciseControls({
+  exerciseId,
+  isFirst,
+  isLast,
+  showRemove = true,
+  onReorder,
+}: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -54,6 +65,9 @@ export function ExerciseControls({ exerciseId, isFirst, isLast }: Props) {
     setMenuOpen((o) => !o);
   }
 
+  const hasActions = !isFirst || !isLast || showRemove;
+  if (!hasActions) return null;
+
   return (
     <div ref={wrapperRef} className="relative">
       <button
@@ -83,7 +97,8 @@ export function ExerciseControls({ exerciseId, isFirst, isLast }: Props) {
               role="menuitem"
               onClick={() => {
                 setMenuOpen(false);
-                startTransition(() => reorderExercise({ exerciseId, direction: "up" }));
+                if (onReorder) onReorder("up");
+                else startTransition(() => reorderExercise({ exerciseId, direction: "up" }));
               }}
               disabled={pending}
               className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
@@ -97,7 +112,8 @@ export function ExerciseControls({ exerciseId, isFirst, isLast }: Props) {
               role="menuitem"
               onClick={() => {
                 setMenuOpen(false);
-                startTransition(() => reorderExercise({ exerciseId, direction: "down" }));
+                if (onReorder) onReorder("down");
+                else startTransition(() => reorderExercise({ exerciseId, direction: "down" }));
               }}
               disabled={pending}
               className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
@@ -105,18 +121,20 @@ export function ExerciseControls({ exerciseId, isFirst, isLast }: Props) {
               <ChevronDown className="w-3.5 h-3.5 text-neutral-500" /> Move down
             </button>
           )}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setMenuOpen(false);
-              setConfirming(true);
-              setTimeout(() => setConfirming(false), 2500);
-            }}
-            className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-neutral-800 inline-flex items-center gap-2"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Remove exercise
-          </button>
+          {showRemove && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                setConfirming(true);
+                setTimeout(() => setConfirming(false), 2500);
+              }}
+              className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-neutral-800 inline-flex items-center gap-2"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Remove exercise
+            </button>
+          )}
         </div>
       ) : null}
     </div>

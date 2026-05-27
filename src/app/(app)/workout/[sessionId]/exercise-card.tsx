@@ -13,18 +13,24 @@ import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { SwipeRow } from "@/components/swipe-row";
+import { ExerciseControls } from "@/app/(app)/program/exercise-controls";
 import type { ExerciseRow, SetRow } from "./types";
 import { SetInputRow } from "./set-input-row";
 import { TimeSetInputRow } from "./time-set-input-row";
 
 export function ExerciseCard({
   exercise,
+  isFirst,
+  isLast,
   onChange,
   onAddSet,
   onDeleteSet,
   onHide,
+  onReorder,
 }: {
   exercise: ExerciseRow;
+  isFirst: boolean;
+  isLast: boolean;
   onChange: (
     setNumber: number,
     patch: Partial<SetRow>,
@@ -33,6 +39,7 @@ export function ExerciseCard({
   onAddSet: () => void;
   onDeleteSet: (setNumber: number) => void;
   onHide: () => void;
+  onReorder: (direction: "up" | "down") => void;
 }) {
   const [zoomed, setZoomed] = useState(false);
   const allComplete =
@@ -138,6 +145,13 @@ export function ExerciseCard({
                 <p className="text-[11px] text-neutral-500">{exercise.note}</p>
               ) : null}
             </button>
+            <ExerciseControls
+              exerciseId={exercise.id}
+              isFirst={isFirst}
+              isLast={isLast}
+              showRemove={false}
+              onReorder={onReorder}
+            />
           </div>
 
           <div className="space-y-1.5">
