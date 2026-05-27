@@ -81,7 +81,7 @@ export function SetInputRow({
       <div
         className={cn(
           "grid grid-cols-[1fr_1fr_56px] items-center gap-2 rounded-md px-2 py-1.5",
-          set.completed ? "bg-neutral-800/60" : "bg-background"
+          set.completed ? "bg-accent/10" : "bg-background"
         )}
       >
         <label className="flex flex-col min-w-0">
