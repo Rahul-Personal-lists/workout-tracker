@@ -32,7 +32,7 @@ jobs:
         env:
           REF: ${{ github.event.inputs.ref || 'main' }}
         run: |
-          npm run refresh-catalog -- --ref "$REF" --no-db --force | tee refresh-report.txt
+          npm run refresh-catalog -- --ref "$REF" --no-db --force | tee /tmp/refresh-report.txt
 
       - name: Build PR body
         run: |
@@ -40,11 +40,11 @@ jobs:
             echo "Automated weekly refresh of \`public/data/exercises-catalog.json\` from [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db)."
             echo
             echo '```'
-            cat refresh-report.txt
+            cat /tmp/refresh-report.txt
             echo '```'
             echo
             echo "If the report flags **primary[] changed** or **removed**, re-run \`npm run refresh-catalog\` locally (with Supabase env vars) to see the full DB-reference audit before merging."
-          } > pr-body.md
+          } > /tmp/pr-body.md
 
       - name: Open PR
         uses: peter-evans/create-pull-request@v7
@@ -52,5 +52,6 @@ jobs:
           branch: chore/refresh-exercise-catalog
           commit-message: "chore: refresh exercise catalog"
           title: "chore: refresh exercise catalog"
-          body-path: pr-body.md
+          body-path: /tmp/pr-body.md
+          add-paths: public/data/exercises-catalog.json
           delete-branch: true
