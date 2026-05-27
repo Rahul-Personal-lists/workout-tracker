@@ -113,7 +113,7 @@ export default async function ProgramPage({
                   isSelected
                     ? "bg-accent text-accent-foreground border-accent"
                     : isCurrent
-                      ? "border-emerald-500 text-emerald-400"
+                      ? "border-accent/60 text-accent"
                       : "border-border text-foreground-muted"
                 )}
               >

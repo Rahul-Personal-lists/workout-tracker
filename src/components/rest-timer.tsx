@@ -51,7 +51,7 @@ export function RestTimerBar() {
               className={cn(
                 "h-8 px-2.5 rounded text-xs tabular-nums border",
                 d === defaultDuration
-                  ? "border-emerald-500 text-emerald-400"
+                  ? "border-accent text-accent"
                   : "border-border text-foreground-muted"
               )}
             >
@@ -75,16 +75,16 @@ export function RestTimerBar() {
   const remaining = Math.max(0, Math.ceil((endsAt - referenceNow) / 1000));
 
   return (
-    <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 flex items-center gap-3">
-      <span className="text-xs uppercase tracking-wide text-emerald-400">Rest</span>
-      <span className="text-lg font-semibold tabular-nums text-emerald-300 flex-1 text-center">
+    <div className="rounded-2xl border border-accent/40 bg-accent/10 px-3 py-2 flex items-center gap-3">
+      <span className="text-xs uppercase tracking-wide text-accent">Rest</span>
+      <span className="text-lg font-semibold tabular-nums text-accent flex-1 text-center">
         {formatDuration(remaining)}
       </span>
       <button
         type="button"
         aria-label="-15s"
         onClick={() => adjust(-15)}
-        className="h-8 w-8 rounded border border-emerald-500/40 text-emerald-300 flex items-center justify-center"
+        className="h-8 w-8 rounded-lg border border-accent/40 text-accent flex items-center justify-center"
       >
         <Minus className="w-4 h-4" />
       </button>
@@ -92,7 +92,7 @@ export function RestTimerBar() {
         type="button"
         aria-label="+15s"
         onClick={() => adjust(15)}
-        className="h-8 w-8 rounded border border-emerald-500/40 text-emerald-300 flex items-center justify-center"
+        className="h-8 w-8 rounded-lg border border-accent/40 text-accent flex items-center justify-center"
       >
         <Plus className="w-4 h-4" />
       </button>
@@ -100,7 +100,7 @@ export function RestTimerBar() {
         type="button"
         aria-label="Stop"
         onClick={stop}
-        className="h-8 w-8 rounded text-emerald-300 flex items-center justify-center"
+        className="h-8 w-8 rounded-lg text-accent flex items-center justify-center"
       >
         <X className="w-4 h-4" />
       </button>
