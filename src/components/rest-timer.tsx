@@ -38,8 +38,8 @@ export function RestTimerBar() {
 
   if (endsAt === null) {
     return (
-      <details className="rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs">
-        <summary className="cursor-pointer text-neutral-400 select-none">
+      <details className="rounded-2xl border border-border bg-surface px-3 py-2 text-xs">
+        <summary className="cursor-pointer text-foreground-muted select-none">
           Rest: {defaultDuration}s default
         </summary>
         <div className="flex items-center gap-1.5 mt-2">
@@ -52,7 +52,7 @@ export function RestTimerBar() {
                 "h-8 px-2.5 rounded text-xs tabular-nums border",
                 d === defaultDuration
                   ? "border-emerald-500 text-emerald-400"
-                  : "border-neutral-800 text-neutral-400"
+                  : "border-border text-foreground-muted"
               )}
             >
               {d}s
@@ -61,7 +61,7 @@ export function RestTimerBar() {
           <button
             type="button"
             onClick={() => start()}
-            className="ml-auto h-8 px-3 rounded text-xs bg-neutral-800 text-neutral-200"
+            className="ml-auto h-8 px-3 rounded-lg text-xs border border-border text-foreground hover:bg-surface-hover"
           >
             Start
           </button>
@@ -75,7 +75,7 @@ export function RestTimerBar() {
   const remaining = Math.max(0, Math.ceil((endsAt - referenceNow) / 1000));
 
   return (
-    <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 flex items-center gap-3">
+    <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 flex items-center gap-3">
       <span className="text-xs uppercase tracking-wide text-emerald-400">Rest</span>
       <span className="text-lg font-semibold tabular-nums text-emerald-300 flex-1 text-center">
         {formatDuration(remaining)}

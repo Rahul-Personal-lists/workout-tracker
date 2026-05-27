@@ -68,9 +68,9 @@ export function ExerciseCard({
           actionLabel="Hide"
           actionTone="neutral"
           actionIcon={<EyeOff className="w-3.5 h-3.5" />}
-          className="rounded-lg"
+          className="rounded-2xl"
         >
-          <div className="rounded-lg border border-neutral-800 bg-neutral-900/60">
+          <div className="rounded-2xl border border-border bg-surface-subtle">
             <button
               type="button"
               onClick={() => setExpanded(true)}
@@ -85,7 +85,7 @@ export function ExerciseCard({
               />
               <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium truncate">{exercise.name}</span>
-                <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                <span className="flex items-center gap-1 text-[11px] text-foreground-muted tabular-nums whitespace-nowrap">
                   {plannedSummary}
                   <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
                 </span>
@@ -108,9 +108,9 @@ export function ExerciseCard({
         actionLabel="Hide"
         actionTone="neutral"
         actionIcon={<EyeOff className="w-3.5 h-3.5" />}
-        className="rounded-lg"
+        className="rounded-2xl"
       >
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 space-y-2">
+        <div className="rounded-2xl border border-border bg-surface p-3 space-y-2">
           <div className="flex items-start gap-3">
             {exercise.imageUrl ? (
               <button
@@ -134,7 +134,7 @@ export function ExerciseCard({
             >
               <div className="flex items-baseline justify-between gap-2">
                 <h2 className="text-sm font-medium leading-snug">{exercise.name}</h2>
-                <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                <span className="flex items-center gap-1 text-[11px] text-foreground-muted tabular-nums whitespace-nowrap">
                   {plannedSummary}
                   {allComplete ? (
                     <ChevronUp className="w-3.5 h-3.5 text-neutral-500" />
@@ -197,7 +197,7 @@ export function ExerciseCard({
             <button
               type="button"
               onClick={onAddSet}
-              className="flex items-center justify-center gap-1.5 w-full h-9 rounded-md border border-dashed border-neutral-700 text-xs text-neutral-400 hover:border-neutral-600 hover:text-neutral-300 transition-colors"
+              className="flex items-center justify-center gap-1.5 w-full h-9 rounded-xl border border-dashed border-border-strong text-xs text-foreground-muted hover:text-foreground transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Add set
@@ -216,7 +216,7 @@ export function ExerciseCard({
           aria-modal="true"
           aria-label={`${exercise.name} animation`}
           onClick={(e) => e.stopPropagation()}
-          className="relative bg-neutral-950 border border-neutral-800 rounded-xl p-4 max-w-sm w-full flex flex-col items-center gap-3"
+          className="relative bg-surface border border-border rounded-2xl p-4 max-w-sm w-full flex flex-col items-center gap-3"
         >
           <button
             type="button"
@@ -227,7 +227,7 @@ export function ExerciseCard({
             <X className="w-4 h-4" />
           </button>
           <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={288} />
-          <p className="text-sm text-neutral-300 text-center">{exercise.name}</p>
+          <p className="text-sm text-foreground-muted text-center">{exercise.name}</p>
         </div>
       </div>
     ) : null}

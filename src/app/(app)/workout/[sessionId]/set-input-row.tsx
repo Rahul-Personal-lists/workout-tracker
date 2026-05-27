@@ -78,7 +78,7 @@ export function SetInputRow({
       <div
         className={cn(
           "grid grid-cols-[1fr_1fr_44px] items-center gap-2 rounded-md px-2 py-1.5",
-          set.completed ? "bg-neutral-800/60" : "bg-neutral-950"
+          set.completed ? "bg-neutral-800/60" : "bg-background"
         )}
       >
         <label className="flex flex-col min-w-0">
@@ -91,8 +91,8 @@ export function SetInputRow({
             onBlur={commitOnBlur}
             placeholder="lb"
             className={cn(
-              "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
-              set.completed && "text-neutral-400"
+              "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+              set.completed && "text-foreground-muted"
             )}
           />
           {hint ? (
@@ -108,8 +108,8 @@ export function SetInputRow({
           onBlur={commitOnBlur}
           placeholder="reps"
           className={cn(
-            "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
-            set.completed && "text-neutral-400"
+            "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+            set.completed && "text-foreground-muted"
           )}
         />
         <button
@@ -120,7 +120,7 @@ export function SetInputRow({
             "h-11 w-11 rounded-md flex items-center justify-center border transition-colors",
             set.completed
               ? "bg-emerald-500 border-emerald-500 text-black"
-              : "border-neutral-700 text-neutral-500"
+              : "border-border-strong text-neutral-500"
           )}
         >
           <Check className="w-5 h-5" strokeWidth={3} />

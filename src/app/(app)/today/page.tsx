@@ -79,7 +79,7 @@ export default async function TodayPage() {
         <form action={undoLastSkip}>
           <button
             type="submit"
-            className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2 text-xs text-foreground-muted hover:bg-surface-hover"
+            className="flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-xs text-foreground-muted hover:bg-surface-hover"
           >
             <span>
               Skipped {undoable.dayLabel}: {undoable.dayTitle}
@@ -97,7 +97,7 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-border bg-surface p-4 text-sm text-neutral-300 space-y-3">
+        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-foreground-muted space-y-3">
           <p>You don&apos;t have a program yet.</p>
           <Link
             href="/program"
@@ -115,7 +115,7 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-border bg-surface p-4 text-sm text-neutral-300 space-y-3">
+        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-foreground-muted space-y-3">
           <p>{program.name} has no days yet.</p>
           <Link
             href="/program"
@@ -142,7 +142,7 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-border bg-surface p-4 text-sm">
+        <div className="rounded-2xl border border-border bg-surface p-4 text-sm">
           <span aria-hidden="true">🎉</span> You finished all {program.weeks}{" "}
           weeks. Time to plan the next block.
         </div>
@@ -163,7 +163,7 @@ export default async function TodayPage() {
     return (
       <div className="space-y-6 pt-8">
         {greeting}
-        <div className="rounded-md border border-border bg-surface p-4 text-sm text-foreground-muted space-y-3">
+        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-foreground-muted space-y-3">
           <p>
             {day.label}: {day.title} has no exercises yet.
           </p>
@@ -243,7 +243,7 @@ export default async function TodayPage() {
           return (
             <li
               key={ex.id}
-              className="rounded-md border border-border bg-surface p-3"
+              className="rounded-2xl border border-border bg-surface p-3"
             >
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-sm">{ex.name}</span>

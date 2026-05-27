@@ -114,7 +114,7 @@ export default async function ProgramPage({
                     ? "bg-accent text-accent-foreground border-accent"
                     : isCurrent
                       ? "border-emerald-500 text-emerald-400"
-                      : "border-neutral-800 text-neutral-400"
+                      : "border-border text-foreground-muted"
                 )}
               >
                 <span className="font-medium leading-none">W{w}</span>
@@ -136,10 +136,10 @@ export default async function ProgramPage({
       </div>
 
       {programIsEmpty ? (
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
-          <p className="font-medium text-neutral-100">No exercises yet.</p>
-          <p className="text-neutral-400 mt-1">
-            Tap <span className="text-neutral-200">+ Add exercise</span> on any day below to get started.
+        <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-foreground-muted">
+          <p className="font-medium text-foreground">No exercises yet.</p>
+          <p className="text-foreground-muted mt-1">
+            Tap <span className="text-foreground">+ Add exercise</span> on any day below to get started.
           </p>
         </div>
       ) : null}
@@ -149,9 +149,9 @@ export default async function ProgramPage({
             return (
           <li
             key={day.id}
-            className="rounded-lg border border-neutral-800 bg-neutral-900"
+            className="rounded-2xl border border-border bg-surface"
           >
-            <header className="px-3 py-2.5 border-b border-neutral-800 flex items-center gap-2">
+            <header className="px-3 py-2.5 border-b border-border flex items-center gap-2">
               <DayControls
                 dayId={day.id}
                 initialLabel={day.label}
@@ -191,7 +191,7 @@ export default async function ProgramPage({
                         </span>
                       ) : null}
                     </span>
-                    <span className="text-xs text-neutral-400 tabular-nums whitespace-nowrap">
+                    <span className="text-xs text-foreground-muted tabular-nums whitespace-nowrap">
                       {ex.sets}×{r ?? "—"}
                       {w !== null ? ` · ${formatWeight(w)} lb` : ""}
                     </span>
