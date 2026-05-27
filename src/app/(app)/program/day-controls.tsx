@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
-import { ChevronUp, ChevronDown, MoreVertical, Pencil, Plus, Trash2, X, Check } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getPhase } from "@/lib/progression";
 import { archiveDay, renameDay, reorderDay } from "@/app/actions/program";
 
 type DayControlsProps = {
@@ -11,6 +19,8 @@ type DayControlsProps = {
   initialLabel: string;
   initialTitle: string;
   selectedWeek: number;
+  totalWeeks: number;
+  deloadWeeks: number[];
   isFirst: boolean;
   isLast: boolean;
 };
@@ -20,6 +30,8 @@ export function DayControls({
   initialLabel,
   initialTitle,
   selectedWeek,
+  totalWeeks,
+  deloadWeeks,
   isFirst,
   isLast,
 }: DayControlsProps) {
@@ -120,10 +132,16 @@ export function DayControls({
     setMenuOpen((o) => !o);
   }
 
+  const isDeload = deloadWeeks.includes(selectedWeek);
+  const phase = isDeload ? "Deload" : getPhase(selectedWeek);
+
   if (editing) {
     return (
-      <>
-        <div className="flex-1 min-w-0 space-y-1.5">
+      <div className="space-y-2 text-center">
+        <p className="text-xs font-medium text-accent tabular-nums">
+          Week {selectedWeek}/{totalWeeks} · {phase}
+        </p>
+        <div className="space-y-1.5 max-w-xs mx-auto">
           <input
             ref={labelRef}
             autoFocus
@@ -134,7 +152,7 @@ export function DayControls({
             maxLength={40}
             placeholder="Label (e.g. Day 1)"
             className={cn(
-              "text-[11px] uppercase tracking-wide bg-transparent border-b border-accent outline-none w-full text-neutral-200 placeholder:text-neutral-600",
+              "text-[11px] uppercase tracking-wide bg-transparent border-b border-accent outline-none w-full text-center text-neutral-200 placeholder:text-neutral-600",
               pending && "opacity-50"
             )}
           />
@@ -144,133 +162,124 @@ export function DayControls({
             onKeyDown={onRenameKeyDown}
             disabled={pending}
             maxLength={80}
-            placeholder="Title (e.g. Upper — Strength)"
+            placeholder="Title (e.g. Upper Body)"
             className={cn(
-              "text-sm font-medium bg-transparent border-b border-accent outline-none w-full text-neutral-200 placeholder:text-neutral-600",
+              "text-lg font-bold tracking-wide bg-transparent border-b border-accent outline-none w-full text-center placeholder:text-neutral-600",
               pending && "opacity-50"
             )}
           />
         </div>
-        <button
-          type="button"
-          onClick={saveRename}
-          disabled={pending}
-          aria-label="Save day name"
-          className="h-11 w-11 rounded flex items-center justify-center text-accent hover:text-accent/80 transition-colors"
-        >
-          <Check className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={cancelRename}
-          disabled={pending}
-          aria-label="Cancel rename"
-          className="h-11 w-11 rounded flex items-center justify-center text-neutral-500 hover:text-neutral-300 transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </>
+        <div className="flex items-center justify-center gap-2 pt-1">
+          <button
+            type="button"
+            onClick={saveRename}
+            disabled={pending}
+            aria-label="Save day name"
+            className="h-10 w-10 rounded-md flex items-center justify-center text-accent hover:bg-surface-hover"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={cancelRename}
+            disabled={pending}
+            aria-label="Cancel rename"
+            className="h-10 w-10 rounded-md flex items-center justify-center text-foreground-muted hover:bg-surface-hover"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     );
   }
 
-  const titleWords = initialTitle.split(/\s+/);
-  const titleLast = titleWords.pop() ?? "";
-  const titleRest = titleWords.join(" ");
-
   return (
-    <>
-      <div className="flex-1 min-w-0">
-        <h2 className="text-sm font-medium truncate">
-          {initialLabel}{initialTitle ? ": " : ""}
-          {titleRest ? `${titleRest} ` : ""}
-          <em className="font-display italic font-medium">{titleLast}</em>
+    <div className="text-center space-y-1">
+      <p className="text-xs font-medium text-accent tabular-nums">
+        Week {selectedWeek}/{totalWeeks} · {phase}
+      </p>
+      <div className="flex items-center justify-center gap-1.5">
+        <h2 className="text-lg font-bold tracking-wide uppercase truncate">
+          {initialTitle}
         </h2>
-      </div>
-      <div ref={wrapperRef} className="relative">
         <button
           type="button"
-          onClick={onTriggerClick}
-          disabled={pending}
-          aria-label={confirming ? "Confirm archive day" : "Day actions"}
-          aria-expanded={menuOpen && !confirming}
-          className={cn(
-            "h-11 w-11 rounded flex items-center justify-center transition-colors",
-            confirming
-              ? "bg-red-500/15 text-red-400 border border-red-500/40"
-              : "text-neutral-500 hover:text-neutral-300",
-            pending && "opacity-50"
-          )}
+          onClick={openRename}
+          aria-label="Rename day"
+          className="h-9 w-9 rounded-md inline-flex items-center justify-center text-foreground-muted hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
         >
-          {confirming ? (
-            <X className="w-4 h-4" />
-          ) : (
-            <MoreVertical className="w-4 h-4" />
-          )}
+          <Pencil className="w-4 h-4" />
         </button>
-        {menuOpen && !confirming ? (
-          <div
-            role="menu"
-            className="absolute right-0 top-12 z-20 min-w-44 rounded-md border border-neutral-700 bg-neutral-900 shadow-lg py-1"
+        <div ref={wrapperRef} className="relative">
+          <button
+            type="button"
+            onClick={onTriggerClick}
+            disabled={pending}
+            aria-label={confirming ? "Confirm archive day" : "Day actions"}
+            aria-expanded={menuOpen && !confirming}
+            className={cn(
+              "h-9 w-9 rounded-md flex items-center justify-center transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]",
+              confirming
+                ? "bg-red-500/15 text-red-400 border border-red-500/40"
+                : "text-foreground-muted hover:bg-surface-hover",
+              pending && "opacity-50"
+            )}
           >
-            <Link
-              href={`/program/add?day=${dayId}&week=${selectedWeek}`}
-              role="menuitem"
-              onClick={() => setMenuOpen(false)}
-              className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
+            {confirming ? (
+              <X className="w-4 h-4" />
+            ) : (
+              <MoreVertical className="w-4 h-4" />
+            )}
+          </button>
+          {menuOpen && !confirming ? (
+            <div
+              role="menu"
+              className="absolute right-0 top-12 z-20 min-w-44 rounded-md border border-neutral-700 bg-neutral-900 shadow-lg py-1"
             >
-              <Plus className="w-3.5 h-3.5 text-neutral-500" /> Add exercise
-            </Link>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={openRename}
-              className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
-            >
-              <Pencil className="w-3.5 h-3.5 text-neutral-500" /> Rename day
-            </button>
-            {!isFirst && (
+              {!isFirst && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    startTransition(() => reorderDay({ dayId, direction: "up" }));
+                  }}
+                  disabled={pending}
+                  className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
+                >
+                  <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> Move up
+                </button>
+              )}
+              {!isLast && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    startTransition(() => reorderDay({ dayId, direction: "down" }));
+                  }}
+                  disabled={pending}
+                  className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
+                >
+                  <ChevronDown className="w-3.5 h-3.5 text-neutral-500" /> Move down
+                </button>
+              )}
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => {
                   setMenuOpen(false);
-                  startTransition(() => reorderDay({ dayId, direction: "up" }));
+                  setConfirming(true);
+                  setTimeout(() => setConfirming(false), 2500);
                 }}
-                disabled={pending}
-                className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
+                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-neutral-800 inline-flex items-center gap-2"
               >
-                <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> Move up
+                <Trash2 className="w-3.5 h-3.5" /> Archive day
               </button>
-            )}
-            {!isLast && (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setMenuOpen(false);
-                  startTransition(() => reorderDay({ dayId, direction: "down" }));
-                }}
-                disabled={pending}
-                className="w-full text-left px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-center gap-2"
-              >
-                <ChevronDown className="w-3.5 h-3.5 text-neutral-500" /> Move down
-              </button>
-            )}
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setMenuOpen(false);
-                setConfirming(true);
-                setTimeout(() => setConfirming(false), 2500);
-              }}
-              className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-neutral-800 inline-flex items-center gap-2"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Archive day
-            </button>
-          </div>
-        ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

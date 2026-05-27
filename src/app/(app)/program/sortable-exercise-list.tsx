@@ -138,11 +138,16 @@ function SortableRow({
         <div
           className={
             isDragging
-              ? "flex items-center gap-2 text-sm rounded-md bg-surface-hover shadow-lg ring-1 ring-border"
-              : "flex items-center gap-2 text-sm"
+              ? "flex items-center gap-2.5 text-sm rounded-md bg-surface-hover shadow-lg ring-1 ring-border"
+              : "flex items-center gap-2.5 text-sm"
           }
         >
-          <ExerciseAnimation url={ex.imageUrl} alt={ex.name} size={44} />
+          <ExerciseAnimation
+            url={ex.imageUrl}
+            alt={ex.name}
+            size={28}
+            shape="circle"
+          />
           <span className="leading-snug flex-1 min-w-0">
             {ex.name}
             {ex.note ? (
