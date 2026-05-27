@@ -3,17 +3,31 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pause, Play, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/format";
 import {
   deleteSetLog,
   finishWorkout,
   logSet,
-  pauseSession,
   recordSessionPhotos,
-  resumeSession,
 } from "@/app/actions/workout";
+import { setExerciseOrder } from "@/app/actions/program";
+import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { RestTimerBar } from "@/components/rest-timer";
 import { DayNotePopover } from "@/components/day-note-popover";
 import { useRestTimer } from "@/lib/stores/rest-timer";
@@ -37,8 +51,6 @@ type Props = {
   sessionId: string;
   dayId: string;
   startedAt: string;
-  pausedAt: string | null;
-  totalPausedSeconds: number;
   weekNumber: number;
   dayLabel: string;
   dayTitle: string;
@@ -50,8 +62,6 @@ export function WorkoutClient({
   sessionId,
   dayId,
   startedAt,
-  pausedAt,
-  totalPausedSeconds,
   weekNumber,
   dayLabel,
   dayTitle,
@@ -63,43 +73,22 @@ export function WorkoutClient({
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
   const [elapsed, setElapsed] = useState(0);
   const [finishing, startFinish] = useTransition();
-  const [pausing, startPause] = useTransition();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [finishedSuccessfully, setFinishedSuccessfully] = useState(false);
   const startRest = useRestTimer((s) => s.start);
-  const pauseRest = useRestTimer((s) => s.pause);
-  const resumeRest = useRestTimer((s) => s.resume);
-
-  const isPaused = pausedAt !== null;
 
   useEffect(() => {
     function compute() {
       const startMs = new Date(startedAt).getTime();
-      const pauseStartMs = pausedAt ? new Date(pausedAt).getTime() : null;
-      // Active elapsed = wall clock - already-accumulated paused seconds -
-      // (live paused interval, if currently paused). Freezes at the moment
-      // of pause and resumes from the same value on resume.
-      const base = Math.floor((Date.now() - startMs) / 1000) - totalPausedSeconds;
-      const live =
-        pauseStartMs !== null
-          ? Math.floor((Date.now() - pauseStartMs) / 1000)
-          : 0;
-      setElapsed(Math.max(0, base - live));
+      setElapsed(Math.max(0, Math.floor((Date.now() - startMs) / 1000)));
     }
     compute();
-    if (isPaused) return; // freeze the clock while paused
     const id = setInterval(compute, 1000);
     return () => clearInterval(id);
-  }, [startedAt, pausedAt, totalPausedSeconds, isPaused]);
-
-  // Keep the rest timer in sync with the workout's pause state.
-  useEffect(() => {
-    if (isPaused) pauseRest();
-    else resumeRest();
-  }, [isPaused, pauseRest, resumeRest]);
+  }, [startedAt]);
 
   const visibleExercises = useMemo(
     () => exercises.filter((e) => !hiddenIds.has(e.id)),
@@ -179,6 +168,28 @@ export function WorkoutClient({
       console.error("deleteSetLog failed", err);
       setExercises(snapshot);
     });
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const snapshot = exercises;
+    const oldIdx = exercises.findIndex((x) => x.id === active.id);
+    const newIdx = exercises.findIndex((x) => x.id === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    const next = arrayMove(exercises, oldIdx, newIdx);
+    setExercises(next);
+    setExerciseOrder({ dayId, orderedIds: next.map((x) => x.id) }).catch(
+      (err) => {
+        console.error("setExerciseOrder failed", err);
+        setExercises(snapshot);
+      }
+    );
   }
 
   function hideExercise(id: string) {
@@ -310,22 +321,6 @@ export function WorkoutClient({
     router.push(`/history/${sessionId}`);
   }
 
-  function handlePause() {
-    pauseRest();
-    // Don't try/catch — pauseSession redirects to /today via Next's
-    // NEXT_REDIRECT error, which must propagate out of the transition.
-    startPause(async () => {
-      await pauseSession({ sessionId });
-    });
-  }
-
-  function handleResume() {
-    resumeRest();
-    startPause(async () => {
-      await resumeSession({ sessionId });
-    });
-  }
-
   return (
     <div className="space-y-5 pb-28">
       <header className="space-y-1">
@@ -342,18 +337,6 @@ export function WorkoutClient({
                 weekNumber={previousDayNote.weekNumber}
               />
             ) : null}
-            <button
-              type="button"
-              onClick={isPaused ? handleResume : handlePause}
-              disabled={pausing}
-              aria-label={isPaused ? "Resume workout" : "Pause workout"}
-              className={cn(
-                "inline-flex h-6 w-6 items-center justify-center rounded-full text-foreground-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                pausing && "opacity-50"
-              )}
-            >
-              {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-            </button>
           </h1>
           <span className="text-sm tabular-nums text-neutral-300">
             {formatDuration(elapsed)}
@@ -370,25 +353,36 @@ export function WorkoutClient({
         Tip: swipe a set left to delete it.
       </p>
 
-      <ul className="space-y-3">
-        {visibleExercises.map((ex) => (
-          <ExerciseCard
-            key={ex.id}
-            exercise={ex}
-            onChange={(setNumber, patch, persist) => {
-              const prev = ex.sets.find((s) => s.setNumber === setNumber);
-              updateSet(ex.id, setNumber, patch);
-              if (persist && prev) persistSet(ex, { ...prev, ...patch });
-              if (patch.completed === true && prev && !prev.completed) {
-                startRest();
-              }
-            }}
-            onAddSet={() => addSet(ex.id)}
-            onDeleteSet={(setNumber) => removeSet(ex.id, setNumber)}
-            onHide={() => hideExercise(ex.id)}
-          />
-        ))}
-      </ul>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={visibleExercises.map((x) => x.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <ul className="space-y-3">
+            {visibleExercises.map((ex) => (
+              <ExerciseCard
+                key={ex.id}
+                exercise={ex}
+                onChange={(setNumber, patch, persist) => {
+                  const prev = ex.sets.find((s) => s.setNumber === setNumber);
+                  updateSet(ex.id, setNumber, patch);
+                  if (persist && prev) persistSet(ex, { ...prev, ...patch });
+                  if (patch.completed === true && prev && !prev.completed) {
+                    startRest();
+                  }
+                }}
+                onAddSet={() => addSet(ex.id)}
+                onDeleteSet={(setNumber) => removeSet(ex.id, setNumber)}
+                onHide={() => hideExercise(ex.id)}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
 
       <Link
         href={`/program/add?day=${dayId}&week=${weekNumber}&returnTo=/workout/${sessionId}`}

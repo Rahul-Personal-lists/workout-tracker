@@ -109,47 +109,51 @@ export async function unarchiveExerciseFromProgram(
   revalidatePath("/today");
 }
 
-const ReorderExerciseSchema = z.object({
-  exerciseId: z.string().uuid(),
-  direction: z.enum(["up", "down"]),
+const SetExerciseOrderSchema = z.object({
+  dayId: z.string().uuid(),
+  orderedIds: z.array(z.string().uuid()).min(1).max(50),
 });
 
-export async function reorderExercise(
-  input: z.infer<typeof ReorderExerciseSchema>
+export async function setExerciseOrder(
+  input: z.infer<typeof SetExerciseOrderSchema>
 ) {
-  const { exerciseId, direction } = ReorderExerciseSchema.parse(input);
+  const { dayId, orderedIds } = SetExerciseOrderSchema.parse(input);
   const supabase = await createClient();
-
-  const { data: target, error: tErr } = await supabase
-    .from("program_exercises")
-    .select("id, program_day_id, order_index")
-    .eq("id", exerciseId)
-    .single();
-  if (tErr || !target) throw tErr ?? new Error("Exercise not found");
 
   const { data: siblings, error: sErr } = await supabase
     .from("program_exercises")
-    .select("id, order_index")
-    .eq("program_day_id", target.program_day_id)
-    .is("archived_at", null)
-    .order("order_index", { ascending: true });
+    .select("id")
+    .eq("program_day_id", dayId)
+    .is("archived_at", null);
   if (sErr) throw sErr;
 
-  const idx = siblings.findIndex((e) => e.id === exerciseId);
-  const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
-  if (neighborIdx < 0 || neighborIdx >= siblings.length) return;
+  const siblingIds = new Set(siblings.map((s) => s.id));
+  if (
+    orderedIds.length !== siblingIds.size ||
+    orderedIds.some((id) => !siblingIds.has(id))
+  ) {
+    throw new Error("orderedIds must match the day's current exercise set.");
+  }
 
-  const neighbor = siblings[neighborIdx];
-  const { error: e1 } = await supabase
-    .from("program_exercises")
-    .update({ order_index: neighbor.order_index })
-    .eq("id", target.id);
-  if (e1) throw e1;
-  const { error: e2 } = await supabase
-    .from("program_exercises")
-    .update({ order_index: target.order_index })
-    .eq("id", neighbor.id);
-  if (e2) throw e2;
+  // Two-phase write: first push every row into a temporary high range so the
+  // final assignments can't collide with existing values. order_index has no
+  // unique constraint today, but the two-phase approach keeps this safe if
+  // we add one later.
+  const OFFSET = 1_000_000;
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ order_index: OFFSET + i })
+      .eq("id", orderedIds[i]);
+    if (error) throw error;
+  }
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ order_index: i })
+      .eq("id", orderedIds[i]);
+    if (error) throw error;
+  }
 
   revalidatePath("/program");
   revalidatePath("/today");

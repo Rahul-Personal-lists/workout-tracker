@@ -6,9 +6,12 @@ import {
   ChevronDown,
   ChevronUp,
   EyeOff,
+  GripVertical,
   Plus,
   X,
 } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
 import { ExerciseAnimation } from "@/components/exercise-animation";
@@ -34,6 +37,19 @@ export function ExerciseCard({
   onDeleteSet: (setNumber: number) => void;
   onHide: () => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: exercise.id });
+  const sortableStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+  };
   const [zoomed, setZoomed] = useState(false);
   const allComplete =
     exercise.sets.length > 0 && exercise.sets.every((s) => s.completed);
@@ -55,21 +71,26 @@ export function ExerciseCard({
 
   if (allComplete && !expanded) {
     return (
-      <li>
+      <li ref={setNodeRef} style={sortableStyle}>
         <SwipeRow
           onAction={onHide}
           actionLabel="Hide"
           actionTone="neutral"
           actionIcon={<EyeOff className="w-3.5 h-3.5" />}
-          className="rounded-lg"
+          className="rounded-2xl"
         >
-          <div className="rounded-lg border border-neutral-800 bg-neutral-900/60">
+          <div
+            className={cn(
+              "rounded-2xl border border-border bg-surface-subtle flex items-stretch",
+              isDragging && "shadow-lg ring-1 ring-border bg-surface-hover"
+            )}
+          >
             <button
               type="button"
               onClick={() => setExpanded(true)}
               aria-expanded={false}
               aria-label={`Expand ${exercise.name}`}
-              className="w-full flex items-center gap-3 p-2.5 text-left"
+              className="flex-1 min-w-0 flex items-center gap-3 p-2.5 text-left"
             >
               <ExerciseAnimation
                 url={exercise.imageUrl}
@@ -78,7 +99,7 @@ export function ExerciseCard({
               />
               <div className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium truncate">{exercise.name}</span>
-                <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                <span className="flex items-center gap-1 text-[11px] text-foreground-muted tabular-nums whitespace-nowrap">
                   {plannedSummary}
                   <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
                 </span>
@@ -87,6 +108,11 @@ export function ExerciseCard({
                 <Check className="w-3.5 h-3.5" strokeWidth={3} />
               </span>
             </button>
+            <DragHandle
+              attributes={attributes}
+              listeners={listeners}
+              name={exercise.name}
+            />
           </div>
         </SwipeRow>
       </li>
@@ -95,15 +121,20 @@ export function ExerciseCard({
 
   return (
     <>
-    <li>
+    <li ref={setNodeRef} style={sortableStyle}>
       <SwipeRow
         onAction={onHide}
         actionLabel="Hide"
         actionTone="neutral"
         actionIcon={<EyeOff className="w-3.5 h-3.5" />}
-        className="rounded-lg"
+        className="rounded-2xl"
       >
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 space-y-2">
+        <div
+          className={cn(
+            "rounded-2xl border border-border bg-surface p-3 space-y-2",
+            isDragging && "shadow-lg ring-1 ring-border bg-surface-hover"
+          )}
+        >
           <div className="flex items-start gap-3">
             {exercise.imageUrl ? (
               <button
@@ -127,7 +158,7 @@ export function ExerciseCard({
             >
               <div className="flex items-baseline justify-between gap-2">
                 <h2 className="text-sm font-medium leading-snug">{exercise.name}</h2>
-                <span className="flex items-center gap-1 text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                <span className="flex items-center gap-1 text-[11px] text-foreground-muted tabular-nums whitespace-nowrap">
                   {plannedSummary}
                   {allComplete ? (
                     <ChevronUp className="w-3.5 h-3.5 text-neutral-500" />
@@ -138,6 +169,11 @@ export function ExerciseCard({
                 <p className="text-[11px] text-neutral-500">{exercise.note}</p>
               ) : null}
             </button>
+            <DragHandle
+              attributes={attributes}
+              listeners={listeners}
+              name={exercise.name}
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -145,8 +181,8 @@ export function ExerciseCard({
               className={cn(
                 "grid gap-2 px-2 text-[10px] uppercase tracking-wide text-neutral-500",
                 isTime
-                  ? "grid-cols-[1fr_44px]"
-                  : "grid-cols-[1fr_1fr_44px]"
+                  ? "grid-cols-[1fr_56px]"
+                  : "grid-cols-[1fr_1fr_56px]"
               )}
             >
               {isTime ? (
@@ -183,7 +219,7 @@ export function ExerciseCard({
             <button
               type="button"
               onClick={onAddSet}
-              className="flex items-center justify-center gap-1.5 w-full h-9 rounded-md border border-dashed border-neutral-700 text-xs text-neutral-400 hover:border-neutral-600 hover:text-neutral-300 transition-colors"
+              className="flex items-center justify-center gap-1.5 w-full h-9 rounded-xl border border-dashed border-border-strong text-xs text-foreground-muted hover:text-foreground transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Add set
@@ -202,7 +238,7 @@ export function ExerciseCard({
           aria-modal="true"
           aria-label={`${exercise.name} animation`}
           onClick={(e) => e.stopPropagation()}
-          className="relative bg-neutral-950 border border-neutral-800 rounded-xl p-4 max-w-sm w-full flex flex-col items-center gap-3"
+          className="relative bg-surface border border-border rounded-2xl p-4 max-w-sm w-full flex flex-col items-center gap-3"
         >
           <button
             type="button"
@@ -213,10 +249,39 @@ export function ExerciseCard({
             <X className="w-4 h-4" />
           </button>
           <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={288} />
-          <p className="text-sm text-neutral-300 text-center">{exercise.name}</p>
+          <p className="text-sm text-foreground-muted text-center">{exercise.name}</p>
         </div>
       </div>
     ) : null}
     </>
+  );
+}
+
+type SortableListeners = ReturnType<typeof useSortable>["listeners"];
+type SortableAttributes = ReturnType<typeof useSortable>["attributes"];
+
+function DragHandle({
+  attributes,
+  listeners,
+  name,
+}: {
+  attributes: SortableAttributes;
+  listeners: SortableListeners;
+  name: string;
+}) {
+  return (
+    <button
+      type="button"
+      {...attributes}
+      {...listeners}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        listeners?.onPointerDown?.(e);
+      }}
+      aria-label={`Drag to reorder ${name}`}
+      className="h-11 w-8 shrink-0 flex items-center justify-center text-foreground-muted hover:text-foreground touch-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] rounded"
+    >
+      <GripVertical className="w-4 h-4" />
+    </button>
   );
 }

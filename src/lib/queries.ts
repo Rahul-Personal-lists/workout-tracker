@@ -149,22 +149,8 @@ export async function hasInProgressSession(): Promise<boolean> {
   return !!data;
 }
 
-export async function getPausedSession(): Promise<{ id: string } | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("workout_sessions")
-    .select("id")
-    .is("ended_at", null)
-    .not("paused_at", "is", null)
-    .order("paused_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return data ?? null;
-}
-
 export type NextWorkout =
-  | { kind: "in-progress"; sessionId: string; weekNumber: number; day: ProgramDay; pausedAt: string | null }
+  | { kind: "in-progress"; sessionId: string; weekNumber: number; day: ProgramDay }
   | { kind: "next"; weekNumber: number; day: ProgramDay }
   | { kind: "complete" };
 
@@ -177,7 +163,7 @@ export async function getNextWorkout(
 
   const { data: inProgress } = await supabase
     .from("workout_sessions")
-    .select("id, week_number, program_day_id, paused_at")
+    .select("id, week_number, program_day_id")
     .in("program_day_id", dayIds)
     .is("ended_at", null)
     .order("started_at", { ascending: false })
@@ -192,7 +178,6 @@ export async function getNextWorkout(
         sessionId: inProgress.id,
         weekNumber: inProgress.week_number,
         day,
-        pausedAt: inProgress.paused_at,
       };
     }
   }
@@ -383,8 +368,8 @@ export async function getSession(sessionId: string) {
     .from("workout_sessions")
     .select(
       `
-      id, started_at, ended_at, duration_seconds, week_number, notes, program_day_id, paused_at, total_paused_seconds
-    `
+      id, started_at, ended_at, duration_seconds, week_number, notes, program_day_id
+`
     )
     .eq("id", sessionId)
     .maybeSingle();

@@ -56,6 +56,9 @@ export function SetInputRow({
     const parsedR = repsStrRef.current.trim() === "" ? null : parseInt(repsStrRef.current, 10);
     const validW = Number.isFinite(parsedW as number) ? (parsedW as number) : null;
     const validR = Number.isFinite(parsedR as number) ? (parsedR as number) : null;
+    if (next && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate?.(15);
+    }
     onChange(
       { completed: next, actualWeight: validW, actualReps: validR },
       true
@@ -77,8 +80,8 @@ export function SetInputRow({
     >
       <div
         className={cn(
-          "grid grid-cols-[1fr_1fr_44px] items-center gap-2 rounded-md px-2 py-1.5",
-          set.completed ? "bg-neutral-800/60" : "bg-neutral-950"
+          "grid grid-cols-[1fr_1fr_56px] items-center gap-2 rounded-md px-2 py-1.5",
+          set.completed ? "bg-accent/10" : "bg-background"
         )}
       >
         <label className="flex flex-col min-w-0">
@@ -91,8 +94,10 @@ export function SetInputRow({
             onBlur={commitOnBlur}
             placeholder="lb"
             className={cn(
-              "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
-              set.completed && "text-neutral-400"
+              "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+              set.completed
+                ? "text-base text-foreground-muted"
+                : "text-2xl font-semibold"
             )}
           />
           {hint ? (
@@ -108,8 +113,10 @@ export function SetInputRow({
           onBlur={commitOnBlur}
           placeholder="reps"
           className={cn(
-            "w-full min-w-0 h-11 rounded bg-transparent text-base px-2 text-center tabular-nums outline-none border border-transparent focus:border-neutral-700",
-            set.completed && "text-neutral-400"
+            "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+            set.completed
+              ? "text-base text-foreground-muted"
+              : "text-2xl font-semibold"
           )}
         />
         <button
@@ -117,13 +124,21 @@ export function SetInputRow({
           aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
           onClick={toggleComplete}
           className={cn(
-            "h-11 w-11 rounded-md flex items-center justify-center border transition-colors",
+            "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors",
             set.completed
               ? "bg-emerald-500 border-emerald-500 text-black"
-              : "border-neutral-700 text-neutral-500"
+              : "border-border-strong text-neutral-500"
           )}
         >
-          <Check className="w-5 h-5" strokeWidth={3} />
+          <span
+            key={String(set.completed)}
+            className={cn(
+              "flex items-center justify-center",
+              set.completed && "animate-set-check"
+            )}
+          >
+            <Check className="w-5 h-5" strokeWidth={3} />
+          </span>
         </button>
       </div>
     </SwipeRow>

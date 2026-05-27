@@ -16,14 +16,10 @@ const ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
 
-  // Hide nav during an active workout — keeps Finish button reachable
-  // and removes navigation distractions mid-set.
-  if (pathname.startsWith("/workout/")) return null;
-
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/70 pb-[env(safe-area-inset-bottom)]"
+      className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="grid grid-cols-5 h-16 max-w-md mx-auto">
         {ITEMS.map(({ href, label, icon: Icon }) => {
