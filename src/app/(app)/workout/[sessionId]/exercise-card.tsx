@@ -6,31 +6,28 @@ import {
   ChevronDown,
   ChevronUp,
   EyeOff,
+  GripVertical,
   Plus,
   X,
 } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight } from "@/lib/format";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { SwipeRow } from "@/components/swipe-row";
-import { ExerciseControls } from "@/app/(app)/program/exercise-controls";
 import type { ExerciseRow, SetRow } from "./types";
 import { SetInputRow } from "./set-input-row";
 import { TimeSetInputRow } from "./time-set-input-row";
 
 export function ExerciseCard({
   exercise,
-  isFirst,
-  isLast,
   onChange,
   onAddSet,
   onDeleteSet,
   onHide,
-  onReorder,
 }: {
   exercise: ExerciseRow;
-  isFirst: boolean;
-  isLast: boolean;
   onChange: (
     setNumber: number,
     patch: Partial<SetRow>,
@@ -39,8 +36,20 @@ export function ExerciseCard({
   onAddSet: () => void;
   onDeleteSet: (setNumber: number) => void;
   onHide: () => void;
-  onReorder: (direction: "up" | "down") => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: exercise.id });
+  const sortableStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+  };
   const [zoomed, setZoomed] = useState(false);
   const allComplete =
     exercise.sets.length > 0 && exercise.sets.every((s) => s.completed);
@@ -62,7 +71,7 @@ export function ExerciseCard({
 
   if (allComplete && !expanded) {
     return (
-      <li>
+      <li ref={setNodeRef} style={sortableStyle}>
         <SwipeRow
           onAction={onHide}
           actionLabel="Hide"
@@ -70,13 +79,18 @@ export function ExerciseCard({
           actionIcon={<EyeOff className="w-3.5 h-3.5" />}
           className="rounded-2xl"
         >
-          <div className="rounded-2xl border border-border bg-surface-subtle">
+          <div
+            className={cn(
+              "rounded-2xl border border-border bg-surface-subtle flex items-stretch",
+              isDragging && "shadow-lg ring-1 ring-border bg-surface-hover"
+            )}
+          >
             <button
               type="button"
               onClick={() => setExpanded(true)}
               aria-expanded={false}
               aria-label={`Expand ${exercise.name}`}
-              className="w-full flex items-center gap-3 p-2.5 text-left"
+              className="flex-1 min-w-0 flex items-center gap-3 p-2.5 text-left"
             >
               <ExerciseAnimation
                 url={exercise.imageUrl}
@@ -94,6 +108,11 @@ export function ExerciseCard({
                 <Check className="w-3.5 h-3.5" strokeWidth={3} />
               </span>
             </button>
+            <DragHandle
+              attributes={attributes}
+              listeners={listeners}
+              name={exercise.name}
+            />
           </div>
         </SwipeRow>
       </li>
@@ -102,7 +121,7 @@ export function ExerciseCard({
 
   return (
     <>
-    <li>
+    <li ref={setNodeRef} style={sortableStyle}>
       <SwipeRow
         onAction={onHide}
         actionLabel="Hide"
@@ -110,7 +129,12 @@ export function ExerciseCard({
         actionIcon={<EyeOff className="w-3.5 h-3.5" />}
         className="rounded-2xl"
       >
-        <div className="rounded-2xl border border-border bg-surface p-3 space-y-2">
+        <div
+          className={cn(
+            "rounded-2xl border border-border bg-surface p-3 space-y-2",
+            isDragging && "shadow-lg ring-1 ring-border bg-surface-hover"
+          )}
+        >
           <div className="flex items-start gap-3">
             {exercise.imageUrl ? (
               <button
@@ -145,12 +169,10 @@ export function ExerciseCard({
                 <p className="text-[11px] text-neutral-500">{exercise.note}</p>
               ) : null}
             </button>
-            <ExerciseControls
-              exerciseId={exercise.id}
-              isFirst={isFirst}
-              isLast={isLast}
-              showRemove={false}
-              onReorder={onReorder}
+            <DragHandle
+              attributes={attributes}
+              listeners={listeners}
+              name={exercise.name}
             />
           </div>
 
@@ -232,5 +254,34 @@ export function ExerciseCard({
       </div>
     ) : null}
     </>
+  );
+}
+
+type SortableListeners = ReturnType<typeof useSortable>["listeners"];
+type SortableAttributes = ReturnType<typeof useSortable>["attributes"];
+
+function DragHandle({
+  attributes,
+  listeners,
+  name,
+}: {
+  attributes: SortableAttributes;
+  listeners: SortableListeners;
+  name: string;
+}) {
+  return (
+    <button
+      type="button"
+      {...attributes}
+      {...listeners}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        listeners?.onPointerDown?.(e);
+      }}
+      aria-label={`Drag to reorder ${name}`}
+      className="h-11 w-8 shrink-0 flex items-center justify-center text-foreground-muted hover:text-foreground touch-none cursor-grab active:cursor-grabbing outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] rounded"
+    >
+      <GripVertical className="w-4 h-4" />
+    </button>
   );
 }

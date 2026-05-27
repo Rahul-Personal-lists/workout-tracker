@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CalendarDays, Coffee, Dumbbell, Trophy } from "lucide-react";
 import {
   getCurrentProgram,
@@ -152,12 +151,23 @@ export default async function TodayPage() {
   const next = await getNextWorkout(program);
   if (!next) return null;
 
-  // A paused session is the user's explicit signal that they stepped away;
-  // don't yank them back. The PausedWorkoutBanner mounted in (app)/layout
-  // already offers a Resume CTA on every route.
-  if (next.kind === "in-progress" && !next.pausedAt) {
-    redirect(`/workout/${next.sessionId}`);
-  }
+  const resumeCard =
+    next.kind === "in-progress" ? (
+      <Link
+        href={`/workout/${next.sessionId}`}
+        className="flex items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-foreground"
+      >
+        <span className="flex flex-col">
+          <span className="font-medium">Workout in progress</span>
+          <span className="text-xs text-foreground-muted">
+            {next.day.label}: {next.day.title}
+          </span>
+        </span>
+        <span className="text-xs font-medium uppercase tracking-wide text-accent">
+          Resume
+        </span>
+      </Link>
+    ) : null;
 
   if (next.kind === "complete") {
     return (
@@ -240,6 +250,7 @@ export default async function TodayPage() {
   return (
     <div className="space-y-6 pt-8">
       {greeting}
+      {resumeCard}
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-foreground-muted">
           {phase} · Week {weekNumber}

@@ -4,8 +4,7 @@ import type { createClient } from "./supabase/server";
 
 // Sessions with no activity for this long are auto-finished (or deleted, if
 // they have no logs) the next time the user re-enters the app or starts a
-// workout. Paused sessions are exempt — pause is an explicit "save for later"
-// signal.
+// workout.
 const STALE_SESSION_MS = 2 * 60 * 60 * 1000;
 
 // Returns the id of an in-progress session the caller should resume, or null
@@ -17,14 +16,13 @@ export async function reapStaleSession(
 ): Promise<string | null> {
   const { data: open } = await supabase
     .from("workout_sessions")
-    .select("id, started_at, paused_at")
+    .select("id, started_at")
     .eq("user_id", userId)
     .is("ended_at", null)
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (!open) return null;
-  if (open.paused_at) return open.id;
 
   const { data: lastLog } = await supabase
     .from("set_logs")

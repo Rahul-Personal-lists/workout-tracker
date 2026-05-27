@@ -6,10 +6,8 @@ import {
   getNextWorkout,
 } from "@/lib/queries";
 import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
-import { formatWeight } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { ExerciseAnimation } from "@/components/exercise-animation";
-import { ExerciseControls } from "./exercise-controls";
+import { SortableExerciseList } from "./sortable-exercise-list";
 import { DayControls } from "./day-controls";
 import { EditableProgramName } from "./editable-program-name";
 import { ProgramSwitcher } from "./program-switcher";
@@ -168,54 +166,32 @@ export default async function ProgramPage({
                 isLast={program.days.indexOf(day) === program.days.length - 1}
               />
             </header>
-            <ul className="px-3 py-2 space-y-1.5">
-              {day.exercises.map((ex, exIdx) => {
-                const w = getPlannedWeight(
-                  ex.start_weight,
-                  ex.increment,
-                  selectedWeek,
-                  program.deload_weeks,
-                  ex.progression_weeks,
-                  ex.peak_taper,
-                );
-                const r = getPlannedReps(
-                  ex.base_reps,
-                  selectedWeek,
-                  program.deload_weeks,
-                  ex.peak_taper,
-                );
-                return (
-                  <li
-                    key={ex.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <ExerciseAnimation url={ex.image_url} alt={ex.name} size={44} />
-                    <span className="leading-snug flex-1 min-w-0">
-                      {ex.name}
-                      {ex.note ? (
-                        <span className="text-[11px] text-neutral-500 ml-1">
-                          ({ex.note})
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="text-xs text-foreground-muted tabular-nums whitespace-nowrap">
-                      {ex.sets}×{r ?? "—"}
-                      {w !== null ? ` · ${formatWeight(w)} lb` : ""}
-                    </span>
-                    <ExerciseControls
-                      exerciseId={ex.id}
-                      isFirst={exIdx === 0}
-                      isLast={exIdx === day.exercises.length - 1}
-                    />
-                  </li>
-                );
-              })}
-              {day.exercises.length === 0 && !programIsEmpty ? (
-                <li className="text-xs text-neutral-500 italic px-1 py-2">
-                  No exercises yet.
-                </li>
-              ) : null}
-            </ul>
+            <div className="px-3 py-2">
+              <SortableExerciseList
+                dayId={day.id}
+                exercises={day.exercises.map((ex) => ({
+                  id: ex.id,
+                  name: ex.name,
+                  note: ex.note,
+                  imageUrl: ex.image_url,
+                  sets: ex.sets,
+                  plannedWeight: getPlannedWeight(
+                    ex.start_weight,
+                    ex.increment,
+                    selectedWeek,
+                    program.deload_weeks,
+                    ex.progression_weeks,
+                    ex.peak_taper,
+                  ),
+                  plannedReps: getPlannedReps(
+                    ex.base_reps,
+                    selectedWeek,
+                    program.deload_weeks,
+                    ex.peak_taper,
+                  ),
+                }))}
+              />
+            </div>
             <div className="px-3 pb-3 pt-1">
               <Link
                 href={`/program/add?day=${day.id}&week=${selectedWeek}`}

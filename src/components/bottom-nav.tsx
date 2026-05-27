@@ -16,10 +16,6 @@ const ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
 
-  // Hide nav during an active workout — keeps Finish button reachable
-  // and removes navigation distractions mid-set.
-  if (pathname.startsWith("/workout/")) return null;
-
   return (
     <nav
       aria-label="Primary"

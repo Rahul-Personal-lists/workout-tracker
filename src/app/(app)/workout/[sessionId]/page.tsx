@@ -101,8 +101,6 @@ export default async function WorkoutPage({
       sessionId={sessionId}
       dayId={day.id}
       startedAt={session.started_at}
-      pausedAt={session.paused_at}
-      totalPausedSeconds={session.total_paused_seconds}
       weekNumber={session.week_number}
       dayLabel={day.label}
       dayTitle={day.title}
