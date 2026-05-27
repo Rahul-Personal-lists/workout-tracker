@@ -8,19 +8,24 @@ export function ExerciseAnimation({
   url,
   alt,
   size = 80,
+  shape = "square",
   className,
 }: {
   url: string | null;
   alt: string;
   size?: number;
+  shape?: "square" | "circle";
   className?: string;
 }) {
+  const radius = shape === "circle" ? "rounded-full" : "rounded";
+
   if (!url) {
     return (
       <div
         style={{ width: size, height: size }}
         className={cn(
-          "shrink-0 rounded bg-neutral-800 border border-neutral-800",
+          "shrink-0 bg-neutral-800 border border-neutral-800",
+          radius,
           className
         )}
         aria-hidden
@@ -32,7 +37,8 @@ export function ExerciseAnimation({
     <div
       style={{ width: size, height: size }}
       className={cn(
-        "relative shrink-0 rounded bg-neutral-100 overflow-hidden border border-neutral-800",
+        "relative shrink-0 bg-neutral-100 overflow-hidden border border-neutral-800",
+        radius,
         className
       )}
     >

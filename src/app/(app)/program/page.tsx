@@ -5,13 +5,13 @@ import {
   getCurrentProgram,
   getNextWorkout,
 } from "@/lib/queries";
-import { getPhase, getPlannedReps, getPlannedWeight } from "@/lib/progression";
-import { cn } from "@/lib/utils";
+import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { SortableExerciseList } from "./sortable-exercise-list";
 import { DayControls } from "./day-controls";
 import { EditableProgramName } from "./editable-program-name";
 import { ProgramSwitcher } from "./program-switcher";
 import { PresetList } from "./preset-list";
+import { DayTabs } from "./day-tabs";
 import { addDay } from "@/app/actions/program";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +19,9 @@ export const dynamic = "force-dynamic";
 export default async function ProgramPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; day?: string }>;
 }) {
-  const { week: weekParam } = await searchParams;
+  const { week: weekParam, day: dayParam } = await searchParams;
   const [program, allPrograms] = await Promise.all([
     getCurrentProgram(),
     getAllPrograms(),
@@ -60,9 +60,16 @@ export default async function ProgramPage({
       ? parsed
       : currentWeek;
 
-  const phase = getPhase(selectedWeek);
-  const isDeload = program.deload_weeks.includes(selectedWeek);
   const canAddProgram = allPrograms.length < 2;
+  const nextDayId =
+    next && (next.kind === "next" || next.kind === "in-progress")
+      ? next.day.id
+      : null;
+  const selectedDay =
+    program.days.find((d) => d.id === dayParam) ??
+    program.days.find((d) => d.id === nextDayId) ??
+    program.days[0] ??
+    null;
 
   const programIsEmpty = program.days.every((d) => d.exercises.length === 0);
 
@@ -95,43 +102,26 @@ export default async function ProgramPage({
         </div>
       )}
 
-      <div className="-mx-4 px-4 overflow-x-auto">
-        <div className="flex gap-1.5 min-w-max">
-          {Array.from({ length: program.weeks }, (_, i) => i + 1).map((w) => {
-            const isSelected = w === selectedWeek;
-            const isCurrent = w === currentWeek;
-            const isDeloadWeek = program.deload_weeks.includes(w);
-            return (
-              <Link
-                key={w}
-                href={`/program?week=${w}`}
-                scroll={false}
-                className={cn(
-                  "h-9 min-w-[44px] px-2 rounded-md flex flex-col items-center justify-center text-[11px] tabular-nums border",
-                  isSelected
-                    ? "bg-accent text-accent-foreground border-accent"
-                    : isCurrent
-                      ? "border-accent/60 text-accent"
-                      : "border-border text-foreground-muted"
-                )}
-              >
-                <span className="font-medium leading-none">W{w}</span>
-                {isDeloadWeek ? (
-                  <span className="text-[9px] leading-none mt-0.5 opacity-70">
-                    deload
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      {selectedDay ? (
+        <DayTabs
+          days={program.days.map((d) => ({ id: d.id, label: d.label }))}
+          selectedDayId={selectedDay.id}
+          selectedWeek={selectedWeek}
+        />
+      ) : null}
 
-      <div className="text-xs uppercase tracking-wide text-foreground-muted">
-        {phase} · Week {selectedWeek}
-        {isDeload ? " · Deload" : ""}
-        {selectedWeek === currentWeek ? " · Current" : ""}
-      </div>
+      {selectedDay ? (
+        <DayControls
+          dayId={selectedDay.id}
+          initialLabel={selectedDay.label}
+          initialTitle={selectedDay.title}
+          selectedWeek={selectedWeek}
+          totalWeeks={program.weeks}
+          deloadWeeks={program.deload_weeks}
+          isFirst={program.days.indexOf(selectedDay) === 0}
+          isLast={program.days.indexOf(selectedDay) === program.days.length - 1}
+        />
+      ) : null}
 
       {programIsEmpty ? (
         <div className="rounded-2xl border border-border bg-surface p-5 text-center space-y-3">
@@ -143,67 +133,46 @@ export default async function ProgramPage({
           <div className="space-y-1">
             <p className="font-medium">No exercises yet</p>
             <p className="text-sm text-foreground-muted">
-              Tap <span className="text-foreground">+ Add exercise</span> on any day below to get started.
+              Tap <span className="text-foreground">+ Add exercise</span> below to get started.
             </p>
           </div>
         </div>
       ) : null}
 
-      <ul className="space-y-3">
-        {program.days.map((day) => {
-            return (
-          <li
-            key={day.id}
-            className="rounded-2xl border border-border bg-surface"
+      {selectedDay ? (
+        <div className="space-y-3">
+          <SortableExerciseList
+            dayId={selectedDay.id}
+            exercises={selectedDay.exercises.map((ex) => ({
+              id: ex.id,
+              name: ex.name,
+              note: ex.note,
+              imageUrl: ex.image_url,
+              sets: ex.sets,
+              plannedWeight: getPlannedWeight(
+                ex.start_weight,
+                ex.increment,
+                selectedWeek,
+                program.deload_weeks,
+                ex.progression_weeks,
+                ex.peak_taper,
+              ),
+              plannedReps: getPlannedReps(
+                ex.base_reps,
+                selectedWeek,
+                program.deload_weeks,
+                ex.peak_taper,
+              ),
+            }))}
+          />
+          <Link
+            href={`/program/add?day=${selectedDay.id}&week=${selectedWeek}`}
+            className="btn-ghost-add h-9 text-xs"
           >
-            <header className="px-3 py-2.5 border-b border-border flex items-center gap-2">
-              <DayControls
-                dayId={day.id}
-                initialLabel={day.label}
-                initialTitle={day.title}
-                selectedWeek={selectedWeek}
-                isFirst={program.days.indexOf(day) === 0}
-                isLast={program.days.indexOf(day) === program.days.length - 1}
-              />
-            </header>
-            <div className="px-3 py-2">
-              <SortableExerciseList
-                dayId={day.id}
-                exercises={day.exercises.map((ex) => ({
-                  id: ex.id,
-                  name: ex.name,
-                  note: ex.note,
-                  imageUrl: ex.image_url,
-                  sets: ex.sets,
-                  plannedWeight: getPlannedWeight(
-                    ex.start_weight,
-                    ex.increment,
-                    selectedWeek,
-                    program.deload_weeks,
-                    ex.progression_weeks,
-                    ex.peak_taper,
-                  ),
-                  plannedReps: getPlannedReps(
-                    ex.base_reps,
-                    selectedWeek,
-                    program.deload_weeks,
-                    ex.peak_taper,
-                  ),
-                }))}
-              />
-            </div>
-            <div className="px-3 pb-3 pt-1">
-              <Link
-                href={`/program/add?day=${day.id}&week=${selectedWeek}`}
-                className="btn-ghost-add h-9 text-xs"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add exercise
-              </Link>
-            </div>
-          </li>
-          );
-        })}
-      </ul>
+            <Plus className="w-3.5 h-3.5" /> Add exercise
+          </Link>
+        </div>
+      ) : null}
 
       <form
         action={async () => {
@@ -216,10 +185,7 @@ export default async function ProgramPage({
           });
         }}
       >
-        <button
-          type="submit"
-          className="btn-ghost-add h-10 text-xs"
-        >
+        <button type="submit" className="btn-ghost-add h-10 text-xs">
           <Plus className="w-3.5 h-3.5" /> Add day
         </button>
       </form>
