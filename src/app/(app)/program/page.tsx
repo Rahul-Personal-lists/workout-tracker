@@ -2,17 +2,21 @@ import Link from "next/link";
 import { ListChecks, Plus } from "lucide-react";
 import {
   getAllPrograms,
+  getCompletedSlots,
   getCurrentProgram,
   getNextWorkout,
 } from "@/lib/queries";
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { formatWeight } from "@/lib/format";
+import { reapStaleSession } from "@/lib/sessions";
+import { createClient } from "@/lib/supabase/server";
 import { DayControls } from "./day-controls";
 import { ProgramSwitcher } from "./program-switcher";
 import { PresetList } from "./preset-list";
 import { DayTabs } from "./day-tabs";
 import { StartWorkoutButton } from "./start-workout-button";
+import type { SlotState } from "./types";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +26,17 @@ export default async function ProgramPage({
   searchParams: Promise<{ week?: string; day?: string }>;
 }) {
   const { week: weekParam, day: dayParam } = await searchParams;
+
+  // Reap any stale (>2h idle) in-progress sessions before reading workout state
+  // — otherwise getNextWorkout treats yesterday's abandoned session as the
+  // current one and the page sticks on the wrong day. Mirrors the call /today
+  // used to make before /today was deleted.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) await reapStaleSession(supabase, user.id);
+
   const [program, allPrograms] = await Promise.all([
     getCurrentProgram(),
     getAllPrograms(),
@@ -48,7 +63,10 @@ export default async function ProgramPage({
     );
   }
 
-  const next = await getNextWorkout(program);
+  const [next, completedSlots] = await Promise.all([
+    getNextWorkout(program),
+    getCompletedSlots(program),
+  ]);
   const currentWeek =
     next && (next.kind === "next" || next.kind === "in-progress")
       ? next.weekNumber
@@ -74,11 +92,20 @@ export default async function ProgramPage({
   const dayIsEmpty = !!selectedDay && selectedDay.exercises.length === 0;
   const inProgress = next?.kind === "in-progress" ? next : null;
 
-  const isToday =
-    !!next &&
-    (next.kind === "next" || next.kind === "in-progress") &&
-    selectedDay?.id === next.day.id &&
-    selectedWeek === next.weekNumber;
+  const nextKey =
+    next && (next.kind === "next" || next.kind === "in-progress")
+      ? `${next.day.id}:${next.weekNumber}`
+      : null;
+  const selectedKey = selectedDay
+    ? `${selectedDay.id}:${selectedWeek}`
+    : null;
+
+  let slotState: SlotState = "upcoming";
+  if (selectedKey) {
+    if (inProgress && nextKey === selectedKey) slotState = "in-progress";
+    else if (completedSlots.has(selectedKey)) slotState = "completed";
+    else if (nextKey === selectedKey) slotState = "today";
+  }
 
   return (
     <div className="space-y-5 pb-4">
@@ -109,6 +136,9 @@ export default async function ProgramPage({
             selectedDayId={selectedDay.id}
             selectedWeek={selectedWeek}
             programId={program.id}
+            completedSlots={Array.from(completedSlots)}
+            nextKey={nextKey}
+            inProgress={!!inProgress}
           />
           <DayControls
             dayId={selectedDay.id}
@@ -117,7 +147,7 @@ export default async function ProgramPage({
             totalWeeks={program.weeks}
             deloadWeeks={program.deload_weeks}
             programName={program.name}
-            isToday={isToday}
+            slotState={slotState}
           />
         </div>
       ) : null}
@@ -209,6 +239,7 @@ export default async function ProgramPage({
         <StartWorkoutButton
           programDayId={selectedDay.id}
           weekNumber={selectedWeek}
+          variant={slotState === "completed" ? "redo" : "start"}
         />
       ) : null}
     </div>

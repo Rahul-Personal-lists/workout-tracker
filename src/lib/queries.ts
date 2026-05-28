@@ -214,6 +214,24 @@ export async function getNextWorkout(
   return { kind: "next", weekNumber: nextWeek, day: program.days[nextIdx] };
 }
 
+// Keys: `${program_day_id}:${week_number}` — matches the slot identity used by
+// the /program day pills. Returned as a Set for O(1) lookups while rendering
+// up to weeks × days pills.
+export async function getCompletedSlots(
+  program: Program,
+): Promise<Set<string>> {
+  if (program.days.length === 0) return new Set();
+  const supabase = await createClient();
+  const dayIds = program.days.map((d) => d.id);
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select("program_day_id, week_number")
+    .in("program_day_id", dayIds)
+    .not("ended_at", "is", null);
+  if (error || !data) return new Set();
+  return new Set(data.map((r) => `${r.program_day_id}:${r.week_number}`));
+}
+
 // Mirrors UNDO_SKIP_WINDOW_MS in actions/workout.ts.
 const UNDO_SKIP_WINDOW_MS = 5 * 60 * 1000;
 
