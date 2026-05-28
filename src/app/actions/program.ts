@@ -159,6 +159,60 @@ export async function setExerciseOrder(
   revalidatePath("/today");
 }
 
+const SaveDayEditsSchema = z.object({
+  dayId: z.string().uuid(),
+  orderedIds: z.array(z.string().uuid()).max(50),
+});
+
+// Reconciles a day's exercise list against the user's edit-mode snapshot:
+// rows present in the DB but absent from orderedIds are archived; rows in
+// orderedIds are renumbered to match the new order.
+export async function saveDayEdits(
+  input: z.infer<typeof SaveDayEditsSchema>
+) {
+  const { dayId, orderedIds } = SaveDayEditsSchema.parse(input);
+  const supabase = await createClient();
+
+  const { data: siblings, error: sErr } = await supabase
+    .from("program_exercises")
+    .select("id")
+    .eq("program_day_id", dayId)
+    .is("archived_at", null);
+  if (sErr) throw sErr;
+
+  const orderedSet = new Set(orderedIds);
+  const toArchive = (siblings ?? [])
+    .map((s) => s.id)
+    .filter((id) => !orderedSet.has(id));
+
+  if (toArchive.length > 0) {
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ archived_at: new Date().toISOString() })
+      .in("id", toArchive);
+    if (error) throw error;
+  }
+
+  const OFFSET = 1_000_000;
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ order_index: OFFSET + i })
+      .eq("id", orderedIds[i]);
+    if (error) throw error;
+  }
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ order_index: i })
+      .eq("id", orderedIds[i]);
+    if (error) throw error;
+  }
+
+  revalidatePath("/program");
+  revalidatePath("/today");
+}
+
 // ──────────────────────────────────────────────
 // Program creation / activation / archive
 // ──────────────────────────────────────────────
@@ -461,16 +515,21 @@ export async function addDay(input: z.infer<typeof AddDaySchema>) {
   if (maxErr) throw maxErr;
   const nextDay = (maxRow?.day_number ?? 0) + 1;
 
-  const { error } = await supabase.from("program_days").insert({
-    program_id: parsed.programId,
-    day_number: nextDay,
-    label: parsed.label,
-    title: parsed.title,
-  });
+  const { data: inserted, error } = await supabase
+    .from("program_days")
+    .insert({
+      program_id: parsed.programId,
+      day_number: nextDay,
+      label: parsed.label,
+      title: parsed.title,
+    })
+    .select("id")
+    .single();
   if (error) throw error;
 
   revalidatePath("/program");
   revalidatePath("/today");
+  return { dayId: inserted.id };
 }
 
 const ReorderDaySchema = z.object({

@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, CalendarRange, Dumbbell, Scale, Settings } from "lucide-react";
+import { CalendarRange, Dumbbell, Scale, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
-  { href: "/today",    label: "Today",    icon: CalendarDays },
   { href: "/program",  label: "Program",  icon: Dumbbell },
   { href: "/calendar", label: "Calendar", icon: CalendarRange },
   { href: "/body",     label: "Body",     icon: Scale },
@@ -16,12 +15,14 @@ const ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
 
+  if (pathname === "/program/edit") return null;
+
   return (
     <nav
       aria-label="Primary"
       className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="grid grid-cols-5 h-16 max-w-md mx-auto">
+      <ul className="grid grid-cols-4 h-16 max-w-md mx-auto">
         {ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (

@@ -6,13 +6,13 @@ import {
   getNextWorkout,
 } from "@/lib/queries";
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
-import { SortableExerciseList } from "./sortable-exercise-list";
+import { ExerciseAnimation } from "@/components/exercise-animation";
+import { formatWeight } from "@/lib/format";
 import { DayControls } from "./day-controls";
-import { EditableProgramName } from "./editable-program-name";
 import { ProgramSwitcher } from "./program-switcher";
 import { PresetList } from "./preset-list";
 import { DayTabs } from "./day-tabs";
-import { addDay } from "@/app/actions/program";
+import { StartWorkoutButton } from "./start-workout-button";
 
 export const dynamic = "force-dynamic";
 
@@ -71,18 +71,17 @@ export default async function ProgramPage({
     program.days[0] ??
     null;
 
-  const programIsEmpty = program.days.every((d) => d.exercises.length === 0);
+  const dayIsEmpty = !!selectedDay && selectedDay.exercises.length === 0;
+  const inProgress = next?.kind === "in-progress" ? next : null;
+
+  const isToday =
+    !!next &&
+    (next.kind === "next" || next.kind === "in-progress") &&
+    selectedDay?.id === next.day.id &&
+    selectedWeek === next.weekNumber;
 
   return (
-    <div className="space-y-5">
-      <header className="space-y-1">
-        <EditableProgramName programId={program.id} initialName={program.name} />
-        <p className="text-xs text-neutral-500">
-          {program.weeks} weeks · deloads on{" "}
-          {program.deload_weeks.join(", ") || "none"}
-        </p>
-      </header>
-
+    <div className="space-y-5 pb-4">
       {(allPrograms.length > 1 || canAddProgram) && (
         <div className="flex items-center justify-between gap-2">
           {allPrograms.length > 1 ? (
@@ -103,27 +102,44 @@ export default async function ProgramPage({
       )}
 
       {selectedDay ? (
-        <DayTabs
-          days={program.days.map((d) => ({ id: d.id, label: d.label }))}
-          selectedDayId={selectedDay.id}
-          selectedWeek={selectedWeek}
-        />
+        <div className="space-y-3">
+          <DayTabs
+            templates={program.days.map((d) => ({ id: d.id }))}
+            totalWeeks={program.weeks}
+            selectedDayId={selectedDay.id}
+            selectedWeek={selectedWeek}
+            programId={program.id}
+          />
+          <DayControls
+            dayId={selectedDay.id}
+            initialTitle={selectedDay.title}
+            selectedWeek={selectedWeek}
+            totalWeeks={program.weeks}
+            deloadWeeks={program.deload_weeks}
+            programName={program.name}
+            isToday={isToday}
+          />
+        </div>
       ) : null}
 
-      {selectedDay ? (
-        <DayControls
-          dayId={selectedDay.id}
-          initialLabel={selectedDay.label}
-          initialTitle={selectedDay.title}
-          selectedWeek={selectedWeek}
-          totalWeeks={program.weeks}
-          deloadWeeks={program.deload_weeks}
-          isFirst={program.days.indexOf(selectedDay) === 0}
-          isLast={program.days.indexOf(selectedDay) === program.days.length - 1}
-        />
+      {inProgress ? (
+        <Link
+          href={`/workout/${inProgress.sessionId}`}
+          className="flex items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-foreground"
+        >
+          <span className="flex flex-col">
+            <span className="font-medium">Workout in progress</span>
+            <span className="text-xs text-foreground-muted">
+              {inProgress.day.label}: {inProgress.day.title}
+            </span>
+          </span>
+          <span className="text-xs font-medium uppercase tracking-wide text-accent">
+            Resume
+          </span>
+        </Link>
       ) : null}
 
-      {programIsEmpty ? (
+      {dayIsEmpty ? (
         <div className="rounded-2xl border border-border bg-surface p-5 text-center space-y-3">
           <ListChecks
             aria-hidden="true"
@@ -133,62 +149,68 @@ export default async function ProgramPage({
           <div className="space-y-1">
             <p className="font-medium">No exercises yet</p>
             <p className="text-sm text-foreground-muted">
-              Tap <span className="text-foreground">+ Add exercise</span> below to get started.
+              Tap the pencil to open the editor and add exercises.
             </p>
           </div>
         </div>
       ) : null}
 
-      {selectedDay ? (
-        <div className="space-y-3">
-          <SortableExerciseList
-            dayId={selectedDay.id}
-            exercises={selectedDay.exercises.map((ex) => ({
-              id: ex.id,
-              name: ex.name,
-              note: ex.note,
-              imageUrl: ex.image_url,
-              sets: ex.sets,
-              plannedWeight: getPlannedWeight(
-                ex.start_weight,
-                ex.increment,
-                selectedWeek,
-                program.deload_weeks,
-                ex.progression_weeks,
-                ex.peak_taper,
-              ),
-              plannedReps: getPlannedReps(
-                ex.base_reps,
-                selectedWeek,
-                program.deload_weeks,
-                ex.peak_taper,
-              ),
-            }))}
-          />
-          <Link
-            href={`/program/add?day=${selectedDay.id}&week=${selectedWeek}`}
-            className="btn-ghost-add h-9 text-xs"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add exercise
-          </Link>
-        </div>
+      {selectedDay && selectedDay.exercises.length > 0 ? (
+        <ul className="space-y-2">
+          {selectedDay.exercises.map((ex) => {
+            const plannedWeight = getPlannedWeight(
+              ex.start_weight,
+              ex.increment,
+              selectedWeek,
+              program.deload_weeks,
+              ex.progression_weeks,
+              ex.peak_taper,
+            );
+            const plannedReps = getPlannedReps(
+              ex.base_reps,
+              selectedWeek,
+              program.deload_weeks,
+              ex.peak_taper,
+            );
+            return (
+              <li
+                key={ex.id}
+                className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
+              >
+                <ExerciseAnimation
+                  url={ex.image_url}
+                  alt={ex.name}
+                  size={40}
+                  shape="circle"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm leading-snug truncate">
+                    {ex.name}
+                    {ex.note ? (
+                      <span className="text-[11px] text-foreground-muted ml-1">
+                        ({ex.note})
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs text-foreground-muted tabular-nums">
+                    {ex.sets}×{plannedReps ?? "—"}
+                    {plannedWeight !== null
+                      ? ` · ${formatWeight(plannedWeight)} lb`
+                      : ""}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       ) : null}
 
-      <form
-        action={async () => {
-          "use server";
-          const nextN = program.days.length + 1;
-          await addDay({
-            programId: program.id,
-            label: `Day ${nextN}`,
-            title: "New day",
-          });
-        }}
-      >
-        <button type="submit" className="btn-ghost-add h-10 text-xs">
-          <Plus className="w-3.5 h-3.5" /> Add day
-        </button>
-      </form>
+      {selectedDay && selectedDay.exercises.length > 0 && !inProgress ? (
+        <StartWorkoutButton
+          programDayId={selectedDay.id}
+          weekNumber={selectedWeek}
+        />
+      ) : null}
     </div>
   );
 }
