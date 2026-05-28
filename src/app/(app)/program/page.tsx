@@ -235,13 +235,11 @@ export default async function ProgramPage({
         </ul>
       ) : null}
 
-      {selectedDay &&
-      selectedDay.exercises.length > 0 &&
-      !inProgress &&
-      slotState !== "completed" ? (
+      {selectedDay && selectedDay.exercises.length > 0 && !inProgress ? (
         <StartWorkoutButton
           programDayId={selectedDay.id}
           weekNumber={selectedWeek}
+          variant={slotState === "completed" ? "redo" : "start"}
         />
       ) : null}
     </div>
