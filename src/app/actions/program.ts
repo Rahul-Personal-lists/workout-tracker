@@ -580,29 +580,3 @@ export async function reorderDay(input: z.infer<typeof ReorderDaySchema>) {
   revalidatePath("/program");
   revalidatePath("/today");
 }
-
-const DayIdSchema = z.object({ dayId: z.string().uuid() });
-
-export async function archiveDay(input: z.infer<typeof DayIdSchema>) {
-  const { dayId } = DayIdSchema.parse(input);
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("program_days")
-    .update({ archived_at: new Date().toISOString() })
-    .eq("id", dayId);
-  if (error) throw error;
-  revalidatePath("/program");
-  revalidatePath("/today");
-}
-
-export async function unarchiveDay(input: z.infer<typeof DayIdSchema>) {
-  const { dayId } = DayIdSchema.parse(input);
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("program_days")
-    .update({ archived_at: null })
-    .eq("id", dayId);
-  if (error) throw error;
-  revalidatePath("/program");
-  revalidatePath("/today");
-}

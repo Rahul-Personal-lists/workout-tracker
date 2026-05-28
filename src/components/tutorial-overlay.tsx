@@ -38,10 +38,10 @@ const TOUR_STEPS: Record<TourId, Step[]> = {
       body: "Browse every day in your plan. Tap the pencil to edit exercises.",
     },
     {
-      target: "nav-calendar",
+      target: "nav-progress",
       route: "/program",
-      title: "Calendar",
-      body: "Tap any past day to review the sets you logged.",
+      title: "Progress",
+      body: "Stats, charts, and a calendar of every workout you've logged.",
     },
     {
       target: "nav-body",
