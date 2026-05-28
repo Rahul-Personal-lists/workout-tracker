@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { dateKeyInTz } from "@/lib/tz";
+import { dateKeyInTz, getUserTimezone } from "@/lib/tz";
 
 export type ProgramExercise = {
   id: string;
@@ -184,7 +184,7 @@ export async function getNextWorkout(
 
   const { data: lastFinished } = await supabase
     .from("workout_sessions")
-    .select("week_number, program_day_id")
+    .select("week_number, program_day_id, ended_at")
     .in("program_day_id", dayIds)
     .not("ended_at", "is", null)
     .order("ended_at", { ascending: false })
@@ -200,6 +200,23 @@ export async function getNextWorkout(
   );
   if (lastIdx === -1) {
     return { kind: "next", weekNumber: 1, day: program.days[0] };
+  }
+
+  // If the last finished session ended on today's calendar date (in the user's
+  // timezone), keep "next" pointing at that same day so the /program page sits
+  // on today's completed workout instead of skipping ahead. Tomorrow this
+  // comparison flips false and the normal cycle advance below runs.
+  if (lastFinished.ended_at) {
+    const tz = await getUserTimezone();
+    const finishedDate = dateKeyInTz(new Date(lastFinished.ended_at), tz);
+    const todayDate = dateKeyInTz(new Date(), tz);
+    if (finishedDate === todayDate) {
+      return {
+        kind: "next",
+        weekNumber: lastFinished.week_number,
+        day: program.days[lastIdx],
+      };
+    }
   }
 
   let nextWeek = lastFinished.week_number;
