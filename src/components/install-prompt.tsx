@@ -63,7 +63,7 @@ export function InstallPrompt() {
 
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground leading-tight">
-              Install Workout Tracker
+              Install Trainly
             </p>
             <p className="text-xs text-foreground-muted mt-0.5 truncate">
               Add to home screen for the full experience

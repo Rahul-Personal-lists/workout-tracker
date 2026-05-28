@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/program",
-    name: "Workout Tracker",
-    short_name: "Workout",
+    name: "Trainly",
+    short_name: "Trainly",
     description: "Turn every workout into measurable progress.",
     start_url: "/program",
     display: "standalone",

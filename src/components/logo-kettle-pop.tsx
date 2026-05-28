@@ -6,7 +6,7 @@ export function LogoKettlePop({ size = 96 }: LogoProps) {
   return (
     <Image
       src="/icon-512.png"
-      alt="Workout Tracker logo"
+      alt="Trainly logo"
       width={size}
       height={size}
       priority

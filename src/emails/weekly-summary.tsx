@@ -82,7 +82,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
               </Button>
             </Section>
             <Hr style={{ borderColor: "#e2e8f0", margin: "28px 0 12px" }} />
-            <Text style={styles.footer}>Workout Tracker · weekly summary</Text>
+            <Text style={styles.footer}>Trainly · weekly summary</Text>
           </Container>
         </Body>
       </Html>
@@ -264,7 +264,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
           </Section>
 
           <Hr style={{ borderColor: "#e2e8f0", margin: "28px 0 12px" }} />
-          <Text style={styles.footer}>Workout Tracker · weekly summary</Text>
+          <Text style={styles.footer}>Trainly · weekly summary</Text>
         </Container>
       </Body>
     </Html>
