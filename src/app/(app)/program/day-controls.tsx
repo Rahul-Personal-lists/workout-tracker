@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { MoreVertical, Pencil, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { archiveDay } from "@/app/actions/program";
+import type { SlotState } from "./types";
 
 type DayControlsProps = {
   dayId: string;
@@ -13,7 +14,14 @@ type DayControlsProps = {
   totalWeeks: number;
   deloadWeeks: number[];
   programName: string;
-  isToday: boolean;
+  slotState: SlotState;
+};
+
+const STAGE_LABEL: Record<SlotState, string> = {
+  completed: "COMPLETED",
+  "in-progress": "IN PROGRESS",
+  today: "TODAY'S WORKOUT",
+  upcoming: "UPCOMING WORKOUT",
 };
 
 export function DayControls({
@@ -23,7 +31,7 @@ export function DayControls({
   totalWeeks,
   deloadWeeks,
   programName,
-  isToday,
+  slotState,
 }: DayControlsProps) {
   const [confirming, setConfirming] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -74,7 +82,7 @@ export function DayControls({
   const weekLine = isDeload
     ? `Week ${selectedWeek}/${totalWeeks} · Deload`
     : `Week ${selectedWeek}/${totalWeeks} · ${programName}`;
-  const stageLabel = isToday ? "TODAY'S WORKOUT" : "UPCOMING WORKOUT";
+  const stageLabel = STAGE_LABEL[slotState];
 
   return (
     <div className="text-center space-y-1">

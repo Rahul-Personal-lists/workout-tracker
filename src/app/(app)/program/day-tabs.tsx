@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useTransition } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useTransition } from "react";
+import { Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDay } from "@/app/actions/program";
 
@@ -15,16 +15,29 @@ export function DayTabs({
   selectedDayId,
   selectedWeek,
   programId,
+  completedSlots,
+  nextKey,
+  inProgress,
 }: {
   templates: Template[];
   totalWeeks: number;
   selectedDayId: string;
   selectedWeek: number;
   programId: string;
+  // Array (not Set) because page.tsx passes it across the server/client
+  // boundary, where Sets can't be serialized. We rebuild the Set client-side.
+  completedSlots: string[];
+  nextKey: string | null;
+  inProgress: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+
+  const completedSet = useMemo(
+    () => new Set(completedSlots),
+    [completedSlots],
+  );
 
   const templateCount = templates.length;
   const totalDays = totalWeeks * templateCount;
@@ -34,10 +47,12 @@ export function DayTabs({
     const globalNumber = i + 1;
     const weekNumber = Math.floor(i / templateCount) + 1;
     const templateIndex = i % templateCount;
+    const templateId = templates[templateIndex].id;
     return {
       globalNumber,
       weekNumber,
-      templateId: templates[templateIndex].id,
+      templateId,
+      key: `${templateId}:${weekNumber}`,
     };
   });
 
@@ -100,19 +115,40 @@ export function DayTabs({
         <div className="flex items-center gap-2 min-w-max justify-center">
           {slots.map((slot) => {
             const isSelected = slot.globalNumber === selectedGlobalNumber;
+            const isNext = nextKey === slot.key;
+            const isInProgress = isNext && inProgress;
+            const isCompleted = !isInProgress && completedSet.has(slot.key);
+            // Style precedence: selected > in-progress > today > completed > upcoming.
+            const styleClass = isSelected
+              ? "bg-accent text-accent-foreground border-accent"
+              : isInProgress
+                ? "border-accent text-accent bg-accent/10"
+                : isNext
+                  ? "border-accent text-foreground ring-2 ring-accent/40"
+                  : isCompleted
+                    ? "border-border bg-surface-subtle text-foreground-muted"
+                    : "border-border text-foreground-muted";
             return (
               <Link
                 key={slot.globalNumber}
                 href={`/program?week=${slot.weekNumber}&day=${slot.templateId}`}
                 scroll={false}
                 data-selected={isSelected ? "true" : undefined}
+                aria-label={
+                  isCompleted
+                    ? `Day ${slot.globalNumber}, completed`
+                    : isNext
+                      ? `Day ${slot.globalNumber}, today's workout`
+                      : `Day ${slot.globalNumber}`
+                }
                 className={cn(
-                  "h-9 px-4 rounded-full inline-flex items-center justify-center text-sm font-medium border shrink-0 whitespace-nowrap",
-                  isSelected
-                    ? "bg-accent text-accent-foreground border-accent"
-                    : "border-border text-foreground-muted",
+                  "h-9 px-3.5 rounded-full inline-flex items-center justify-center gap-1 text-sm font-medium border shrink-0 whitespace-nowrap",
+                  styleClass,
                 )}
               >
+                {isCompleted ? (
+                  <Check className="w-3 h-3" aria-hidden="true" />
+                ) : null}
                 Day {slot.globalNumber}
               </Link>
             );
