@@ -16,13 +16,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Workout Tracker",
+  title: "Trainly",
   description: "Turn every workout into measurable progress.",
-  applicationName: "Workout",
+  applicationName: "Trainly",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Workout",
+    title: "Trainly",
   },
   formatDetection: { telephone: false },
 };

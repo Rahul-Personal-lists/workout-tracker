@@ -79,8 +79,23 @@ export default function LoginPage() {
       />
       <div className="relative w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950/80 p-10 space-y-8 shadow-2xl backdrop-blur">
         <div className="flex flex-col items-center space-y-4">
-          <LogoKettlePop size={72} />
-          <h1 className="text-2xl font-semibold text-center">Welcome to Workout Tracker</h1>
+          <div className="animate-logo-enter">
+            <LogoKettlePop size={72} />
+          </div>
+          <h1 className="text-2xl font-semibold text-center animate-title-enter">
+            {"Welcome to "}
+            <span className="inline-flex" aria-label="Trainly">
+              {"Trainly".split("").map((ch, i) => (
+                <span
+                  key={i}
+                  className="inline-block animate-letter-bounce"
+                  style={{ animationDelay: `${0.45 + i * 0.06}s` }}
+                >
+                  {ch}
+                </span>
+              ))}
+            </span>
+          </h1>
         </div>
 
         {status === "sent" || status === "verifying" ? (
