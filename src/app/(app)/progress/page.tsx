@@ -21,7 +21,7 @@ import { MuscleMap } from "./muscle-map";
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendarPage({
+export default async function ProgressPage({
   searchParams,
 }: {
   searchParams: Promise<{ range?: string; anchor?: string }>;
@@ -85,26 +85,21 @@ export default async function CalendarPage({
 
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold leading-tight">Progress</h1>
-          {weekStreak > 0 ? (
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-foreground"
-              title="Consecutive weeks with at least one workout"
-              aria-label={`${weekStreak}-week workout streak`}
-            >
-              <Flame
-                aria-hidden="true"
-                className="h-3.5 w-3.5 text-[color:var(--color-accent)]"
-              />
-              {weekStreak}-week streak
-            </span>
-          ) : null}
-        </div>
-        <p className="text-xs text-foreground-muted">
-          Tap a workout day to review · accent ring marks today
-        </p>
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold leading-tight">Progress</h1>
+        {weekStreak > 0 ? (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-foreground"
+            title="Consecutive weeks with at least one workout"
+            aria-label={`${weekStreak}-week workout streak`}
+          >
+            <Flame
+              aria-hidden="true"
+              className="h-3.5 w-3.5 text-[color:var(--color-accent)]"
+            />
+            {weekStreak}-week streak
+          </span>
+        ) : null}
       </header>
 
       <RangeTabs active={range} anchorForRange={anchorForRange} />
