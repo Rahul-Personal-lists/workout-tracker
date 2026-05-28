@@ -75,7 +75,7 @@ src/app/
 ├── (app)/
 │   ├── today                      next-up workout card → starts session
 │   ├── workout/[sessionId]        active logging UI (RestTimerBar lives here)
-│   ├── program                    template picker (empty) OR week selector + day cards (Start W{n}, rename/archive day, + Add day, + Add exercise) and 2-program switcher
+│   ├── program                    template picker (empty) OR week selector + day cards (Start W{n}, rename day, + Add day, + Add exercise) and 2-program switcher
 │   │   ├── add                    catalog search → config form
 │   │   └── new                    blank-program builder (name, weeks, deloads, days)
 │   ├── calendar                   month grid of tracked sessions (?m=YYYY-MM); tap a day → /history/[sessionId]
@@ -90,7 +90,7 @@ Workouts are deleted **one at a time** from the history detail page; there is no
 
 Server actions:
 - [src/app/actions/workout.ts](src/app/actions/workout.ts) — startWorkout, logSet, editSetLog, editSessionDuration, finishWorkout, uploadSessionPhotos, deleteSessionPhoto, deleteSession
-- [src/app/actions/program.ts](src/app/actions/program.ts) — addExerciseToProgram, archive/unarchiveExerciseFromProgram, seedPresetProgram, createBlankProgram, setActiveProgram, archiveProgram, addDay, renameDay, archiveDay, unarchiveDay
+- [src/app/actions/program.ts](src/app/actions/program.ts) — addExerciseToProgram, archive/unarchiveExerciseFromProgram, seedPresetProgram, createBlankProgram, setActiveProgram, archiveProgram, addDay, renameDay
 
 ## Setup / run
 
@@ -153,7 +153,8 @@ Watch out: Supabase rate-limits `signInWithOtp` (~60s between sends). The `scrip
 - **Mid-workout exercise add.** New exercises only appear in *future* sessions of that day. The active in-progress session won't pick them up.
 - **Day/program structure edits during an active session.** `setActiveProgram` blocks while a session is in-progress, but archiving the day of an in-progress session is not blocked — avoid it manually.
 - **No program-level editor for weeks/deloads after creation** — only days and exercises. Change weeks/deloads by archiving and re-creating.
-- **Max 2 programs.** Trying to create a 3rd is rejected — user must archive one first. No UI to unarchive yet (`unarchiveDay` exists, `unarchiveProgram` does not).
+- **Max 2 programs.** Trying to create a 3rd is rejected — user must archive one first. No UI to unarchive yet.
+- **No "archive day" action.** Removed from the UI — if you want a day gone, delete its exercises via the pencil/edit page. The `program_days.archived_at` column still exists for soft-delete safety, but no code paths set it anymore.
 - **PWA shell caching only.** No real offline data; no install prompt UI (relies on browser/iOS native install).
 
 ## Don't

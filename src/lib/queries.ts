@@ -1,6 +1,13 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { dateKeyInTz, getUserTimezone } from "@/lib/tz";
+import {
+  getMuscleGroupsForExercise,
+  TOP_LEVEL_GROUPS,
+  type TopLevelGroup,
+} from "@/lib/muscle-groups";
+import type { ProgressBucketDef } from "@/lib/progress-range";
+import { mondayKeyOf, paddedInstantsForWindow } from "@/lib/progress-range";
 
 export type ProgramExercise = {
   id: string;
@@ -683,54 +690,264 @@ export async function getExerciseHistory(
   };
 }
 
-export type CalendarSession = {
-  sessionId: string;
-  status: "completed" | "in-progress";
-  label: string;
-};
+// Consecutive Mon-Sun weeks (counting back from this week, or last week if
+// this week is still empty) with ≥1 completed workout. Returns 0 if neither
+// this week nor last week have any activity — so the streak doesn't appear
+// to "drop" the instant a new week starts but holds for up to 7 days of
+// grace before resetting.
+export async function getWeekStreak(tz: string): Promise<number> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select("started_at")
+    .not("ended_at", "is", null)
+    .or("duration_seconds.is.null,duration_seconds.gt.0");
+  if (error) throw error;
+  if (!data || data.length === 0) return 0;
 
-export type CalendarDay = {
-  date: string; // YYYY-MM-DD in local time
-  sessions: CalendarSession[];
-};
+  const weeksWithWorkouts = new Set<string>();
+  for (const s of data) {
+    const dateKey = dateKeyInTz(new Date(s.started_at), tz);
+    weeksWithWorkouts.add(mondayKeyOf(dateKey));
+  }
 
-export async function getCalendarMonth(
+  const todayKey = dateKeyInTz(new Date(), tz);
+  const thisMonday = mondayKeyOf(todayKey);
+
+  // Decide where the streak should start. If this week has activity, start
+  // here. Otherwise, allow last week as the anchor (gives a 7-day grace
+  // period). Anything older = streak has been broken.
+  let cursor: string;
+  if (weeksWithWorkouts.has(thisMonday)) {
+    cursor = thisMonday;
+  } else {
+    const lastMonday = mondayKeyOf(prevWeekKey(thisMonday));
+    if (!weeksWithWorkouts.has(lastMonday)) return 0;
+    cursor = lastMonday;
+  }
+
+  let count = 0;
+  while (weeksWithWorkouts.has(cursor)) {
+    count += 1;
+    cursor = mondayKeyOf(prevWeekKey(cursor));
+  }
+  return count;
+}
+
+// Returns YYYY-MM-DD that's exactly 7 days earlier than the given Monday key.
+// Kept inline (rather than exported from progress-range) because it's only
+// used here.
+function prevWeekKey(mondayKey: string): string {
+  const [y, m, d] = mondayKey.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d - 7));
+  const ny = date.getUTCFullYear();
+  const nm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const nd = String(date.getUTCDate()).padStart(2, "0");
+  return `${ny}-${nm}-${nd}`;
+}
+
+// User-tz date key (YYYY-MM-DD) of the most recently completed session, or
+// null if the user has never finished a workout. Used by the `Last` tab so
+// the chart points at the day the user actually trained, not "today".
+export async function getLatestSessionDateKey(
+  tz: string
+): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select("started_at")
+    .not("ended_at", "is", null)
+    .or("duration_seconds.is.null,duration_seconds.gt.0")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return dateKeyInTz(new Date(data.started_at), tz);
+}
+
+// Map of YYYY-MM-DD (in the user's tz) → latest session id on that date.
+// Used by the progress page's month grid widget to mark days with workouts.
+export async function getSessionsByDateForMonth(
   year: number,
   month: number,
   tz: string
-): Promise<Map<string, CalendarDay>> {
+): Promise<Map<string, string>> {
   const supabase = await createClient();
 
-  // Pad ±1 day in UTC so sessions whose local-tz date falls inside the
-  // visible month are included even when their UTC instant straddles the boundary.
+  // Pad ±1 UTC day so user-tz boundary days inside this month are included.
   const start = new Date(Date.UTC(year, month - 1, 1) - 24 * 60 * 60 * 1000);
   const end = new Date(Date.UTC(year, month, 1) + 24 * 60 * 60 * 1000);
 
-  const { data: sessions, error } = await supabase
+  const { data, error } = await supabase
     .from("workout_sessions")
-    .select(
-      `id, started_at, ended_at,
-       program_days ( label, title )`
-    )
+    .select("id, started_at, ended_at")
     .gte("started_at", start.toISOString())
     .lt("started_at", end.toISOString())
     .or("duration_seconds.is.null,duration_seconds.gt.0")
     .order("started_at", { ascending: true });
   if (error) throw error;
 
-  const byDate = new Map<string, CalendarDay>();
-  for (const s of sessions ?? []) {
-    const key = dateKeyInTz(new Date(s.started_at), tz);
-    const dayLabel = s.program_days?.label ?? "—";
-    const dayTitle = s.program_days?.title ?? "—";
-    const entry =
-      byDate.get(key) ?? ({ date: key, sessions: [] } as CalendarDay);
-    entry.sessions.push({
-      sessionId: s.id,
-      status: s.ended_at ? "completed" : "in-progress",
-      label: `${dayLabel} · ${dayTitle}`,
-    });
-    byDate.set(key, entry);
+  const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+  const out = new Map<string, string>();
+  for (const s of data ?? []) {
+    const dateKey = dateKeyInTz(new Date(s.started_at), tz);
+    if (!dateKey.startsWith(monthKey)) continue;
+    out.set(dateKey, s.id);
   }
-  return byDate;
+  return out;
+}
+
+export type ProgressTotals = {
+  workouts: number;
+  exercises: number;
+  minutes: number;
+  reps: number;
+  volume: number;
+};
+
+export type ProgressBucket = {
+  key: string;
+  label: string;
+  workouts: number;
+  minutes: number;
+  sessionId: string | null;
+};
+
+export type ProgressData = {
+  totals: ProgressTotals;
+  buckets: ProgressBucket[];
+  muscleSets: Record<TopLevelGroup, number>;
+};
+
+function emptyMuscleSets(): Record<TopLevelGroup, number> {
+  return Object.fromEntries(TOP_LEVEL_GROUPS.map((g) => [g, 0])) as Record<
+    TopLevelGroup,
+    number
+  >;
+}
+
+export async function getProgressForRange(
+  startKey: string,
+  endKey: string,
+  buckets: ProgressBucketDef[],
+  bucketKind: "day" | "week" | "month",
+  tz: string
+): Promise<ProgressData> {
+  const supabase = await createClient();
+  const { startISO, endISO } = paddedInstantsForWindow(startKey, endKey);
+
+  const { data: sessions, error: sErr } = await supabase
+    .from("workout_sessions")
+    .select("id, started_at, duration_seconds")
+    .gte("started_at", startISO)
+    .lt("started_at", endISO)
+    .not("ended_at", "is", null)
+    .or("duration_seconds.is.null,duration_seconds.gt.0");
+  if (sErr) throw sErr;
+
+  const bucketKeySet = new Set(buckets.map((b) => b.key));
+  type Tagged = {
+    id: string;
+    startedAt: string;
+    durationSeconds: number;
+    bucketKey: string;
+  };
+  const tagged: Tagged[] = [];
+  for (const s of sessions ?? []) {
+    const dateKey = dateKeyInTz(new Date(s.started_at), tz);
+    if (dateKey < startKey || dateKey > endKey) continue;
+    const bucketKey =
+      bucketKind === "month"
+        ? dateKey.slice(0, 7)
+        : bucketKind === "week"
+          ? mondayKeyOf(dateKey)
+          : dateKey;
+    if (!bucketKeySet.has(bucketKey)) continue;
+    tagged.push({
+      id: s.id,
+      startedAt: s.started_at,
+      durationSeconds: s.duration_seconds ?? 0,
+      bucketKey,
+    });
+  }
+
+  const muscleSets = emptyMuscleSets();
+  const exerciseSet = new Set<string>();
+  let totalReps = 0;
+  let totalVolume = 0;
+
+  if (tagged.length > 0) {
+    const sessionIds = tagged.map((t) => t.id);
+    const { data: logs, error: lErr } = await supabase
+      .from("set_logs")
+      .select(
+        "session_id, program_exercise_id, actual_weight, actual_reps, program_exercises ( name, image_url )"
+      )
+      .in("session_id", sessionIds)
+      .eq("completed", true);
+    if (lErr) throw lErr;
+
+    for (const r of logs ?? []) {
+      exerciseSet.add(r.program_exercise_id);
+      if (r.actual_reps !== null) totalReps += r.actual_reps;
+      if (r.actual_weight !== null && r.actual_reps !== null) {
+        totalVolume += r.actual_weight * r.actual_reps;
+      }
+      const ex = r.program_exercises as
+        | { name: string; image_url: string | null }
+        | null;
+      const groups = getMuscleGroupsForExercise(
+        ex?.name ?? "",
+        ex?.image_url ?? null
+      );
+      for (const g of groups) muscleSets[g] += 1;
+    }
+  }
+
+  const bucketAgg = new Map<
+    string,
+    { workouts: number; seconds: number; latestStartedAt: string; latestSessionId: string }
+  >();
+  let totalSeconds = 0;
+  for (const t of tagged) {
+    totalSeconds += t.durationSeconds;
+    const cur = bucketAgg.get(t.bucketKey);
+    if (!cur) {
+      bucketAgg.set(t.bucketKey, {
+        workouts: 1,
+        seconds: t.durationSeconds,
+        latestStartedAt: t.startedAt,
+        latestSessionId: t.id,
+      });
+    } else {
+      cur.workouts += 1;
+      cur.seconds += t.durationSeconds;
+      if (t.startedAt > cur.latestStartedAt) {
+        cur.latestStartedAt = t.startedAt;
+        cur.latestSessionId = t.id;
+      }
+    }
+  }
+
+  return {
+    totals: {
+      workouts: tagged.length,
+      exercises: exerciseSet.size,
+      minutes: Math.round(totalSeconds / 60),
+      reps: totalReps,
+      volume: Math.round(totalVolume),
+    },
+    buckets: buckets.map((b) => {
+      const entry = bucketAgg.get(b.key);
+      return {
+        key: b.key,
+        label: b.label,
+        workouts: entry?.workouts ?? 0,
+        minutes: entry ? Math.round(entry.seconds / 60) : 0,
+        sessionId: entry?.latestSessionId ?? null,
+      };
+    }),
+    muscleSets,
+  };
 }

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarRange, Dumbbell, Scale, Settings } from "lucide-react";
+import { Dumbbell, LineChart, Scale, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/program",  label: "Program",  icon: Dumbbell },
-  { href: "/calendar", label: "Calendar", icon: CalendarRange },
+  { href: "/progress", label: "Progress", icon: LineChart },
   { href: "/body",     label: "Body",     icon: Scale },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

@@ -69,7 +69,7 @@ export async function skipRestDay(input: z.infer<typeof SkipRestDaySchema>) {
   if (error) throw error;
 
   revalidatePath("/today");
-  revalidatePath("/calendar");
+  revalidatePath("/progress");
   redirect("/today");
 }
 
@@ -99,7 +99,7 @@ export async function undoLastSkip() {
   if (error) throw error;
 
   revalidatePath("/today");
-  revalidatePath("/calendar");
+  revalidatePath("/progress");
 }
 
 const LogSetSchema = z.object({
@@ -161,7 +161,7 @@ export async function editSetLog(input: z.infer<typeof LogSetSchema>) {
   if (error) throw error;
 
   revalidatePath(`/history/${parsed.sessionId}`);
-  revalidatePath("/calendar");
+  revalidatePath("/progress");
 }
 
 const DeleteSetLogSchema = z.object({
@@ -217,7 +217,7 @@ export async function editSessionDuration(
   if (error) throw error;
 
   revalidatePath(`/history/${sessionId}`);
-  revalidatePath("/calendar");
+  revalidatePath("/progress");
 }
 
 const FinishSchema = z.object({
@@ -253,7 +253,7 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
   if (error) throw error;
 
   revalidatePath("/today");
-  revalidatePath("/calendar");
+  revalidatePath("/progress");
   revalidatePath("/program");
   revalidatePath(`/history/${sessionId}`);
   return { ok: true as const };
@@ -355,7 +355,7 @@ export async function deleteSession(input: z.infer<typeof DeleteSessionSchema>) 
   if (error) throw error;
 
   revalidatePath("/today");
-  revalidatePath("/calendar");
+  revalidatePath("/progress");
   revalidatePath("/program");
-  redirect("/calendar");
+  redirect("/progress");
 }

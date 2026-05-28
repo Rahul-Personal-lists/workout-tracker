@@ -50,10 +50,10 @@ export default async function ExerciseHistoryPage({
   return (
     <div className="space-y-6">
       <Link
-        href="/calendar"
+        href="/progress"
         className="inline-flex items-center text-sm text-neutral-400"
       >
-        <ArrowLeft className="w-4 h-4 mr-1" /> Calendar
+        <ArrowLeft className="w-4 h-4 mr-1" /> Progress
       </Link>
 
       <header className="space-y-1">
