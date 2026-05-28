@@ -7,7 +7,7 @@ import {
   getNextWorkout,
 } from "@/lib/queries";
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
-import { ExerciseAnimation } from "@/components/exercise-animation";
+import { ExerciseThumb } from "./exercise-thumb";
 import { formatWeight } from "@/lib/format";
 import { reapStaleSession } from "@/lib/sessions";
 import { createClient } from "@/lib/supabase/server";
@@ -109,24 +109,9 @@ export default async function ProgramPage({
 
   return (
     <div className="space-y-5 pb-4">
-      {(allPrograms.length > 1 || canAddProgram) && (
-        <div className="flex items-center justify-between gap-2">
-          {allPrograms.length > 1 ? (
-            <ProgramSwitcher programs={allPrograms} />
-          ) : (
-            <span />
-          )}
-          {canAddProgram ? (
-            <Link
-              href="/program/new"
-              data-tour="open-new-program"
-              className="btn-secondary h-9 px-3 text-xs"
-            >
-              <Plus className="w-3.5 h-3.5" /> New program
-            </Link>
-          ) : null}
-        </div>
-      )}
+      <div className="flex items-center justify-between gap-2">
+        <ProgramSwitcher programs={allPrograms} canAddProgram={canAddProgram} />
+      </div>
 
       {selectedDay ? (
         <div className="space-y-3">
@@ -146,7 +131,6 @@ export default async function ProgramPage({
             selectedWeek={selectedWeek}
             totalWeeks={program.weeks}
             deloadWeeks={program.deload_weeks}
-            programName={program.name}
             slotState={slotState}
           />
         </div>
@@ -207,12 +191,7 @@ export default async function ProgramPage({
                 key={ex.id}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
               >
-                <ExerciseAnimation
-                  url={ex.image_url}
-                  alt={ex.name}
-                  size={40}
-                  shape="circle"
-                />
+                <ExerciseThumb url={ex.image_url} alt={ex.name} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm leading-snug truncate">
                     {ex.name}
