@@ -15,7 +15,7 @@ const ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
 
-  if (pathname === "/program/edit") return null;
+  if (pathname === "/program/edit" || pathname.startsWith("/workout/")) return null;
 
   return (
     <nav

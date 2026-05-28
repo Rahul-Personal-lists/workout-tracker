@@ -10,7 +10,14 @@ import {
 } from "@/lib/stores/rest-timer";
 import { formatDuration } from "@/lib/format";
 
-export function RestTimerBar() {
+// `floating` splits the component into two complementary mounts:
+//   - default (inline): renders the idle settings disclosure when no timer is
+//     running. Returns null while a timer is active so the floating mount owns
+//     the running countdown.
+//   - floating: returns null when idle; renders the active countdown bar when
+//     a timer is running. Caller is responsible for positioning the parent
+//     (e.g. inside the fixed-bottom Finish footer in workout-client).
+export function RestTimerBar({ floating = false }: { floating?: boolean } = {}) {
   const endsAt = useRestTimer((s) => s.endsAt);
   const pausedAt = useRestTimer((s) => s.pausedAt);
   const defaultDuration = useRestTimer((s) => s.defaultDuration);
@@ -37,6 +44,7 @@ export function RestTimerBar() {
   }, [endsAt, pausedAt, now, stop]);
 
   if (endsAt === null) {
+    if (floating) return null;
     return (
       <details className="rounded-2xl border border-border bg-surface px-3 py-2 text-xs">
         <summary className="cursor-pointer text-foreground-muted select-none">
@@ -69,6 +77,10 @@ export function RestTimerBar() {
       </details>
     );
   }
+
+  // Active state — only the floating mount renders it, so the timer follows
+  // the user even when they scroll past the original inline position.
+  if (!floating) return null;
 
   // Freeze the displayed remaining at the moment of pause.
   const referenceNow = pausedAt ?? now;

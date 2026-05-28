@@ -122,17 +122,27 @@ export async function setExerciseOrder(
 
   const { data: siblings, error: sErr } = await supabase
     .from("program_exercises")
-    .select("id")
+    .select("id, order_index")
     .eq("program_day_id", dayId)
-    .is("archived_at", null);
+    .is("archived_at", null)
+    .order("order_index", { ascending: true });
   if (sErr) throw sErr;
 
+  // Merge under drift instead of throwing: the workout-page snapshot can
+  // diverge from the live program_exercises set if the user adds an exercise
+  // mid-workout (via /program/add) or another tab archives one. Keep any IDs
+  // from orderedIds that still exist, then append surviving siblings the
+  // caller didn't mention (preserving their current order_index relative
+  // ordering) so we never lose a row from the persisted order.
   const siblingIds = new Set(siblings.map((s) => s.id));
-  if (
-    orderedIds.length !== siblingIds.size ||
-    orderedIds.some((id) => !siblingIds.has(id))
-  ) {
-    throw new Error("orderedIds must match the day's current exercise set.");
+  const requested = orderedIds.filter((id) => siblingIds.has(id));
+  const requestedSet = new Set(requested);
+  const appended = siblings
+    .map((s) => s.id)
+    .filter((id) => !requestedSet.has(id));
+  const merged = [...requested, ...appended];
+  if (merged.length === 0) {
+    throw new Error("No matching exercises to reorder.");
   }
 
   // Two-phase write: first push every row into a temporary high range so the
@@ -140,18 +150,18 @@ export async function setExerciseOrder(
   // unique constraint today, but the two-phase approach keeps this safe if
   // we add one later.
   const OFFSET = 1_000_000;
-  for (let i = 0; i < orderedIds.length; i++) {
+  for (let i = 0; i < merged.length; i++) {
     const { error } = await supabase
       .from("program_exercises")
       .update({ order_index: OFFSET + i })
-      .eq("id", orderedIds[i]);
+      .eq("id", merged[i]);
     if (error) throw error;
   }
-  for (let i = 0; i < orderedIds.length; i++) {
+  for (let i = 0; i < merged.length; i++) {
     const { error } = await supabase
       .from("program_exercises")
       .update({ order_index: i })
-      .eq("id", orderedIds[i]);
+      .eq("id", merged[i]);
     if (error) throw error;
   }
 
