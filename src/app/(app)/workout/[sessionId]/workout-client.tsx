@@ -78,7 +78,19 @@ export function WorkoutClient({
   const [notes, setNotes] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [finishedSuccessfully, setFinishedSuccessfully] = useState(false);
+  // Drag-to-reorder lands in program_exercises.order_index via setExerciseOrder.
+  // Without feedback the user can't tell whether the write succeeded — surface
+  // it briefly as a toast, then auto-clear.
+  const [reorderToast, setReorderToast] = useState<
+    "saved" | "error" | null
+  >(null);
   const startRest = useRestTimer((s) => s.start);
+
+  useEffect(() => {
+    if (reorderToast === null) return;
+    const id = setTimeout(() => setReorderToast(null), 2200);
+    return () => clearTimeout(id);
+  }, [reorderToast]);
 
   useEffect(() => {
     function compute() {
@@ -184,12 +196,13 @@ export function WorkoutClient({
     if (oldIdx === -1 || newIdx === -1) return;
     const next = arrayMove(exercises, oldIdx, newIdx);
     setExercises(next);
-    setExerciseOrder({ dayId, orderedIds: next.map((x) => x.id) }).catch(
-      (err) => {
+    setExerciseOrder({ dayId, orderedIds: next.map((x) => x.id) })
+      .then(() => setReorderToast("saved"))
+      .catch((err) => {
         console.error("setExerciseOrder failed", err);
         setExercises(snapshot);
-      }
-    );
+        setReorderToast("error");
+      });
   }
 
   function hideExercise(id: string) {
@@ -391,8 +404,28 @@ export function WorkoutClient({
         <Plus className="w-4 h-4" /> Add exercise
       </Link>
 
+      {reorderToast ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className={cn(
+            "fixed left-1/2 -translate-x-1/2 z-40 px-3 py-1.5 rounded-full text-xs font-medium shadow-lg border",
+            // Sit above the Finish/RestTimer footer (~7rem + safe-area).
+            "bottom-[calc(env(safe-area-inset-bottom)+7rem)]",
+            reorderToast === "saved"
+              ? "bg-accent/15 border-accent/40 text-accent"
+              : "bg-red-500/15 border-red-500/40 text-red-300"
+          )}
+        >
+          {reorderToast === "saved"
+            ? "Order saved"
+            : "Couldn't save order — reverted."}
+        </div>
+      ) : null}
+
       <div className="fixed bottom-0 inset-x-0 z-30 bg-gradient-to-t from-black via-black/95 to-transparent pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] px-4">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md mx-auto space-y-3">
+          <RestTimerBar floating />
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
