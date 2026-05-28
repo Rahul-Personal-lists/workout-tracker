@@ -18,7 +18,7 @@ const OPTIONS: Option[] = [
     tour: "today",
     title: "Get to know the app",
     caption: "5 steps · the app layout",
-    route: "/today",
+    route: "/program",
   },
   {
     tour: "createProgram",
@@ -48,7 +48,7 @@ export function OnboardingPicker() {
   const open =
     hydrated &&
     !pickerSeen &&
-    pathname === "/today" &&
+    pathname === "/program" &&
     !autoStartToday &&
     !autoStartCreate;
 

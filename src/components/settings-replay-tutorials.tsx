@@ -10,7 +10,7 @@ type Entry = {
 };
 
 const ENTRIES: Entry[] = [
-  { tour: "today", label: "Replay: Get to know the app", route: "/today" },
+  { tour: "today", label: "Replay: Get to know the app", route: "/program" },
   {
     tour: "createProgram",
     label: "Replay: Make your first program",

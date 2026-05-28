@@ -2,11 +2,11 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    id: "/today",
+    id: "/program",
     name: "Workout Tracker",
     short_name: "Workout",
     description: "Turn every workout into measurable progress.",
-    start_url: "/today",
+    start_url: "/program",
     display: "standalone",
     orientation: "portrait",
     background_color: "#000000",

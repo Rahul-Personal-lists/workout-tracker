@@ -27,31 +27,31 @@ const TOUR_STEPS: Record<TourId, Step[]> = {
   today: [
     {
       target: "today-cta",
-      route: "/today",
+      route: "/program",
       title: "Start here",
-      body: "Tap this to pick a program — that's the gate for everything else.",
+      body: "Tap to begin today's workout — everything else is optional.",
     },
     {
       target: "nav-program",
-      route: "/today",
+      route: "/program",
       title: "Program",
-      body: "Edit your weeks, days, and exercises. Swap presets anytime.",
+      body: "Browse every day in your plan. Tap the pencil to edit exercises.",
     },
     {
       target: "nav-calendar",
-      route: "/today",
+      route: "/program",
       title: "Calendar",
       body: "Tap any past day to review the sets you logged.",
     },
     {
       target: "nav-body",
-      route: "/today",
+      route: "/program",
       title: "Body",
       body: "Log body weight and progress photos.",
     },
     {
       target: "nav-settings",
-      route: "/today",
+      route: "/program",
       title: "Settings",
       body: "Theme, display name, and sign out live here.",
     },

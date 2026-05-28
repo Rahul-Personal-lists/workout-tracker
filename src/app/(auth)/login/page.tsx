@@ -55,7 +55,7 @@ export default function LoginPage() {
       return;
     }
     // Hard navigation so the proxy middleware picks up the new auth cookies.
-    window.location.href = "/today";
+    window.location.href = "/program";
   }
 
   async function resend() {
