@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import { BlankProgramForm } from "./blank-program-form";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { PresetList } from "../preset-list";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +31,16 @@ export default function NewProgramPage() {
         <h2 className="text-base font-semibold text-foreground">
           Or Build Your Own
         </h2>
-        <BlankProgramForm />
+        <Link
+          href="/program/new/custom"
+          className="btn-ghost-add h-14 px-4 justify-between text-sm"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Pencil className="w-4 h-4" />
+            Start from scratch
+          </span>
+          <ChevronRight className="w-4 h-4 text-neutral-500" />
+        </Link>
       </section>
     </div>
   );

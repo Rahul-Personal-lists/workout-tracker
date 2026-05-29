@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useTransition } from "react";
-import { Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Check, ChevronLeft, ChevronRight, Dumbbell, Moon, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDay } from "@/app/actions/program";
 
@@ -33,6 +33,7 @@ export function DayTabs({
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const completedSet = useMemo(
     () => new Set(completedSlots),
@@ -74,14 +75,15 @@ export function DayTabs({
   const prevSlot = slots[selectedGlobalNumber - 2] ?? null;
   const nextSlot = slots[selectedGlobalNumber] ?? null;
 
-  function onAddDay() {
+  function onAddDay(title: string) {
     if (pending) return;
+    setMenuOpen(false);
     startTransition(async () => {
       try {
         const { dayId } = await addDay({
           programId,
           label: `Day ${templateCount + 1}`,
-          title: "New day",
+          title,
         });
         router.push(`/program?week=${selectedWeek}&day=${dayId}`);
         router.refresh();
@@ -153,18 +155,56 @@ export function DayTabs({
               </Link>
             );
           })}
-          <button
-            type="button"
-            onClick={onAddDay}
-            disabled={pending}
-            aria-label="Add day"
-            className={cn(
-              "h-9 w-9 rounded-full inline-flex items-center justify-center border border-dashed border-border text-foreground-muted shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]",
-              pending && "opacity-50",
-            )}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              disabled={pending}
+              aria-label="Add day"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className={cn(
+                "h-9 w-9 rounded-full inline-flex items-center justify-center border border-dashed border-border text-foreground-muted outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]",
+                pending && "opacity-50",
+              )}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+            {menuOpen ? (
+              <>
+                <button
+                  type="button"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  onClick={() => setMenuOpen(false)}
+                  className="fixed inset-0 z-40 cursor-default"
+                />
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-border bg-surface p-1 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => onAddDay("New day")}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                  >
+                    <Dumbbell className="w-4 h-4 text-foreground-muted" />
+                    Training day
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => onAddDay("Rest")}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                  >
+                    <Moon className="w-4 h-4 text-foreground-muted" />
+                    Rest day
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
       <Link

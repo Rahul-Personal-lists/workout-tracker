@@ -47,7 +47,7 @@ export async function skipRestDay(input: z.infer<typeof SkipRestDaySchema>) {
 
   const resumeId = await reapStaleSession(supabase, user.id);
   if (resumeId) {
-    revalidatePath("/today");
+    revalidatePath("/program");
     redirect(`/workout/${resumeId}`);
   }
 
@@ -68,9 +68,9 @@ export async function skipRestDay(input: z.infer<typeof SkipRestDaySchema>) {
   });
   if (error) throw error;
 
-  revalidatePath("/today");
+  revalidatePath("/program");
   revalidatePath("/progress");
-  redirect("/today");
+  redirect("/program");
 }
 
 // 5-minute window for undoing a rest-day skip.
@@ -98,7 +98,7 @@ export async function undoLastSkip() {
     .eq("id", latest.id);
   if (error) throw error;
 
-  revalidatePath("/today");
+  revalidatePath("/program");
   revalidatePath("/progress");
 }
 
