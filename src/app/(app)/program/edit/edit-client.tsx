@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
   DndContext,
   type DragEndEvent,
@@ -56,6 +56,11 @@ export function EditDayClient({
   const [items, setItems] = useState(exercises);
   const [pending, startTransition] = useTransition();
 
+  const isDirty = useMemo(() => {
+    if (items.length !== exercises.length) return true;
+    return items.some((item, i) => item.id !== exercises[i].id);
+  }, [items, exercises]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -99,17 +104,23 @@ export function EditDayClient({
         <button
           type="button"
           onClick={() => router.push(`/program?day=${dayId}&week=${selectedWeek}`)}
-          className="text-sm font-medium text-foreground-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] rounded px-1"
+          disabled={!isDirty || pending}
+          className={cn(
+            "text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] rounded px-1",
+            !isDirty || pending
+              ? "text-foreground-muted opacity-50"
+              : "text-foreground-muted hover:text-foreground",
+          )}
         >
           Discard
         </button>
         <button
           type="button"
           onClick={onSave}
-          disabled={pending}
+          disabled={pending || !isDirty}
           className={cn(
             "text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] rounded px-1",
-            pending ? "text-foreground-muted" : "text-accent",
+            pending || !isDirty ? "text-foreground-muted opacity-50" : "text-accent",
           )}
         >
           {pending ? "Saving…" : "Save"}

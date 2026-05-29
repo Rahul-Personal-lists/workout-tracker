@@ -82,6 +82,20 @@ export function ProfileClient({
   const [deletePending, startDelete] = useTransition();
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const initialAgeStr = initialAge !== null ? String(initialAge) : "";
+  const initialHeightFtStr = initialFtIn ? String(initialFtIn.ft) : "";
+  const initialHeightInStr = initialFtIn ? String(initialFtIn.in) : "";
+  const initialHeightCmStr =
+    initialHeightCm !== null ? String(Math.round(initialHeightCm)) : "";
+
+  const isDirty =
+    name !== (initialName ?? "") ||
+    gender !== initialGender ||
+    age !== initialAgeStr ||
+    (units === "imperial"
+      ? heightFt !== initialHeightFtStr || heightIn !== initialHeightInStr
+      : heightCmInput !== initialHeightCmStr);
+
   useEffect(() => {
     return () => {
       if (confirmTimer.current) clearTimeout(confirmTimer.current);
@@ -368,10 +382,10 @@ export function ProfileClient({
       <button
         type="button"
         onClick={onSaveForm}
-        disabled={formPending}
+        disabled={formPending || !isDirty}
         className={cn(
           "w-full h-11 rounded-md text-sm font-medium bg-accent text-accent-foreground",
-          formPending && "opacity-50"
+          (formPending || !isDirty) && "opacity-50"
         )}
       >
         {formPending ? "Saving…" : "Save changes"}
