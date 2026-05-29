@@ -10,7 +10,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, unitLabel } from "@/lib/format";
+import type { Units } from "@/lib/units";
+
+const LB_PER_KG = 2.20462;
 
 export type ChartPoint = {
   date: string;
@@ -21,12 +24,15 @@ export type ChartPoint = {
 export function ExerciseChart({
   points,
   isTime = false,
+  units,
 }: {
   points: ChartPoint[];
   isTime?: boolean;
+  units: Units;
 }) {
   const data = points.map((p) => ({
     ...p,
+    value: isTime ? p.value : units === "metric" ? p.value / LB_PER_KG : p.value,
     ts: new Date(p.date).getTime(),
     label: format(new Date(p.date), "MMM d"),
   }));
@@ -67,7 +73,8 @@ export function ExerciseChart({
                   return [formatDuration(value), "Top time"];
                 }
                 const reps = payload?.payload?.reps;
-                return [`${value} lb${reps ? ` × ${reps}` : ""}`, "Top set"];
+                const display = `${value.toFixed(1)} ${unitLabel(units)}${reps ? ` × ${reps}` : ""}`;
+                return [display, "Top set"];
               }}
             />
             <Line

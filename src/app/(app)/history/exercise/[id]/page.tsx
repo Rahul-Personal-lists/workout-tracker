@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, LineChart } from "lucide-react";
 import { getExerciseHistory } from "@/lib/queries";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, formatWeight } from "@/lib/format";
+import { getUnitsServer } from "@/lib/units-server";
 import { ExerciseChart, type ChartPoint } from "./exercise-chart";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,10 @@ export default async function ExerciseHistoryPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const history = await getExerciseHistory(id);
+  const [history, units] = await Promise.all([
+    getExerciseHistory(id),
+    getUnitsServer(),
+  ]);
   if (!history) notFound();
 
   const isTime = history.kind === "time";
@@ -68,7 +72,7 @@ export default async function ExerciseHistoryPage({
               <span className="font-medium">
                 {isTime
                   ? formatDuration(latest!.value)
-                  : `${latest!.value} lb`}
+                  : formatWeight(latest!.value, units)}
               </span>
               {!isTime && latest!.reps !== null ? ` × ${latest!.reps}` : ""}
             </span>
@@ -77,7 +81,7 @@ export default async function ExerciseHistoryPage({
                 {delta > 0 ? "+" : "-"}
                 {isTime
                   ? formatDuration(Math.abs(delta))
-                  : `${Math.abs(delta)} lb`}
+                  : formatWeight(Math.abs(delta), units)}
               </span>
             ) : null}
           </div>
@@ -99,7 +103,7 @@ export default async function ExerciseHistoryPage({
           </div>
         </div>
       ) : (
-        <ExerciseChart points={points} isTime={isTime} />
+        <ExerciseChart points={points} isTime={isTime} units={units} />
       )}
     </div>
   );

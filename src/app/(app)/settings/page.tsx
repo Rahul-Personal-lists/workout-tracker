@@ -1,24 +1,28 @@
-import { createClient } from "@/lib/supabase/server";
-import { getDisplayName, getGoalWeight } from "@/lib/queries";
-import { DisplayNameField } from "./display-name-field";
+import {
+  HelpCircle,
+  Palette,
+  Ruler,
+  Tag,
+  User,
+  Volume2,
+} from "lucide-react";
+import { getProfile } from "@/lib/queries";
 import { GoalWeightField } from "./goal-weight-field";
-import { SignOutButton } from "./sign-out";
-import { ThemePicker } from "./theme-picker";
-import { SettingsReplayTutorials } from "@/components/settings-replay-tutorials";
+import { SettingsRow, SettingsSection, SettingsStaticRow } from "./settings-row";
+
+export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const [
-    {
-      data: { user },
-    },
-    displayName,
-    goalWeight,
-  ] = await Promise.all([
-    supabase.auth.getUser(),
-    getDisplayName(),
-    getGoalWeight(),
-  ]);
+  const profile = await getProfile();
+
+  const profileName = profile.display_name ?? "Set your name";
+  const unitsLabel =
+    profile.units === "metric" ? "Metric (kg / cm)" : "Imperial (lb / in)";
+
+  const soundLabel = soundsSummary(
+    profile.sound_lead_seconds,
+    profile.vibration_lead_seconds
+  );
 
   return (
     <div className="space-y-6">
@@ -26,36 +30,83 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-semibold">Settings</h1>
       </header>
 
-      <section className="space-y-2">
-        <p className="text-xs uppercase tracking-wide text-foreground-muted">
-          Profile
-        </p>
-        <DisplayNameField initialName={displayName} />
-        <div className="rounded-md border border-border bg-surface p-4 space-y-1">
-          <p className="text-xs text-foreground-muted">Signed in as</p>
-          <p className="text-sm">{user?.email}</p>
+      <SettingsSection title="Profile">
+        <SettingsRow
+          href="/settings/profile"
+          icon={
+            profile.avatar_signed_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatar_signed_url}
+                alt=""
+                className="w-7 h-7 rounded-full object-cover -ml-1"
+              />
+            ) : (
+              <User className="w-5 h-5" strokeWidth={1.75} />
+            )
+          }
+          label={profileName}
+          rightLabel="Edit"
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Body">
+        <div className="px-4 py-3">
+          <GoalWeightField
+            initialGoalLb={profile.goal_weight_lb}
+            units={profile.units}
+          />
         </div>
-        <SignOutButton />
-      </section>
+      </SettingsSection>
 
-      <section className="space-y-2">
-        <p className="text-xs uppercase tracking-wide text-foreground-muted">
-          Body
-        </p>
-        <GoalWeightField initialGoalLb={goalWeight} />
-      </section>
+      <SettingsSection title="Preferences">
+        <SettingsRow
+          href="/settings/units"
+          icon={<Ruler className="w-5 h-5" strokeWidth={1.75} />}
+          label="Units"
+          rightLabel={unitsLabel}
+        />
+        <SettingsRow
+          href="/settings/sounds"
+          icon={<Volume2 className="w-5 h-5" strokeWidth={1.75} />}
+          label="Sounds"
+          rightLabel={soundLabel}
+        />
+        <SettingsRow
+          href="/settings/theme"
+          icon={<Palette className="w-5 h-5" strokeWidth={1.75} />}
+          label="Theme"
+          rightLabel="Accent"
+        />
+      </SettingsSection>
 
-      <section className="space-y-2">
-        <p className="text-xs uppercase tracking-wide text-foreground-muted">
-          Preferences
-        </p>
-        <ThemePicker />
-        <SettingsReplayTutorials />
-      </section>
+      <SettingsSection title="Help">
+        <SettingsRow
+          href="/settings/help"
+          icon={<HelpCircle className="w-5 h-5" strokeWidth={1.75} />}
+          label="Replay tutorials"
+        />
+      </SettingsSection>
 
-      <p className="text-center text-[10px] text-foreground-muted tabular-nums pt-4">
-        v0.1.0
-      </p>
+      <SettingsSection title="About">
+        <SettingsStaticRow
+          icon={<Tag className="w-5 h-5" strokeWidth={1.75} />}
+          label="Version"
+          rightLabel="0.1.0"
+        />
+      </SettingsSection>
     </div>
   );
+}
+
+function soundsSummary(
+  sound: number | null,
+  vibration: number | null
+): string {
+  function part(v: number | null): string {
+    if (v === null) return "off";
+    if (v === 0) return "0s";
+    return `${v}s`;
+  }
+  return `${part(sound)} / ${part(vibration)}`;
 }

@@ -4,15 +4,23 @@ import { useRef, useState, useTransition } from "react";
 import { Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setGoalWeight } from "@/app/actions/body";
+import {
+  formatWeight,
+  formatWeightShort,
+  parseWeightInput,
+  unitLabel,
+} from "@/lib/format";
+import type { Units } from "@/lib/units";
 
 type Props = {
   initialGoalLb: number | null;
+  units: Units;
 };
 
-export function GoalWeightField({ initialGoalLb }: Props) {
+export function GoalWeightField({ initialGoalLb, units }: Props) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(
-    initialGoalLb !== null ? String(initialGoalLb) : ""
+    initialGoalLb !== null ? formatWeightShort(initialGoalLb, units) : ""
   );
   const [savedGoal, setSavedGoal] = useState<number | null>(initialGoalLb);
   const [pending, startTransition] = useTransition();
@@ -26,7 +34,7 @@ export function GoalWeightField({ initialGoalLb }: Props) {
   }
 
   function cancel() {
-    setValue(savedGoal !== null ? String(savedGoal) : "");
+    setValue(savedGoal !== null ? formatWeightShort(savedGoal, units) : "");
     setEditing(false);
     setErrorMsg(null);
   }
@@ -35,7 +43,6 @@ export function GoalWeightField({ initialGoalLb }: Props) {
     setErrorMsg(null);
     const trimmed = value.trim();
     if (trimmed === "") {
-      // Clear the goal
       startTransition(async () => {
         try {
           await setGoalWeight({ goalWeightLb: null });
@@ -47,19 +54,19 @@ export function GoalWeightField({ initialGoalLb }: Props) {
       });
       return;
     }
-    const n = Number(trimmed);
-    if (!Number.isFinite(n) || n <= 0 || n >= 2000) {
+    const lb = parseWeightInput(trimmed, units);
+    if (lb === null || lb >= 2000) {
       setErrorMsg("Enter a positive number.");
       return;
     }
-    if (n === savedGoal) {
+    if (lb === savedGoal) {
       setEditing(false);
       return;
     }
     startTransition(async () => {
       try {
-        await setGoalWeight({ goalWeightLb: n });
-        setSavedGoal(n);
+        await setGoalWeight({ goalWeightLb: lb });
+        setSavedGoal(lb);
         setEditing(false);
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Failed to save.");
@@ -77,7 +84,9 @@ export function GoalWeightField({ initialGoalLb }: Props) {
 
   return (
     <div className="rounded-md border border-border bg-surface p-4 space-y-1">
-      <p className="text-xs text-foreground-muted">Goal weight (lb)</p>
+      <p className="text-xs text-foreground-muted">
+        Goal weight ({unitLabel(units)})
+      </p>
       {editing ? (
         <div className="space-y-2">
           <input
@@ -89,7 +98,7 @@ export function GoalWeightField({ initialGoalLb }: Props) {
             onKeyDown={onKeyDown}
             disabled={pending}
             inputMode="decimal"
-            placeholder="e.g. 175"
+            placeholder={units === "metric" ? "e.g. 79" : "e.g. 175"}
             className={cn(
               "w-full text-sm bg-transparent border-b border-accent outline-none tabular-nums",
               pending && "opacity-50"
@@ -112,7 +121,9 @@ export function GoalWeightField({ initialGoalLb }: Props) {
               savedGoal !== null ? "" : "text-foreground-muted italic"
             )}
           >
-            {savedGoal !== null ? `${savedGoal} lb` : "Not set — tap to add"}
+            {savedGoal !== null
+              ? formatWeight(savedGoal, units)
+              : "Not set — tap to add"}
           </span>
           <Pencil className="w-3.5 h-3.5 text-foreground-muted opacity-60 group-hover:opacity-100 transition-opacity" />
         </button>

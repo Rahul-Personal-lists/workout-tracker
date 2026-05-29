@@ -11,6 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatWeightShort } from "@/lib/format";
+import type { Units } from "@/lib/units";
 
 export type BodyPoint = {
   date: string;
@@ -19,17 +21,29 @@ export type BodyPoint = {
   ema: number | null;
 };
 
+const LB_PER_KG = 2.20462;
+
+function toDisplayWeight(lb: number, units: Units): number {
+  return units === "metric" ? lb / LB_PER_KG : lb;
+}
+
 export function BodyChart({
   data,
   goalWeight,
+  units,
 }: {
   data: BodyPoint[];
   goalWeight: number | null;
+  units: Units;
 }) {
   const rows = data.map((p) => ({
     ...p,
+    weight: p.weight !== null ? toDisplayWeight(p.weight, units) : null,
+    ema: p.ema !== null ? toDisplayWeight(p.ema, units) : null,
     label: format(new Date(p.date + "T00:00:00"), "MMM d"),
   }));
+  const goalDisplay =
+    goalWeight !== null ? toDisplayWeight(goalWeight, units) : null;
 
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
@@ -51,10 +65,11 @@ export function BodyChart({
               axisLine={{ stroke: "var(--color-border)" }}
               domain={[
                 (dataMin: number) =>
-                  Math.min(dataMin, goalWeight ?? dataMin) - 1,
+                  Math.min(dataMin, goalDisplay ?? dataMin) - 1,
                 (dataMax: number) =>
-                  Math.max(dataMax, goalWeight ?? dataMax) + 1,
+                  Math.max(dataMax, goalDisplay ?? dataMax) + 1,
               ]}
+              tickFormatter={(v: number) => v.toFixed(1)}
               width={48}
             />
             <Tooltip
@@ -70,18 +85,19 @@ export function BodyChart({
                 if (value === null || value === undefined) return ["—", ""];
                 const num = typeof value === "number" ? value : Number(value);
                 if (!Number.isFinite(num)) return ["—", ""];
-                if (name === "ema") return [`${num.toFixed(1)} lb`, "Trend"];
-                return [`${num} lb`, "Weight"];
+                const suffix = units === "metric" ? "kg" : "lb";
+                if (name === "ema") return [`${num.toFixed(1)} ${suffix}`, "Trend"];
+                return [`${num.toFixed(1)} ${suffix}`, "Weight"];
               }}
             />
-            {goalWeight !== null ? (
+            {goalDisplay !== null && goalWeight !== null ? (
               <ReferenceLine
-                y={goalWeight}
+                y={goalDisplay}
                 stroke="var(--color-accent)"
                 strokeDasharray="4 4"
                 strokeOpacity={0.5}
                 label={{
-                  value: `Goal ${goalWeight}`,
+                  value: `Goal ${formatWeightShort(goalWeight, units)}`,
                   fill: "var(--color-accent)",
                   fontSize: 10,
                   position: "insideBottomRight",

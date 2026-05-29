@@ -10,6 +10,7 @@ import {
 } from "./muscle-groups";
 import type { Database } from "./supabase/database.types";
 import { WeeklySummaryEmail } from "@/emails/weekly-summary";
+import { isUnits, type Units } from "./units";
 
 export const VANCOUVER_TZ = "America/Vancouver";
 
@@ -145,6 +146,7 @@ export type WeeklySummary =
         | { group: TopLevelGroup; pctChange: number; thisWeek: number; avg: number }
         | null;
       perMuscle: Record<TopLevelGroup, number>;
+      units: Units;
     }
   | {
       kind: "missed";
@@ -152,6 +154,7 @@ export type WeeklySummary =
       weekStart: Date;
       weekEnd: Date;
       lastWeekVolume: number;
+      units: Units;
     };
 
 export async function computeWeeklySummary(
@@ -161,6 +164,13 @@ export async function computeWeeklySummary(
   now = new Date()
 ): Promise<WeeklySummary> {
   const { current, trailing } = getWindows(now);
+
+  const { data: prof } = await admin
+    .from("profiles")
+    .select("units")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const units: Units = isUnits(prof?.units) ? prof.units : "imperial";
 
   const thisWeek = await fetchWindow(admin, userId, current.start, current.end);
 
@@ -177,6 +187,7 @@ export async function computeWeeklySummary(
       weekStart: current.start,
       weekEnd: current.end,
       lastWeekVolume: Math.round(totalVolume(lastWeek.rows)),
+      units,
     };
   }
 
@@ -248,6 +259,7 @@ export async function computeWeeklySummary(
     perMuscle: Object.fromEntries(
       TOP_LEVEL_GROUPS.map((g) => [g, Math.round(thisWeekMuscle[g])])
     ) as Record<TopLevelGroup, number>,
+    units,
   };
 }
 

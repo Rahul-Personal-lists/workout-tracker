@@ -4,7 +4,15 @@ import { useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { editSetLog } from "@/app/actions/workout";
-import { formatDuration, formatWeight, parseDuration } from "@/lib/format";
+import {
+  formatDuration,
+  formatWeight,
+  formatWeightShort,
+  parseDuration,
+  parseWeightInput,
+  unitLabel,
+} from "@/lib/format";
+import type { Units } from "@/lib/units";
 
 type Props = {
   sessionId: string;
@@ -17,6 +25,7 @@ type Props = {
   plannedSeconds: number | null;
   actualSeconds: number | null;
   completed: boolean;
+  units: Units;
 };
 
 export function EditableSetRow({
@@ -30,13 +39,14 @@ export function EditableSetRow({
   plannedSeconds,
   actualSeconds,
   completed,
+  units,
 }: Props) {
   const isTime = plannedSeconds !== null || actualSeconds !== null;
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const [weight, setWeight] = useState(
-    actualWeight !== null ? String(actualWeight) : ""
+    actualWeight !== null ? formatWeightShort(actualWeight, units) : ""
   );
   const [reps, setReps] = useState(
     actualReps !== null ? String(actualReps) : ""
@@ -73,9 +83,10 @@ export function EditableSetRow({
       return;
     }
 
-    const w = weight.trim() === "" ? null : Number(weight);
+    const w =
+      weight.trim() === "" ? null : parseWeightInput(weight, units);
     const r = reps.trim() === "" ? null : Number(reps);
-    if (w !== null && (!Number.isFinite(w) || w < 0)) return;
+    if (weight.trim() !== "" && w === null) return;
     if (r !== null && (!Number.isInteger(r) || r < 0)) return;
     startTransition(async () => {
       try {
@@ -99,7 +110,7 @@ export function EditableSetRow({
   }
 
   function cancel() {
-    setWeight(actualWeight !== null ? String(actualWeight) : "");
+    setWeight(actualWeight !== null ? formatWeightShort(actualWeight, units) : "");
     setReps(actualReps !== null ? String(actualReps) : "");
     setDuration(actualSeconds !== null ? formatDuration(actualSeconds) : "");
     setDone(completed);
@@ -123,11 +134,11 @@ export function EditableSetRow({
           ) : (
             <>
               <input
-                aria-label="Weight (lb)"
+                aria-label={`Weight (${unitLabel(units)})`}
                 value={weight}
                 onChange={(e) => setWeight(e.target.value.replace(/[^\d.]/g, "").slice(0, 6))}
                 inputMode="decimal"
-                placeholder="lb"
+                placeholder={unitLabel(units)}
                 className="h-8 w-16 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
               />
               <span className="text-neutral-500 text-xs">×</span>
@@ -237,7 +248,7 @@ export function EditableSetRow({
     >
       <span className="text-neutral-600 tabular-nums">{setNumber}</span>
       <span className={cn("tabular-nums", !dimmed && "font-medium")}>
-        {actualWeight !== null ? `${formatWeight(actualWeight)} lb` : "—"}
+        {actualWeight !== null ? formatWeight(actualWeight, units) : "—"}
         {actualReps !== null ? ` × ${actualReps}` : ""}
       </span>
       <span className="text-[11px] text-neutral-500 tabular-nums">
@@ -248,7 +259,7 @@ export function EditableSetRow({
                 {exceeds ? "↑" : "↓"}{" "}
               </span>
             ) : null}
-            planned {formatWeight(plannedWeight)} × {plannedReps ?? "—"}
+            planned {formatWeight(plannedWeight, units)} × {plannedReps ?? "—"}
           </>
         ) : null}
       </span>

@@ -133,6 +133,74 @@ export async function getDisplayName(): Promise<string | null> {
   return data?.display_name ?? null;
 }
 
+export type ProfileRow = {
+  display_name: string | null;
+  gender: "male" | "female" | "other" | null;
+  age: number | null;
+  height_cm: number | null;
+  avatar_path: string | null;
+  avatar_signed_url: string | null;
+  units: "imperial" | "metric";
+  goal_weight_lb: number | null;
+  sound_lead_seconds: number | null;
+  vibration_lead_seconds: number | null;
+};
+
+export async function getProfile(): Promise<ProfileRow> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "display_name, gender, age, height_cm, avatar_path, units, goal_weight_lb, sound_lead_seconds, vibration_lead_seconds"
+    )
+    .maybeSingle();
+  if (error) throw error;
+
+  let avatarSignedUrl: string | null = null;
+  if (data?.avatar_path) {
+    const { data: signed } = await supabase.storage
+      .from("workout-photos")
+      .createSignedUrl(data.avatar_path, 60 * 60);
+    avatarSignedUrl = signed?.signedUrl ?? null;
+  }
+
+  return {
+    display_name: data?.display_name ?? null,
+    gender: (data?.gender as ProfileRow["gender"]) ?? null,
+    age: data?.age ?? null,
+    height_cm: data?.height_cm !== null && data?.height_cm !== undefined
+      ? Number(data.height_cm)
+      : null,
+    avatar_path: data?.avatar_path ?? null,
+    avatar_signed_url: avatarSignedUrl,
+    units: (data?.units as "imperial" | "metric") ?? "imperial",
+    goal_weight_lb:
+      data?.goal_weight_lb !== null && data?.goal_weight_lb !== undefined
+        ? Number(data.goal_weight_lb)
+        : null,
+    sound_lead_seconds: data?.sound_lead_seconds ?? null,
+    vibration_lead_seconds: data?.vibration_lead_seconds ?? null,
+  };
+}
+
+export async function getTodayWeightLb(): Promise<number | null> {
+  const supabase = await createClient();
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+  const key = `${y}-${m}-${d}`;
+  const { data, error } = await supabase
+    .from("body_logs")
+    .select("weight_lb")
+    .eq("log_date", key)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.weight_lb !== null && data?.weight_lb !== undefined
+    ? Number(data.weight_lb)
+    : null;
+}
+
 export async function getAllPrograms(): Promise<ProgramSummary[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

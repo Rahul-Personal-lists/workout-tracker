@@ -14,7 +14,8 @@ import { DeleteSessionButton } from "./delete-session";
 import { RedoSessionButton } from "./redo-session";
 import { getPlannedReps, getPlannedSeconds, getPlannedWeight } from "@/lib/progression";
 import { formatDateInTz, getUserTimezone } from "@/lib/tz";
-import { formatDuration, formatWeight } from "@/lib/format";
+import { formatDuration, formatVolume, formatWeight } from "@/lib/format";
+import { getUnitsServer } from "@/lib/units-server";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +31,12 @@ export default async function SessionDetailPage({
   const { session, program, day } = ctx;
 
   const exerciseIds = day.exercises.map((e) => e.id);
-  const [logs, photos, tz, allTimeTops] = await Promise.all([
+  const [logs, photos, tz, allTimeTops, units] = await Promise.all([
     getSessionLogs(sessionId),
     getSessionPhotos(sessionId),
     getUserTimezone(),
     getAllTimeTopByExercise(exerciseIds),
+    getUnitsServer(),
   ]);
 
   const totalVolume = logs.reduce(
@@ -88,10 +90,10 @@ export default async function SessionDetailPage({
           </div>
           <div>
             <div className="text-base tabular-nums leading-tight">
-              {totalVolume > 0 ? Math.round(totalVolume).toLocaleString() : "—"}
+              {totalVolume > 0 ? formatVolume(totalVolume, units) : "—"}
             </div>
             <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
-              Lb · Reps
+              {units === "metric" ? "Kg" : "Lb"} · Reps
             </div>
           </div>
         </div>
@@ -206,9 +208,9 @@ export default async function SessionDetailPage({
                       (allTime.weight === todayW && allTime.reps > todayR));
                   return (
                     <span className="text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
-                      Top today · {formatWeight(todayW)} × {todayR}
+                      Top today · {formatWeight(todayW, units)} × {todayR}
                       {allTimeIsBetter
-                        ? ` · all-time ${formatWeight(allTime.weight)} × ${allTime.reps}`
+                        ? ` · all-time ${formatWeight(allTime.weight, units)} × ${allTime.reps}`
                         : ""}
                     </span>
                   );
@@ -232,6 +234,7 @@ export default async function SessionDetailPage({
                       plannedSeconds={s.planned_seconds ?? null}
                       actualSeconds={s.actual_seconds ?? null}
                       completed={s.completed}
+                      units={units}
                     />
                   ))
                 )}

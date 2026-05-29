@@ -1,12 +1,14 @@
 import { Activity, Clock, Dumbbell, Repeat, Weight } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import type { ProgressTotals } from "@/lib/queries";
+import { formatVolume, unitLabel } from "@/lib/format";
+import type { Units } from "@/lib/units";
 
 type Card = {
   id: keyof ProgressTotals;
   label: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
-  format: (v: number) => { value: string; suffix?: string };
+  format: (v: number, units: Units) => { value: string; suffix?: string };
 };
 
 const CARDS: Card[] = [
@@ -38,15 +40,24 @@ const CARDS: Card[] = [
     id: "volume",
     label: "Weight",
     Icon: Weight,
-    format: (v) => ({ value: v.toLocaleString(), suffix: "lb" }),
+    format: (v, units) => ({
+      value: formatVolume(v, units).split(" ")[0],
+      suffix: unitLabel(units),
+    }),
   },
 ];
 
-export function StatCards({ totals }: { totals: ProgressTotals }) {
+export function StatCards({
+  totals,
+  units,
+}: {
+  totals: ProgressTotals;
+  units: Units;
+}) {
   return (
     <div className="grid grid-cols-2 gap-3">
       {CARDS.map(({ id, label, Icon, format }) => {
-        const { value, suffix } = format(totals[id]);
+        const { value, suffix } = format(totals[id], units);
         return (
           <div
             key={id}
