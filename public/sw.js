@@ -1,14 +1,16 @@
 // Minimal service worker — installable PWA criterion + cached shell.
-// SWR for HTML so repeat opens render from cache while a background fetch
-// refreshes the entry for next time. Hashed Next.js static assets are
+// HTML is network-first: an online open always fetches the current deploy,
+// so navigations never render stale shell HTML that references purged
+// /_next/static chunk hashes (which would 404 and break client-side links).
+// Cache is the offline fallback only. Hashed Next.js static assets are
 // cache-first since their URLs are immutable.
 //
 // Auth paths (/login, /api/auth/*) bypass the SW entirely so cookies and
 // redirects always reach the network. HTML responses are only cached when
 // the final URL matches the request URL — prevents an unauthenticated
-// /today fetch (which middleware redirects to /login) from poisoning the
-// /today cache key with login HTML.
-const VERSION = "v3";
+// fetch (which middleware redirects to /login) from poisoning a page's
+// cache key with login HTML.
+const VERSION = "v4";
 const SHELL_CACHE = `shell-${VERSION}`;
 const STATIC_CACHE = `static-${VERSION}`;
 const SHELL_FILES = [
@@ -52,23 +54,16 @@ function sameUrlAs(res, req) {
   }
 }
 
-function staleWhileRevalidate(event, req, cacheName) {
+function networkFirst(req, cacheName) {
   return caches.open(cacheName).then((cache) =>
-    cache.match(req).then((cached) => {
-      const fetchPromise = fetch(req).then((res) => {
+    fetch(req)
+      .then((res) => {
         if (res && res.status === 200 && !res.redirected && sameUrlAs(res, req)) {
           cache.put(req, res.clone());
         }
         return res;
-      });
-      if (cached) {
-        // Keep the SW alive until the background refresh finishes so the
-        // next navigation hits a fresh cache entry.
-        event.waitUntil(fetchPromise.catch(() => {}));
-        return cached;
-      }
-      return fetchPromise.catch(() => Response.error());
-    })
+      })
+      .catch(() => cache.match(req).then((cached) => cached || Response.error()))
   );
 }
 
@@ -97,7 +92,7 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname === "/login" || url.pathname.startsWith("/api/auth/")) return;
 
   if (req.headers.get("accept")?.includes("text/html")) {
-    event.respondWith(staleWhileRevalidate(event, req, SHELL_CACHE));
+    event.respondWith(networkFirst(req, SHELL_CACHE));
     return;
   }
 
