@@ -69,10 +69,9 @@ export function ProgramSwitcher({
         aria-haspopup="menu"
         aria-expanded={open}
         data-tour="open-new-program"
-        className="h-9 px-3 text-xs rounded-md border border-border bg-surface text-foreground flex items-center gap-1.5 max-w-[60vw] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] disabled:opacity-50"
+        className="h-9 px-3 text-xs rounded-md border border-border bg-surface text-foreground flex items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] disabled:opacity-50"
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-        <span className="truncate">{active?.name}</span>
+        <span>My Plan</span>
         <ChevronDown
           aria-hidden="true"
           className={cn(
@@ -126,7 +125,7 @@ export function ProgramSwitcher({
                 <span className="w-4 shrink-0 inline-flex justify-center">
                   <Plus className="w-3.5 h-3.5" />
                 </span>
-                <span className="truncate">New program</span>
+                <span className="truncate">New Program</span>
               </Link>
             </div>
           ) : null}

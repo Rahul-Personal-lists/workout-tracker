@@ -15,22 +15,22 @@ export default function NewProgramPage() {
         >
           <ChevronLeft className="w-3.5 h-3.5" /> Program
         </Link>
-        <h1 className="text-2xl font-semibold">New program</h1>
+        <h1 className="text-2xl font-semibold">New Program</h1>
         <p className="text-xs text-neutral-500">
           Pick a template or build your own.
         </p>
       </header>
 
       <section className="space-y-2">
-        <h2 className="text-[11px] uppercase tracking-wide text-neutral-500">
-          Start from a template
+        <h2 className="text-base font-semibold text-foreground">
+          Start From a Template
         </h2>
         <PresetList />
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-[11px] uppercase tracking-wide text-neutral-500">
-          Or build your own
+        <h2 className="text-base font-semibold text-foreground">
+          Or Build Your Own
         </h2>
         <BlankProgramForm />
       </section>

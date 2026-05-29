@@ -45,21 +45,31 @@ function clearDraft() {
 }
 
 export function BlankProgramForm() {
-  const draft = useMemo(() => loadDraft(), []);
-
-  const [name, setName] = useState(draft?.name ?? "");
-  const [weeks, setWeeks] = useState(draft?.weeks ?? "8");
-  const [deloadSet, setDeloadSet] = useState<Set<number>>(
-    new Set(draft?.deloadSet ?? [])
-  );
-  const [days, setDays] = useState<DayRow[]>(draft?.days ?? DEFAULT_DAYS);
+  const [name, setName] = useState("");
+  const [weeks, setWeeks] = useState("8");
+  const [deloadSet, setDeloadSet] = useState<Set<number>>(new Set());
+  const [days, setDays] = useState<DayRow[]>(DEFAULT_DAYS);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Defer sessionStorage read to post-mount so SSR + first client render match.
+  // Also gates the persist effect so the empty initial state doesn't wipe the draft.
+  const [hydrated, setHydrated] = useState(false);
 
-  // Persist draft on every change
   useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      setName(draft.name);
+      setWeeks(draft.weeks);
+      setDeloadSet(new Set(draft.deloadSet));
+      setDays(draft.days);
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     saveDraft({ name, weeks, deloadSet: Array.from(deloadSet), days });
-  }, [name, weeks, deloadSet, days]);
+  }, [hydrated, name, weeks, deloadSet, days]);
 
   const weeksN = useMemo(() => {
     const n = parseInt(weeks, 10);
