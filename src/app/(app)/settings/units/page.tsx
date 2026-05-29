@@ -3,8 +3,6 @@ import { ArrowLeft } from "lucide-react";
 import { getUnitsServer } from "@/lib/units-server";
 import { UnitsClient } from "./units-client";
 
-export const dynamic = "force-dynamic";
-
 export default async function UnitsPage() {
   const units = await getUnitsServer();
   return (

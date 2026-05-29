@@ -83,7 +83,6 @@ export default function LoginPage() {
             <LogoKettlePop size={72} />
           </div>
           <h1 className="text-2xl font-semibold text-center animate-title-enter">
-            {"Welcome to "}
             <span className="inline-flex" aria-label="Trainly">
               {"Trainly".split("").map((ch, i) => (
                 <span

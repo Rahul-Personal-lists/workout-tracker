@@ -3,8 +3,6 @@ import { ArrowLeft } from "lucide-react";
 import { getProfile } from "@/lib/queries";
 import { SoundsClient } from "./sounds-client";
 
-export const dynamic = "force-dynamic";
-
 export default async function SoundsPage() {
   const profile = await getProfile();
   return (

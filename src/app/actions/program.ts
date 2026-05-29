@@ -322,8 +322,7 @@ export async function seedPresetProgram(
   await insertPresetData(supabase, programRow.id, preset);
 
   revalidatePath("/program");
-  revalidatePath("/today");
-  redirect("/today");
+  redirect("/program");
 }
 
 const CreateBlankSchema = z.object({

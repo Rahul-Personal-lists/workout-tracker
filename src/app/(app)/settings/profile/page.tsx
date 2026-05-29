@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile, getTodayWeightLb } from "@/lib/queries";
 import { ProfileClient } from "./profile-client";
 
-export const dynamic = "force-dynamic";
-
 export default async function ProfilePage() {
   const supabase = await createClient();
   const [
