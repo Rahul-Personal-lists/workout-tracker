@@ -714,6 +714,26 @@ export async function getBodyLogs(): Promise<BodyLogRow[]> {
   }));
 }
 
+export type BodyMeasurementRow = {
+  log_date: string;
+  metric: string;
+  value_cm: number;
+};
+
+export async function getBodyMeasurements(): Promise<BodyMeasurementRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("body_measurements")
+    .select("log_date, metric, value_cm")
+    .order("log_date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    log_date: r.log_date,
+    metric: r.metric,
+    value_cm: Number(r.value_cm),
+  }));
+}
+
 export async function getGoalWeight(): Promise<number | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
