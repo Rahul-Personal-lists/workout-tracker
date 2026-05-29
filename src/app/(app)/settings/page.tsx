@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { getDisplayName } from "@/lib/queries";
+import { getDisplayName, getGoalWeight } from "@/lib/queries";
 import { DisplayNameField } from "./display-name-field";
+import { GoalWeightField } from "./goal-weight-field";
 import { SignOutButton } from "./sign-out";
 import { ThemePicker } from "./theme-picker";
 import { SettingsReplayTutorials } from "@/components/settings-replay-tutorials";
@@ -12,7 +13,12 @@ export default async function SettingsPage() {
       data: { user },
     },
     displayName,
-  ] = await Promise.all([supabase.auth.getUser(), getDisplayName()]);
+    goalWeight,
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    getDisplayName(),
+    getGoalWeight(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -30,6 +36,13 @@ export default async function SettingsPage() {
           <p className="text-sm">{user?.email}</p>
         </div>
         <SignOutButton />
+      </section>
+
+      <section className="space-y-2">
+        <p className="text-xs uppercase tracking-wide text-foreground-muted">
+          Body
+        </p>
+        <GoalWeightField initialGoalLb={goalWeight} />
       </section>
 
       <section className="space-y-2">

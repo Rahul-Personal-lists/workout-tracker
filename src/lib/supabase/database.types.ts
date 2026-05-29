@@ -39,8 +39,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      body_log_photos: {
+        Row: {
+          created_at: string
+          id: string
+          log_date: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          log_date: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          log_date?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "body_log_photos_user_id_log_date_fkey"
+            columns: ["user_id", "log_date"]
+            isOneToOne: false
+            referencedRelation: "body_logs"
+            referencedColumns: ["user_id", "log_date"]
+          },
+        ]
+      }
       body_logs: {
         Row: {
+          body_fat_pct: number | null
           calories: number | null
           log_date: string
           note: string | null
@@ -49,6 +82,7 @@ export type Database = {
           weight_lb: number
         }
         Insert: {
+          body_fat_pct?: number | null
           calories?: number | null
           log_date: string
           note?: string | null
@@ -57,6 +91,7 @@ export type Database = {
           weight_lb: number
         }
         Update: {
+          body_fat_pct?: number | null
           calories?: number | null
           log_date?: string
           note?: string | null
@@ -69,16 +104,19 @@ export type Database = {
       profiles: {
         Row: {
           display_name: string | null
+          goal_weight_lb: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           display_name?: string | null
+          goal_weight_lb?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           display_name?: string | null
+          goal_weight_lb?: number | null
           updated_at?: string
           user_id?: string
         }
