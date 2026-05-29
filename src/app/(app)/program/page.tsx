@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ListChecks, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   getAllPrograms,
   getCompletedSlots,
   getCurrentProgram,
   getNextWorkout,
+  getUndoableSkip,
 } from "@/lib/queries";
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { ExerciseThumb } from "./exercise-thumb";
@@ -17,6 +18,8 @@ import { ProgramSwitcher } from "./program-switcher";
 import { PresetList } from "./preset-list";
 import { DayTabs } from "./day-tabs";
 import { StartWorkoutButton } from "./start-workout-button";
+import { RestDayCard } from "./rest-day-card";
+import { SkipUndoBanner } from "./skip-undo-banner";
 import type { SlotState } from "./types";
 
 export const dynamic = "force-dynamic";
@@ -65,9 +68,10 @@ export default async function ProgramPage({
     );
   }
 
-  const [next, completedSlots] = await Promise.all([
+  const [next, completedSlots, undoableSkip] = await Promise.all([
     getNextWorkout(program),
     getCompletedSlots(program),
+    getUndoableSkip(),
   ]);
   const currentWeek =
     next && (next.kind === "next" || next.kind === "in-progress")
@@ -93,6 +97,13 @@ export default async function ProgramPage({
 
   const dayIsEmpty = !!selectedDay && selectedDay.exercises.length === 0;
   const inProgress = next?.kind === "in-progress" ? next : null;
+
+  const templateIndex = selectedDay
+    ? program.days.findIndex((d) => d.id === selectedDay.id)
+    : -1;
+  const canMoveEarlier = templateIndex > 0;
+  const canMoveLater =
+    templateIndex >= 0 && templateIndex < program.days.length - 1;
 
   const nextKey =
     next && (next.kind === "next" || next.kind === "in-progress")
@@ -134,6 +145,8 @@ export default async function ProgramPage({
             totalWeeks={program.weeks}
             deloadWeeks={program.deload_weeks}
             slotState={slotState}
+            canMoveEarlier={canMoveEarlier}
+            canMoveLater={canMoveLater}
           />
         </div>
       ) : null}
@@ -155,20 +168,15 @@ export default async function ProgramPage({
         </Link>
       ) : null}
 
-      {dayIsEmpty ? (
-        <div className="rounded-2xl border border-border bg-surface p-5 text-center space-y-3">
-          <ListChecks
-            aria-hidden="true"
-            strokeWidth={1.5}
-            className="w-10 h-10 text-foreground-muted mx-auto"
-          />
-          <div className="space-y-1">
-            <p className="font-medium">No exercises yet</p>
-            <p className="text-sm text-foreground-muted">
-              Tap the pencil to open the editor and add exercises.
-            </p>
-          </div>
-        </div>
+      {undoableSkip ? <SkipUndoBanner skip={undoableSkip} /> : null}
+
+      {dayIsEmpty && selectedDay ? (
+        <RestDayCard
+          dayId={selectedDay.id}
+          weekNumber={selectedWeek}
+          slotState={slotState}
+          editHref={`/program/edit?day=${selectedDay.id}&week=${selectedWeek}`}
+        />
       ) : null}
 
       {selectedDay && selectedDay.exercises.length > 0 ? (

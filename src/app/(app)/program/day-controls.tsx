@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Pencil } from "lucide-react";
+import { DayMoveButtons } from "./day-move-buttons";
 import type { SlotState } from "./types";
 
 type DayControlsProps = {
@@ -9,6 +10,8 @@ type DayControlsProps = {
   totalWeeks: number;
   deloadWeeks: number[];
   slotState: SlotState;
+  canMoveEarlier: boolean;
+  canMoveLater: boolean;
 };
 
 const STAGE_LABEL: Record<SlotState, string> = {
@@ -25,6 +28,8 @@ export function DayControls({
   totalWeeks,
   deloadWeeks,
   slotState,
+  canMoveEarlier,
+  canMoveLater,
 }: DayControlsProps) {
   const isDeload = deloadWeeks.includes(selectedWeek);
   const weekLine = isDeload
@@ -34,8 +39,12 @@ export function DayControls({
 
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="w-9 shrink-0" aria-hidden="true" />
-      <div className="min-w-0 text-center space-y-0.5">
+      <DayMoveButtons
+        dayId={dayId}
+        canMoveEarlier={canMoveEarlier}
+        canMoveLater={canMoveLater}
+      />
+      <div className="min-w-0 flex-1 text-center space-y-0.5">
         <p className="text-xs font-medium text-accent tabular-nums">
           {weekLine}
         </p>

@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       body_log_photos: {
@@ -98,6 +73,30 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weight_lb?: number
+        }
+        Relationships: []
+      }
+      body_measurements: {
+        Row: {
+          log_date: string
+          metric: string
+          updated_at: string
+          user_id: string
+          value_cm: number
+        }
+        Insert: {
+          log_date: string
+          metric: string
+          updated_at?: string
+          user_id: string
+          value_cm: number
+        }
+        Update: {
+          log_date?: string
+          metric?: string
+          updated_at?: string
+          user_id?: string
+          value_cm?: number
         }
         Relationships: []
       }
@@ -553,9 +552,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

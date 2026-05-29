@@ -11,39 +11,38 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatWeightShort } from "@/lib/format";
-import type { Units } from "@/lib/units";
 
-export type BodyPoint = {
+export type MetricPoint = {
   date: string;
-  weight: number | null;
-  calories: number | null;
+  value: number | null;
   ema: number | null;
 };
 
-const LB_PER_KG = 2.20462;
-
-function toDisplayWeight(lb: number, units: Units): number {
-  return units === "metric" ? lb / LB_PER_KG : lb;
-}
-
-export function BodyChart({
+export function MetricChart({
   data,
-  goalWeight,
-  units,
+  toDisplay,
+  unitSuffix,
+  decimals = 1,
+  pad = 1,
+  goalValue = null,
+  goalLabel,
 }: {
-  data: BodyPoint[];
-  goalWeight: number | null;
-  units: Units;
+  data: MetricPoint[];
+  /** Maps a canonical stored value to the display unit. */
+  toDisplay: (canonical: number) => number;
+  unitSuffix: string;
+  decimals?: number;
+  pad?: number;
+  goalValue?: number | null;
+  goalLabel?: string;
 }) {
   const rows = data.map((p) => ({
     ...p,
-    weight: p.weight !== null ? toDisplayWeight(p.weight, units) : null,
-    ema: p.ema !== null ? toDisplayWeight(p.ema, units) : null,
+    value: p.value !== null ? toDisplay(p.value) : null,
+    ema: p.ema !== null ? toDisplay(p.ema) : null,
     label: format(new Date(p.date + "T00:00:00"), "MMM d"),
   }));
-  const goalDisplay =
-    goalWeight !== null ? toDisplayWeight(goalWeight, units) : null;
+  const goalDisplay = goalValue !== null ? toDisplay(goalValue) : null;
 
   return (
     <div className="rounded-lg border border-border bg-surface p-3">
@@ -65,11 +64,11 @@ export function BodyChart({
               axisLine={{ stroke: "var(--color-border)" }}
               domain={[
                 (dataMin: number) =>
-                  Math.min(dataMin, goalDisplay ?? dataMin) - 1,
+                  Math.min(dataMin, goalDisplay ?? dataMin) - pad,
                 (dataMax: number) =>
-                  Math.max(dataMax, goalDisplay ?? dataMax) + 1,
+                  Math.max(dataMax, goalDisplay ?? dataMax) + pad,
               ]}
-              tickFormatter={(v: number) => v.toFixed(1)}
+              tickFormatter={(v: number) => v.toFixed(decimals)}
               width={48}
             />
             <Tooltip
@@ -85,19 +84,19 @@ export function BodyChart({
                 if (value === null || value === undefined) return ["—", ""];
                 const num = typeof value === "number" ? value : Number(value);
                 if (!Number.isFinite(num)) return ["—", ""];
-                const suffix = units === "metric" ? "kg" : "lb";
-                if (name === "ema") return [`${num.toFixed(1)} ${suffix}`, "Trend"];
-                return [`${num.toFixed(1)} ${suffix}`, "Weight"];
+                const text = `${num.toFixed(decimals)} ${unitSuffix}`.trim();
+                if (name === "ema") return [text, "Trend"];
+                return [text, "Value"];
               }}
             />
-            {goalDisplay !== null && goalWeight !== null ? (
+            {goalDisplay !== null && goalLabel ? (
               <ReferenceLine
                 y={goalDisplay}
                 stroke="var(--color-accent)"
                 strokeDasharray="4 4"
                 strokeOpacity={0.5}
                 label={{
-                  value: `Goal ${formatWeightShort(goalWeight, units)}`,
+                  value: goalLabel,
                   fill: "var(--color-accent)",
                   fontSize: 10,
                   position: "insideBottomRight",
@@ -106,7 +105,7 @@ export function BodyChart({
             ) : null}
             <Line
               type="monotone"
-              dataKey="weight"
+              dataKey="value"
               stroke="var(--color-foreground-muted)"
               strokeWidth={1}
               strokeOpacity={0.5}

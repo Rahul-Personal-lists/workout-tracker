@@ -58,6 +58,51 @@ export function formatLength(
   return `${ft} ft ${inches} in`;
 }
 
+// Circumference measurements: canonical cm, displayed as decimal inches
+// (imperial) or cm (metric). Distinct from formatLength, which renders height
+// as ft/in.
+export function circumferenceUnitLabel(units: Units): "in" | "cm" {
+  return units === "metric" ? "cm" : "in";
+}
+
+export function formatCircumferenceShort(
+  cm: number | null | undefined,
+  units: Units = "imperial"
+): string {
+  if (cm === null || cm === undefined) return "—";
+  const value = units === "metric" ? cm : cm / CM_PER_IN;
+  return formatNumberOneDecimal(value);
+}
+
+export function formatCircumference(
+  cm: number | null | undefined,
+  units: Units = "imperial"
+): string {
+  if (cm === null || cm === undefined) return "—";
+  return `${formatCircumferenceShort(cm, units)} ${circumferenceUnitLabel(units)}`;
+}
+
+export function formatSignedCircumference(
+  cm: number | null | undefined,
+  units: Units = "imperial"
+): string {
+  if (cm === null || cm === undefined) return "—";
+  const value = units === "metric" ? cm : cm / CM_PER_IN;
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${Math.abs(value).toFixed(1)}`;
+}
+
+export function parseCircumferenceInput(
+  raw: string,
+  units: Units = "imperial"
+): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return units === "metric" ? n : Math.round(n * CM_PER_IN * 10) / 10;
+}
+
 export function parseWeightInput(
   raw: string,
   units: Units = "imperial"

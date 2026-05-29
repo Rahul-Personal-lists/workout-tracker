@@ -1,5 +1,6 @@
 import { PRESET_PROGRAMS } from "@/lib/starter-program";
 import { seedPresetProgram } from "@/app/actions/program";
+import { PresetPreview } from "./preset-preview";
 
 export function PresetList() {
   return (
@@ -19,6 +20,7 @@ export function PresetList() {
             </p>
             <p className="text-xs text-neutral-400 mt-1">{p.description}</p>
           </div>
+          <PresetPreview preset={p} />
           <form
             action={async () => {
               "use server";

@@ -66,6 +66,55 @@ export async function deleteBodyLog(input: z.infer<typeof DeleteSchema>) {
   revalidatePath("/body");
 }
 
+const MeasurementSchema = z.object({
+  date: DateSchema,
+  metric: z.enum(["chest", "waist", "hips", "bicep", "thigh"]),
+  valueCm: z.number().positive().lt(500),
+});
+
+export async function upsertBodyMeasurement(
+  input: z.infer<typeof MeasurementSchema>
+) {
+  const parsed = MeasurementSchema.parse(input);
+  const { supabase, user } = await requireUser();
+
+  const { error } = await supabase.from("body_measurements").upsert(
+    {
+      user_id: user.id,
+      log_date: parsed.date,
+      metric: parsed.metric,
+      value_cm: parsed.valueCm,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,log_date,metric" }
+  );
+  if (error) throw error;
+
+  revalidatePath("/body");
+}
+
+const DeleteMeasurementSchema = z.object({
+  date: DateSchema,
+  metric: z.enum(["chest", "waist", "hips", "bicep", "thigh"]),
+});
+
+export async function deleteBodyMeasurement(
+  input: z.infer<typeof DeleteMeasurementSchema>
+) {
+  const { date, metric } = DeleteMeasurementSchema.parse(input);
+  const { supabase, user } = await requireUser();
+
+  const { error } = await supabase
+    .from("body_measurements")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("log_date", date)
+    .eq("metric", metric);
+  if (error) throw error;
+
+  revalidatePath("/body");
+}
+
 const GoalSchema = z.object({
   goalWeightLb: z.number().positive().lt(2000).nullable(),
 });
