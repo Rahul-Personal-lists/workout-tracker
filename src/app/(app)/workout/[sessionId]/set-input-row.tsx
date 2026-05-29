@@ -3,25 +3,32 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatWeight } from "@/lib/format";
+import {
+  formatWeightShort,
+  parseWeightInput,
+  unitLabel,
+} from "@/lib/format";
+import type { Units } from "@/lib/units";
 import { SwipeRow } from "@/components/swipe-row";
 import type { SetRow } from "./types";
 
 export function SetInputRow({
   set,
+  units,
   lastWeight,
   lastReps,
   onChange,
   onDelete,
 }: {
   set: SetRow;
+  units: Units;
   lastWeight: number | null;
   lastReps: number | null;
   onChange: (patch: Partial<SetRow>, persist: boolean) => void;
   onDelete: () => void;
 }) {
   const [weightStr, setWeightStr] = useState(
-    set.actualWeight !== null ? formatWeight(set.actualWeight) : ""
+    set.actualWeight !== null ? formatWeightShort(set.actualWeight, units) : ""
   );
   const [repsStr, setRepsStr] = useState(
     set.actualReps !== null ? String(set.actualReps) : ""
@@ -35,12 +42,16 @@ export function SetInputRow({
     repsStrRef.current = repsStr;
   }, [repsStr]);
 
+  function parseW(str: string): number | null {
+    const trimmed = str.trim();
+    if (trimmed === "") return null;
+    return parseWeightInput(trimmed, units);
+  }
+
   function commitOnBlur() {
-    const w = weightStrRef.current.trim();
     const r = repsStrRef.current.trim();
-    const parsedW = w === "" ? null : Number(w);
+    const validW = parseW(weightStrRef.current);
     const parsedR = r === "" ? null : parseInt(r, 10);
-    const validW = parsedW === null || Number.isFinite(parsedW) ? parsedW : null;
     const validR = parsedR === null || Number.isFinite(parsedR) ? parsedR : null;
     if (validW !== set.actualWeight || validR !== set.actualReps) {
       onChange(
@@ -52,9 +63,8 @@ export function SetInputRow({
 
   function toggleComplete() {
     const next = !set.completed;
-    const parsedW = weightStrRef.current.trim() === "" ? null : Number(weightStrRef.current);
+    const validW = parseW(weightStrRef.current);
     const parsedR = repsStrRef.current.trim() === "" ? null : parseInt(repsStrRef.current, 10);
-    const validW = Number.isFinite(parsedW as number) ? (parsedW as number) : null;
     const validR = Number.isFinite(parsedR as number) ? (parsedR as number) : null;
     if (next && typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate?.(15);
@@ -67,7 +77,7 @@ export function SetInputRow({
 
   const hint =
     !set.completed && lastWeight !== null
-      ? `last: ${formatWeight(lastWeight)} × ${lastReps ?? "—"}`
+      ? `last: ${formatWeightShort(lastWeight, units)} × ${lastReps ?? "—"}`
       : null;
 
   return (
@@ -92,7 +102,7 @@ export function SetInputRow({
             value={weightStr}
             onChange={(e) => setWeightStr(e.target.value)}
             onBlur={commitOnBlur}
-            placeholder="lb"
+            placeholder={unitLabel(units)}
             className={cn(
               "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
               set.completed

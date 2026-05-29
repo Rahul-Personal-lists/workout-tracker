@@ -103,22 +103,43 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
+          avatar_path: string | null
           display_name: string | null
+          gender: string | null
           goal_weight_lb: number | null
+          height_cm: number | null
+          sound_lead_seconds: number | null
+          units: string
           updated_at: string
           user_id: string
+          vibration_lead_seconds: number | null
         }
         Insert: {
+          age?: number | null
+          avatar_path?: string | null
           display_name?: string | null
+          gender?: string | null
           goal_weight_lb?: number | null
+          height_cm?: number | null
+          sound_lead_seconds?: number | null
+          units?: string
           updated_at?: string
           user_id: string
+          vibration_lead_seconds?: number | null
         }
         Update: {
+          age?: number | null
+          avatar_path?: string | null
           display_name?: string | null
+          gender?: string | null
           goal_weight_lb?: number | null
+          height_cm?: number | null
+          sound_lead_seconds?: number | null
+          units?: string
           updated_at?: string
           user_id?: string
+          vibration_lead_seconds?: number | null
         }
         Relationships: []
       }

@@ -14,6 +14,7 @@ import {
 import { formatInTimeZone } from "date-fns-tz";
 import type { WeeklySummary } from "@/lib/weekly-summary";
 import { muscleLabel } from "@/lib/muscle-groups";
+import { formatVolume } from "@/lib/format";
 
 const VANCOUVER_TZ = "America/Vancouver";
 
@@ -73,7 +74,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
             <Text style={{ fontSize: "15px", color: "#0f172a", lineHeight: 1.6 }}>
               No workouts logged this week.
               {summary.lastWeekVolume > 0
-                ? ` Last week you lifted ${summary.lastWeekVolume.toLocaleString()} lb — let's get back to it.`
+                ? ` Last week you lifted ${formatVolume(summary.lastWeekVolume, summary.units)} — let's get back to it.`
                 : " Time to start the streak."}
             </Text>
             <Section style={{ textAlign: "center", margin: "28px 0 8px" }}>
@@ -106,7 +107,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
   return (
     <Html>
       <Head />
-      <Preview>{`${summary.totalVolume.toLocaleString()} lb across ${summary.sessionsCount} session${summary.sessionsCount === 1 ? "" : "s"}`}</Preview>
+      <Preview>{`${formatVolume(summary.totalVolume, summary.units)} across ${summary.sessionsCount} session${summary.sessionsCount === 1 ? "" : "s"}`}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
           <Heading style={styles.h1}>Your week in lifts</Heading>
@@ -114,7 +115,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
 
           <Section style={{ textAlign: "center", margin: "8px 0 24px" }}>
             <Text style={styles.bigNumber}>
-              {summary.totalVolume.toLocaleString()} lb
+              {formatVolume(summary.totalVolume, summary.units)}
             </Text>
             <Text style={styles.bigLabel}>
               total volume · {summary.sessionsCount} session
@@ -165,7 +166,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
                             {muscleLabel(group)}
                           </div>
                           <div style={{ fontSize: "12px", color: "#64748b" }}>
-                            {volume.toLocaleString()} lb
+                            {formatVolume(volume, summary.units)}
                           </div>
                         </td>
                       ))}
@@ -233,7 +234,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
                             verticalAlign: "middle",
                           }}
                         >
-                          {volume.toLocaleString()} lb
+                          {formatVolume(volume, summary.units)}
                         </td>
                       </tr>
                     </tbody>
@@ -252,7 +253,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
               <Text style={styles.cardSub}>
                 {`${Math.round(
                   summary.weakest.pctChange * 100
-                )}% below your 4-week average (${summary.weakest.thisWeek.toLocaleString()} lb vs ${summary.weakest.avg.toLocaleString()} lb)`}
+                )}% below your 4-week average (${formatVolume(summary.weakest.thisWeek, summary.units)} vs ${formatVolume(summary.weakest.avg, summary.units)})`}
               </Text>
             </Section>
           )}

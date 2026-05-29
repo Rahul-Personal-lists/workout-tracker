@@ -28,15 +28,21 @@ import { BodyChart, type BodyPoint } from "./body-chart";
 import { BodyRangeTabs } from "./range-tabs";
 import { BodyPhotos } from "./body-photos";
 
-const PHOTO_BUCKET = "workout-photos";
-const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
-const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"];
-
-function isLikelyImage(file: File): boolean {
-  if (file.type && file.type.startsWith("image/")) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  return !!ext && ALLOWED_EXTS.includes(ext);
-}
+import {
+  MAX_PHOTO_BYTES,
+  PHOTO_BUCKET,
+  isLikelyImage,
+  photoContentType,
+  photoExt,
+} from "@/lib/photo-upload";
+import type { Units } from "@/lib/units";
+import {
+  formatSignedWeight,
+  formatWeight,
+  formatWeightShort,
+  parseWeightInput,
+  unitLabel,
+} from "@/lib/format";
 
 function todayLocalISODate() {
   const d = new Date();
@@ -46,19 +52,16 @@ function todayLocalISODate() {
   return `${y}-${m}-${day}`;
 }
 
-function formatSigned(n: number, digits = 1): string {
-  const sign = n > 0 ? "+" : n < 0 ? "−" : "";
-  return `${sign}${Math.abs(n).toFixed(digits)}`;
-}
-
 export function BodyClient({
   initialLogs,
   initialPhotos,
   goalWeight,
+  units,
 }: {
   initialLogs: BodyLogRow[];
   initialPhotos: BodyPhotoRow[];
   goalWeight: number | null;
+  units: Units;
 }) {
   const router = useRouter();
   const [logs, setLogs] = useState(initialLogs);
@@ -66,7 +69,7 @@ export function BodyClient({
   const initialEntry = initialLogs.find((l) => l.log_date === initialDate) ?? null;
   const [date, setDate] = useState(initialDate);
   const [weight, setWeight] = useState(
-    initialEntry ? String(initialEntry.weight_lb) : ""
+    initialEntry ? formatWeightShort(initialEntry.weight_lb, units) : ""
   );
   const [calories, setCalories] = useState(
     initialEntry && initialEntry.calories !== null
@@ -163,8 +166,8 @@ export function BodyClient({
 
   function onSave() {
     setError(null);
-    const w = Number(weight);
-    if (!Number.isFinite(w) || w <= 0) {
+    const w = parseWeightInput(weight, units);
+    if (w === null) {
       setError("Enter a valid weight");
       return;
     }
@@ -216,13 +219,9 @@ export function BodyClient({
                   `Unsupported file: ${file.name || "(unnamed)"}`
                 );
               }
-              const ext =
-                (file.name.split(".").pop() || "jpg")
-                  .toLowerCase()
-                  .replace(/[^a-z0-9]/g, "") || "jpg";
+              const ext = photoExt(file);
               const path = `${user.id}/body/${date}/${crypto.randomUUID()}.${ext}`;
-              const contentType =
-                file.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
+              const contentType = photoContentType(file, ext);
               const { error: upErr } = await supabase.storage
                 .from(PHOTO_BUCKET)
                 .upload(path, file, { contentType, upsert: false });
@@ -311,7 +310,7 @@ export function BodyClient({
             onChange={(e) => {
               setDate(e.target.value);
               const found = logs.find((l) => l.log_date === e.target.value);
-              setWeight(found ? String(found.weight_lb) : "");
+              setWeight(found ? formatWeightShort(found.weight_lb, units) : "");
               setCalories(
                 found && found.calories !== null ? String(found.calories) : ""
               );
@@ -328,14 +327,14 @@ export function BodyClient({
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="text-[11px] uppercase tracking-wide text-foreground-muted">
-              Weight (lb)
+              Weight ({unitLabel(units)})
             </span>
             <input
               type="text"
               inputMode="decimal"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              placeholder="e.g. 124.4"
+              placeholder={units === "metric" ? "e.g. 56.5" : "e.g. 124.4"}
               className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong"
             />
           </label>
@@ -437,7 +436,7 @@ export function BodyClient({
             <div className="grid grid-cols-3 gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 tabular-nums">
               <div>
                 <div className="text-base">
-                  {stats.avg7 !== null ? stats.avg7.toFixed(1) : "—"}
+                  {formatWeightShort(stats.avg7, units)}
                 </div>
                 <div className="text-[10px] uppercase tracking-wide text-foreground-muted mt-0.5">
                   7d avg
@@ -451,7 +450,7 @@ export function BodyClient({
                     stats.delta !== null && stats.delta > 0 && "text-amber-400"
                   )}
                 >
-                  {stats.delta !== null ? formatSigned(stats.delta) : "—"}
+                  {formatSignedWeight(stats.delta, units)}
                 </div>
                 <div className="text-[10px] uppercase tracking-wide text-foreground-muted mt-0.5">
                   Δ vs prior wk
@@ -459,23 +458,23 @@ export function BodyClient({
               </div>
               <div>
                 <div className="text-base">
-                  {stats.rate !== null ? formatSigned(stats.rate) : "—"}
+                  {formatSignedWeight(stats.rate, units)}
                 </div>
                 <div className="text-[10px] uppercase tracking-wide text-foreground-muted mt-0.5">
-                  lb / wk
+                  {unitLabel(units)} / wk
                 </div>
               </div>
             </div>
           ) : null}
           <BodyRangeTabs active={range} onChange={setRange} />
-          <BodyChart data={windowedData} goalWeight={goalWeight} />
+          <BodyChart data={windowedData} goalWeight={goalWeight} units={units} />
           {goalWeight !== null && stats && stats.avg7 !== null ? (
             <p className="text-xs text-center text-foreground-muted">
               {predictedGoalDate ? (
                 <>
                   On pace for{" "}
                   <span className="text-foreground font-medium">
-                    {goalWeight} lb
+                    {formatWeight(goalWeight, units)}
                   </span>{" "}
                   on{" "}
                   <span className="text-foreground font-medium">
@@ -522,7 +521,7 @@ export function BodyClient({
                   {format(new Date(l.log_date + "T00:00:00"), "MMM d")}
                 </div>
                 <div className="flex-1 tabular-nums">
-                  <span className="font-medium">{l.weight_lb} lb</span>
+                  <span className="font-medium">{formatWeight(l.weight_lb, units)}</span>
                   {l.body_fat_pct !== null ? (
                     <span className="text-foreground-muted ml-2 text-xs">
                       {l.body_fat_pct}% bf

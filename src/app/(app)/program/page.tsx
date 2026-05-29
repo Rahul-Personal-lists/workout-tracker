@@ -9,6 +9,7 @@ import {
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
 import { ExerciseThumb } from "./exercise-thumb";
 import { formatWeight } from "@/lib/format";
+import { getUnitsServer } from "@/lib/units-server";
 import { reapStaleSession } from "@/lib/sessions";
 import { createClient } from "@/lib/supabase/server";
 import { DayControls } from "./day-controls";
@@ -37,9 +38,10 @@ export default async function ProgramPage({
   } = await supabase.auth.getUser();
   if (user) await reapStaleSession(supabase, user.id);
 
-  const [program, allPrograms] = await Promise.all([
+  const [program, allPrograms, units] = await Promise.all([
     getCurrentProgram(),
     getAllPrograms(),
+    getUnitsServer(),
   ]);
 
   if (!program) {
@@ -204,7 +206,7 @@ export default async function ProgramPage({
                   <p className="text-xs text-foreground-muted tabular-nums">
                     {ex.sets}×{plannedReps ?? "—"}
                     {plannedWeight !== null
-                      ? ` · ${formatWeight(plannedWeight)} lb`
+                      ? ` · ${formatWeight(plannedWeight, units)}`
                       : ""}
                   </p>
                 </div>

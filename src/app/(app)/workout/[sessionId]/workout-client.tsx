@@ -33,19 +33,17 @@ import { DayNotePopover } from "@/components/day-note-popover";
 import { useRestTimer } from "@/lib/stores/rest-timer";
 import { createClient } from "@/lib/supabase/client";
 import type { PreviousDayNote } from "@/lib/queries";
+import {
+  MAX_PHOTO_BYTES,
+  PHOTO_BUCKET,
+  isLikelyImage,
+  photoContentType,
+  photoExt,
+} from "@/lib/photo-upload";
+import type { Units } from "@/lib/units";
 import type { ExerciseRow, SetRow } from "./types";
 import { ExerciseCard } from "./exercise-card";
 import { FinishSheet } from "./finish-sheet";
-
-const PHOTO_BUCKET = "workout-photos";
-const MAX_PHOTO_BYTES = 25 * 1024 * 1024;
-const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp", "heic", "heif", "gif"];
-
-function isLikelyImage(file: File): boolean {
-  if (file.type && file.type.startsWith("image/")) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  return !!ext && ALLOWED_EXTS.includes(ext);
-}
 
 type Props = {
   sessionId: string;
@@ -56,6 +54,7 @@ type Props = {
   dayTitle: string;
   exercises: ExerciseRow[];
   previousDayNote: PreviousDayNote | null;
+  units: Units;
 };
 
 export function WorkoutClient({
@@ -67,6 +66,7 @@ export function WorkoutClient({
   dayTitle,
   exercises: initialExercises,
   previousDayNote,
+  units,
 }: Props) {
   const router = useRouter();
   const [exercises, setExercises] = useState(initialExercises);
@@ -285,12 +285,9 @@ export function WorkoutClient({
                 `Unsupported file: ${file.name || "(unnamed)"} (${file.type || "unknown type"}).`
               );
             }
-            const ext =
-              (file.name.split(".").pop() || "jpg")
-                .toLowerCase()
-                .replace(/[^a-z0-9]/g, "") || "jpg";
+            const ext = photoExt(file);
             const path = `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`;
-            const contentType = file.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
+            const contentType = photoContentType(file, ext);
             const { error: upErr } = await supabase.storage
               .from(PHOTO_BUCKET)
               .upload(path, file, { contentType, upsert: false });
@@ -380,6 +377,7 @@ export function WorkoutClient({
               <ExerciseCard
                 key={ex.id}
                 exercise={ex}
+                units={units}
                 onChange={(setNumber, patch, persist) => {
                   const prev = ex.sets.find((s) => s.setNumber === setNumber);
                   updateSet(ex.id, setNumber, patch);

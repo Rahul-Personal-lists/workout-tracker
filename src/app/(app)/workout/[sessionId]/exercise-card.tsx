@@ -13,7 +13,8 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import { formatDuration, formatWeight } from "@/lib/format";
+import { formatDuration, formatWeight, unitLabel } from "@/lib/format";
+import type { Units } from "@/lib/units";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { SwipeRow } from "@/components/swipe-row";
 import type { ExerciseRow, SetRow } from "./types";
@@ -22,12 +23,14 @@ import { TimeSetInputRow } from "./time-set-input-row";
 
 export function ExerciseCard({
   exercise,
+  units,
   onChange,
   onAddSet,
   onDeleteSet,
   onHide,
 }: {
   exercise: ExerciseRow;
+  units: Units;
   onChange: (
     setNumber: number,
     patch: Partial<SetRow>,
@@ -66,7 +69,7 @@ export function ExerciseCard({
   const plannedSummary = isTime
     ? `${exercise.sets.length} × ${exercise.plannedSeconds !== null ? formatDuration(exercise.plannedSeconds) : "—"}`
     : exercise.plannedWeight !== null
-      ? `${exercise.sets.length}×${exercise.plannedReps ?? "—"} · ${formatWeight(exercise.plannedWeight)} lb`
+      ? `${exercise.sets.length}×${exercise.plannedReps ?? "—"} · ${formatWeight(exercise.plannedWeight, units)}`
       : `${exercise.sets.length}×${exercise.plannedReps ?? "—"}`;
 
   if (allComplete && !expanded) {
@@ -189,7 +192,7 @@ export function ExerciseCard({
                 <span className="text-center">Time</span>
               ) : (
                 <>
-                  <span className="text-center">Lb</span>
+                  <span className="text-center">{unitLabel(units)}</span>
                   <span className="text-center">Reps</span>
                 </>
               )}
@@ -209,6 +212,7 @@ export function ExerciseCard({
                 <SetInputRow
                   key={set.setNumber}
                   set={set}
+                  units={units}
                   lastWeight={exercise.lastWeight}
                   lastReps={exercise.lastReps}
                   onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}

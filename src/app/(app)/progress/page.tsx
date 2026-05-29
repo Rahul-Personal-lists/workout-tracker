@@ -6,6 +6,7 @@ import {
   getWeekStreak,
 } from "@/lib/queries";
 import { dateKeyInTz, getUserTimezone } from "@/lib/tz";
+import { getUnitsServer } from "@/lib/units-server";
 import {
   computeProgressWindow,
   parseAnchor,
@@ -43,7 +44,7 @@ export default async function ProgressPage({
   }
 
   const win = computeProgressWindow(range, anchor, todayKey);
-  const [data, weekStreak] = await Promise.all([
+  const [data, weekStreak, units] = await Promise.all([
     getProgressForRange(
       win.startKey,
       win.endKey,
@@ -52,6 +53,7 @@ export default async function ProgressPage({
       tz
     ),
     getWeekStreak(tz),
+    getUnitsServer(),
   ]);
 
   // Month/Yearly tabs show the calendar grid. For Year, the grid focuses on
@@ -119,7 +121,7 @@ export default async function ProgressPage({
         />
       ) : null}
 
-      <StatCards totals={data.totals} />
+      <StatCards totals={data.totals} units={units} />
 
       <ProgressBarChart buckets={data.buckets} />
 

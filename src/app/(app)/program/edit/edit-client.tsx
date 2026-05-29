@@ -24,6 +24,7 @@ import { GripVertical, Heart, Link as LinkIcon, Plus, Trash2 } from "lucide-reac
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { formatWeight } from "@/lib/format";
+import type { Units } from "@/lib/units";
 import { saveDayEdits } from "@/app/actions/program";
 
 type Row = {
@@ -42,12 +43,14 @@ export function EditDayClient({
   selectedWeek,
   isToday,
   exercises,
+  units,
 }: {
   dayId: string;
   dayTitle: string;
   selectedWeek: number;
   isToday: boolean;
   exercises: Row[];
+  units: Units;
 }) {
   const router = useRouter();
   const [items, setItems] = useState(exercises);
@@ -138,6 +141,7 @@ export function EditDayClient({
                   <SortableEditRow
                     key={ex.id}
                     ex={ex}
+                    units={units}
                     onDelete={() => onDelete(ex.id)}
                   />
                 ))}
@@ -184,9 +188,11 @@ export function EditDayClient({
 function SortableEditRow({
   ex,
   onDelete,
+  units,
 }: {
   ex: Row;
   onDelete: () => void;
+  units: Units;
 }) {
   const {
     attributes,
@@ -241,7 +247,7 @@ function SortableEditRow({
           <p className="text-xs text-foreground-muted tabular-nums">
             {ex.sets}×{ex.plannedReps ?? "—"}
             {ex.plannedWeight !== null
-              ? ` · ${formatWeight(ex.plannedWeight)} lb`
+              ? ` · ${formatWeight(ex.plannedWeight, units)}`
               : ""}
           </p>
         </div>

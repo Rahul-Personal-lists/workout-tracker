@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCurrentProgram, getNextWorkout } from "@/lib/queries";
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
+import { getUnitsServer } from "@/lib/units-server";
 import { EditDayClient } from "./edit-client";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,10 @@ export default async function ProgramEditPage({
   searchParams: Promise<{ day?: string; week?: string }>;
 }) {
   const { day: dayParam, week: weekParam } = await searchParams;
-  const program = await getCurrentProgram();
+  const [program, units] = await Promise.all([
+    getCurrentProgram(),
+    getUnitsServer(),
+  ]);
   if (!program) notFound();
 
   const next = await getNextWorkout(program);
@@ -70,6 +74,7 @@ export default async function ProgramEditPage({
       selectedWeek={selectedWeek}
       isToday={isToday}
       exercises={exercises}
+      units={units}
     />
   );
 }

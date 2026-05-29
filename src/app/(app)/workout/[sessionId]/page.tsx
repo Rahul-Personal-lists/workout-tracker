@@ -8,6 +8,7 @@ import {
   type ProgramExercise,
 } from "@/lib/queries";
 import { getPlannedReps, getPlannedSeconds, getPlannedWeight } from "@/lib/progression";
+import { getUnitsServer } from "@/lib/units-server";
 import { WorkoutClient } from "./workout-client";
 import type { ExerciseRow } from "./types";
 
@@ -28,13 +29,14 @@ export default async function WorkoutPage({
   const day = program.days.find((d) => d.id === session.program_day_id);
   if (!day) notFound();
 
-  const [logs, hints, previousDayNote] = await Promise.all([
+  const [logs, hints, previousDayNote, units] = await Promise.all([
     getSessionLogs(sessionId),
     getLastSessionHints(
       day.exercises.map((e) => e.id),
       sessionId
     ),
     getPreviousDayNote(session.program_day_id, sessionId),
+    getUnitsServer(),
   ]);
 
   const exercises: ExerciseRow[] = day.exercises.map((ex: ProgramExercise) => {
@@ -106,6 +108,7 @@ export default async function WorkoutPage({
       dayTitle={day.title}
       exercises={exercises}
       previousDayNote={previousDayNote}
+      units={units}
     />
   );
 }
