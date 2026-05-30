@@ -29,9 +29,8 @@ Convention reminders before touching anything: reads → `lib/queries.ts`, write
 - **Where:** `settings/units/page.tsx` uses `getUnitsServer()` (cookie) while the hub + every other screen read `profile.units` via `getProfile()`.
 - **Fix:** read units from `getProfile()` here too, for one source of truth.
 
-### S9 · Standardize `requireUser()` across mutations
-- **Where:** `actions/workout.ts` (`logSet`, `editSetLog`, `deleteSetLog`, `editSessionDuration`, `finishWorkout`, `deleteSessionPhoto`, `deleteSession`) and several in `actions/program.ts` use bare `createClient()`.
-- **Fix:** call `requireUser()` at the top so an expired session fails loudly instead of silently no-op'ing. RLS still backstops; this is defense-in-depth + consistency.
+### S9 · ✅ shipped (branch `fix/s9-require-user`)
+- 13 mutating actions in `actions/workout.ts` + `actions/program.ts` now use `requireUser()` — an expired session fails loudly ("Not authenticated") instead of a silent RLS no-op. **Exception:** `logSet` stays on the bare client (fires every set during a workout; the proxy already validates the session on the POST, so the extra Auth round-trip would only add latency on a flaky connection — and its caller swallows errors, so there's no user-facing benefit). RLS still backstops everywhere.
 
 ---
 
