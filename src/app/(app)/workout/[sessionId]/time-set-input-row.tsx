@@ -5,16 +5,19 @@ import { Check, Play, Square, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, parseDuration } from "@/lib/format";
 import { SwipeRow } from "@/components/swipe-row";
+import { useTimeSetTimer } from "@/lib/stores/time-set-timer";
 import type { SetRow } from "./types";
 
 export function TimeSetInputRow({
   set,
+  setKey,
   plannedSeconds,
   lastSeconds,
   onChange,
   onDelete,
 }: {
   set: SetRow;
+  setKey: string;
   plannedSeconds: number | null;
   lastSeconds: number | null;
   onChange: (patch: Partial<SetRow>, persist: boolean) => void;
@@ -28,8 +31,35 @@ export function TimeSetInputRow({
     durationStrRef.current = durationStr;
   }, [durationStr]);
 
-  const [endsAt, setEndsAt] = useState<number | null>(null);
-  const [targetSec, setTargetSec] = useState<number | null>(null);
+  // Read onChange via a ref so the expiry effect doesn't re-subscribe when the
+  // parent passes a fresh inline onChange each render (P3).
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
+
+  // The active countdown lives in a persisted store (one timed set at a time),
+  // so it survives navigation/unmount. This row owns it while the store's
+  // setKey matches; otherwise it shows the editable input.
+  const activeSetKey = useTimeSetTimer((s) => s.setKey);
+  const storeEndsAt = useTimeSetTimer((s) => s.endsAt);
+  const storeTargetSec = useTimeSetTimer((s) => s.targetSec);
+  const startTimer = useTimeSetTimer((s) => s.start);
+  const stopTimer = useTimeSetTimer((s) => s.stop);
+
+  // Gate on hydration so SSR and the first client render match (the store
+  // rehydrates from localStorage on the client).
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated(useTimeSetTimer.persist.hasHydrated());
+    return useTimeSetTimer.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
+
+  const running = hydrated && activeSetKey === setKey && storeEndsAt !== null;
+  const endsAt = running ? storeEndsAt : null;
+  const targetSec = running ? storeTargetSec : null;
+
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -41,21 +71,20 @@ export function TimeSetInputRow({
   useEffect(() => {
     if (endsAt === null || targetSec === null) return;
     if (now < endsAt) return;
-    // Timer-expiry auto-complete: setting state here is behaviour-correct (fires
-    // once as the countdown hits 0). Structural cleanup is deferred — see CODE_AUDIT P5.
+    // Expiry — including a countdown that ended while this row was unmounted and
+    // is restored already past its end: complete the set once, clear the timer.
     /* eslint-disable react-hooks/set-state-in-effect */
-    setEndsAt(null);
-    setTargetSec(null);
     setDurationStr(formatDuration(targetSec));
     /* eslint-enable react-hooks/set-state-in-effect */
-    onChange({ completed: true, actualSeconds: targetSec }, true);
+    stopTimer();
+    onChangeRef.current({ completed: true, actualSeconds: targetSec }, true);
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate?.([200, 80, 200]);
     }
-  }, [endsAt, targetSec, now, onChange]);
+  }, [endsAt, targetSec, now, stopTimer]);
 
   function commitOnBlur() {
-    if (endsAt !== null) return;
+    if (running) return;
     const parsed = parseDuration(durationStrRef.current);
     if (parsed !== set.actualSeconds) {
       onChange({ actualSeconds: parsed }, set.completed);
@@ -67,17 +96,15 @@ export function TimeSetInputRow({
 
   function startCountdown() {
     if (!canStart || startTarget === null) return;
-    setTargetSec(startTarget);
     setNow(Date.now());
-    setEndsAt(Date.now() + startTarget * 1000);
+    startTimer(setKey, startTarget);
   }
 
   function stopCountdown() {
     if (endsAt === null || targetSec === null) return;
     const remainingSec = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
     const elapsed = Math.max(1, targetSec - remainingSec);
-    setEndsAt(null);
-    setTargetSec(null);
+    stopTimer();
     setDurationStr(formatDuration(elapsed));
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate?.(15);
@@ -96,7 +123,6 @@ export function TimeSetInputRow({
 
   const remaining =
     endsAt !== null ? Math.max(0, Math.ceil((endsAt - now) / 1000)) : null;
-  const running = endsAt !== null;
 
   const placeholder =
     plannedSeconds !== null ? formatDuration(plannedSeconds) : "mm:ss";

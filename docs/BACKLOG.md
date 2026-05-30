@@ -19,27 +19,21 @@ Convention reminders before touching anything: reads → `lib/queries.ts`, write
 - **X3 — single source of truth.** `body/body-client.tsx` `logs`/`measurements` are now prop-derived (server-authoritative); the optimistic `useState` mirrors that diverged after `router.refresh()` were removed. Mutations still revalidate `/body` + `router.refresh()`.
 - **S8 — units from DB.** `settings/units/page.tsx` now reads `getProfile().units` like every other screen, not the cookie.
 
-### X3 · body-client state/prop divergence
-- **Where:** `body/body-client.tsx` — `logs`/`measurements` are `useState` seeded once from props; `photos`/`goal`/`units` are prop-driven + `router.refresh()`.
-- **Fix:** pick one source of truth. Simplest: drop the `useState` mirrors and derive from props (rely on `revalidatePath("/body")` + `router.refresh()`), or keep optimistic state and drop the `router.refresh()` calls. Don't run both.
-- **Done when:** a server-side change (or second device) reflects in logs/measurements without a hard reload.
-
-### S8 · `/settings/units` reads cookie, not DB
-- **Where:** `settings/units/page.tsx` uses `getUnitsServer()` (cookie) while the hub + every other screen read `profile.units` via `getProfile()`.
-- **Fix:** read units from `getProfile()` here too, for one source of truth.
-
 ### S9 · ✅ shipped (branch `fix/s9-require-user`)
 - 13 mutating actions in `actions/workout.ts` + `actions/program.ts` now use `requireUser()` — an expired session fails loudly ("Not authenticated") instead of a silent RLS no-op. **Exception:** `logSet` stays on the bare client (fires every set during a workout; the proxy already validates the session on the POST, so the extra Auth round-trip would only add latency on a flaky connection — and its caller swallows errors, so there's no user-facing benefit). RLS still backstops everywhere.
 
 ---
 
-## Tier 3 — performance (all acceptable for single-user today)
+## Tier 3 — ✅ P2/P3/P4/P5 shipped (branch `fix/tier3-perf`)
 
-- **P5 · Per-set countdown lost on navigation** — `workout/[sessionId]/time-set-input-row.tsx`. The time-attack countdown lives in local state; navigating away loses it and the auto-complete/log never fires. Persist it (store `endsAt` keyed by set, like the rest-timer store) or recompute from a stored end timestamp.
-- **P2 · Elapsed clock re-renders the whole tree** — `workout-client.tsx`. Extract a tiny `<ElapsedClock startedAt=… />` that owns its own 1s interval so the set list stays stable.
-- **P1 · Unbounded history scans** — `queries.ts` `getLastSessionHints` / `getAllTimeTopByExercise` pull all completed set_logs then reduce in JS. Push to a SQL aggregate/RPC if history grows.
-- **P3 · time-set effect churn** — stabilize the per-set `onChange` (useCallback / ref) so the expiry effect stops re-subscribing each render.
-- **P4 · catalog re-fetch** — `program/add/add-exercise-client.tsx` re-fetches/parses `exercises-catalog.json` on every mount; cache it module-level.
+- **P5 — per-set countdown persistence.** The time-attack countdown now lives in a persisted Zustand store (`lib/stores/time-set-timer.ts`, one timer at a time) keyed by `${sessionId}:${exerciseId}:${setNumber}`. It survives navigation/unmount: the owning row resumes it on remount, or completes the set if it expired while away (so the log isn't lost). The key is **session-scoped** so a timer left running can't auto-complete a set in a later session that reuses the same program exercise (caught in review); hydration-gated to avoid an SSR mismatch.
+- **P2 — elapsed clock isolated.** `workout-client.tsx` renders a tiny `<ElapsedClock>` that owns its own 1s interval, so the set list no longer re-renders every second.
+- **P3 — time-set onChange stabilized.** The expiry effect reads `onChange` via a ref, so a fresh inline `onChange` each render no longer re-subscribes it (compounds with P2).
+- **P4 — catalog cached.** `add-exercise-client.tsx` loads `exercises-catalog.json` once per session via a module-level cache instead of on every mount.
+
+### P1 · Unbounded history scans (still open — needs an RPC migration)
+- **Where:** `queries.ts` `getLastSessionHints` / `getAllTimeTopByExercise` pull all completed `set_logs` then reduce in JS.
+- **Why deferred:** the clean fix is a DB-side aggregate (Postgres RPC), which needs a migration applied to the live project — out of scope for a code-only PR (and acceptable for a single user today). A date floor would help `getLastSessionHints` but could drop the hint for a rarely-trained exercise, and `getAllTimeTopByExercise` is all-time so a floor would be wrong. Revisit if history grows.
 
 ---
 
