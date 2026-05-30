@@ -103,8 +103,9 @@ export function SetInputRow({
             onChange={(e) => setWeightStr(e.target.value)}
             onBlur={commitOnBlur}
             placeholder={unitLabel(units)}
+            aria-label={`Weight (${unitLabel(units)})`}
             className={cn(
-              "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+              "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
               set.completed
                 ? "text-base text-foreground-muted"
                 : "text-2xl font-semibold"
@@ -122,8 +123,9 @@ export function SetInputRow({
           onChange={(e) => setRepsStr(e.target.value.replace(/[^\d]/g, ""))}
           onBlur={commitOnBlur}
           placeholder="reps"
+          aria-label="Reps"
           className={cn(
-            "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+            "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
             set.completed
               ? "text-base text-foreground-muted"
               : "text-2xl font-semibold"
@@ -134,7 +136,7 @@ export function SetInputRow({
           aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
           onClick={toggleComplete}
           className={cn(
-            "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors",
+            "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
             set.completed
               ? "bg-emerald-500 border-emerald-500 text-black"
               : "border-border-strong text-neutral-500"

@@ -113,26 +113,27 @@ export default function LoginPage() {
               pattern="\d{6}"
               maxLength={6}
               placeholder="123456"
+              aria-label="6-digit verification code"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 px-4 text-lg tracking-[0.4em] text-center outline-none focus:border-neutral-600"
+              className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 px-4 text-lg tracking-[0.4em] text-center outline-none focus:border-neutral-600 focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               autoFocus
             />
             <button
               type="submit"
               disabled={status === "verifying" || code.length !== 6}
-              className="w-full h-12 rounded-md bg-white text-black font-medium disabled:opacity-50"
+              className="w-full h-12 rounded-md bg-white text-black font-medium disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             >
               {status === "verifying" ? "Verifying…" : "Verify code"}
             </button>
             {errorMsg ? (
-              <p className="text-sm text-red-400">{errorMsg}</p>
+              <p role="alert" className="text-sm text-red-400">{errorMsg}</p>
             ) : null}
             <button
               type="button"
               onClick={resend}
               disabled={resending}
-              className="w-full text-sm text-neutral-400 hover:text-neutral-200 disabled:opacity-50"
+              className="w-full text-sm text-neutral-400 hover:text-neutral-200 disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             >
               {resending ? "Sending…" : "Send a new code"}
             </button>
@@ -145,19 +146,20 @@ export default function LoginPage() {
               autoComplete="email"
               inputMode="email"
               placeholder="you@example.com"
+              aria-label="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 px-4 text-base outline-none focus:border-neutral-600"
+              className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 px-4 text-base outline-none focus:border-neutral-600 focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             />
             <button
               type="submit"
               disabled={status === "sending"}
-              className="w-full h-12 rounded-md bg-white text-black font-medium disabled:opacity-50"
+              className="w-full h-12 rounded-md bg-white text-black font-medium disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             >
               {status === "sending" ? "Sending…" : "Send code"}
             </button>
             {errorMsg ? (
-              <p className="text-sm text-red-400">{errorMsg}</p>
+              <p role="alert" className="text-sm text-red-400">{errorMsg}</p>
             ) : null}
           </form>
         ) : (

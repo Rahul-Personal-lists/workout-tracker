@@ -63,7 +63,7 @@ export default async function ExerciseHistoryPage({
     <div className="space-y-6">
       <Link
         href="/progress"
-        className="inline-flex items-center text-sm text-neutral-400"
+        className="inline-flex items-center text-sm text-neutral-400 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
       >
         <ArrowLeft className="w-4 h-4 mr-1" /> Progress
       </Link>

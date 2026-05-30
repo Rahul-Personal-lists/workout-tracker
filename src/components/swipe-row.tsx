@@ -116,14 +116,24 @@ export function SwipeRow({
       <button
         type="button"
         onClick={handleAction}
+        // Keyboard affordance: the action is otherwise only revealed by a pointer
+        // swipe. It's always tab-reachable (sits behind the row content when
+        // closed); focusing it slides the row open so the focus ring is visible,
+        // and blurring collapses it again.
+        onFocus={() => {
+          setOpen(true);
+          setDx(-ACTION_WIDTH);
+        }}
+        onBlur={collapse}
         aria-label={actionLabel}
-        aria-hidden={!open && !dragging ? true : undefined}
-        tabIndex={open ? 0 : -1}
         style={{ width: ACTION_WIDTH }}
         className={cn(
-          "absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 text-xs font-medium",
+          "absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 text-xs font-medium transition-opacity",
           "outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
-          !open && !dragging && "invisible",
+          // Hidden (but still focusable, unlike `invisible`/visibility:hidden)
+          // when closed, so it doesn't bleed through translucent row content
+          // (e.g. a completed set's bg-accent/10). Focus/swipe reveals it.
+          !open && !dragging && "opacity-0",
           toneClass
         )}
       >

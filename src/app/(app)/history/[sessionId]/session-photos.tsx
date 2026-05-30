@@ -28,12 +28,12 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
             key={p.id}
             type="button"
             onClick={() => setActive(p)}
-            className="relative aspect-square rounded-md overflow-hidden bg-neutral-900 border border-neutral-800"
+            className="relative aspect-square rounded-md overflow-hidden bg-neutral-900 border border-neutral-800 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={p.signed_url}
-              alt=""
+              alt="Workout photo"
               className="w-full h-full object-cover"
               loading="lazy"
             />
@@ -58,7 +58,7 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={active.signed_url}
-              alt=""
+              alt="Workout photo"
               className="w-full max-h-[80vh] object-contain rounded-md"
             />
             <div className="flex items-center justify-between mt-3">
@@ -67,7 +67,7 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
                 onClick={() => onDelete(active)}
                 disabled={pending}
                 className={cn(
-                  "h-10 px-4 rounded-md text-sm flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/40",
+                  "h-10 px-4 rounded-md text-sm flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/40 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                   pending && "opacity-50"
                 )}
               >
@@ -77,7 +77,7 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
                 type="button"
                 onClick={() => setActive(null)}
                 aria-label="Close"
-                className="h-10 w-10 rounded-md flex items-center justify-center text-neutral-300"
+                className="h-10 w-10 rounded-md flex items-center justify-center text-neutral-300 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               >
                 <X className="w-5 h-5" />
               </button>

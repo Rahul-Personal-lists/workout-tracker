@@ -104,7 +104,7 @@ export function MetricDetail({
           type="button"
           onClick={onBack}
           aria-label="Back to measures"
-          className="h-9 w-9 -ml-1 flex items-center justify-center text-foreground-muted"
+          className="h-9 w-9 -ml-1 flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -125,21 +125,22 @@ export function MetricDetail({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={`Enter ${metric.label.toLowerCase()}`}
-            className="flex-1 h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong"
+            aria-label={`${metric.label} (${metric.unitLabel(units)})`}
+            className="flex-1 h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           />
           <button
             type="button"
             onClick={submitQuickAdd}
             disabled={pending}
             className={cn(
-              "h-11 px-4 rounded-md font-medium text-sm bg-accent text-accent-foreground",
+              "h-11 px-4 rounded-md font-medium text-sm bg-accent text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
               pending && "opacity-50"
             )}
           >
             Save
           </button>
         </div>
-        {error ? <p className="text-xs text-red-400">{error}</p> : null}
+        {error ? <p role="alert" className="text-xs text-red-400">{error}</p> : null}
       </div>
 
       {points.length >= 2 ? (
@@ -229,7 +230,7 @@ export function MetricDetail({
                     type="button"
                     onClick={() => onDeleteEntry(p.date)}
                     aria-label={`Delete ${p.date}`}
-                    className="h-8 w-8 flex items-center justify-center text-foreground-muted"
+                    className="h-8 w-8 flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

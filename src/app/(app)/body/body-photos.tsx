@@ -75,12 +75,12 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
                   key={p.id}
                   type="button"
                   onClick={() => setActive(p)}
-                  className="relative aspect-square rounded-md overflow-hidden bg-surface-subtle border border-border outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                  className="relative aspect-square rounded-md overflow-hidden bg-surface-subtle border border-border outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={p.signed_url}
-                    alt=""
+                    alt={`Progress photo ${date}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
@@ -100,7 +100,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
               setGroupsVisibleCount((c) => c + PHOTOS_PAGE_GROUPS);
             }
           }}
-          className="w-full h-10 rounded-md text-sm text-foreground-muted hover:text-foreground border border-border bg-surface-subtle"
+          className="w-full h-10 rounded-md text-sm text-foreground-muted hover:text-foreground border border-border bg-surface-subtle outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
         >
           {groupsAtMax
             ? "Show fewer photos"
@@ -138,12 +138,12 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
                           setCompareWith(p);
                           setPicking(false);
                         }}
-                        className="aspect-square rounded-md overflow-hidden border border-border outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                        className="aspect-square rounded-md overflow-hidden border border-border outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={p.signed_url}
-                          alt=""
+                          alt={`Progress photo ${p.log_date}`}
                           className="w-full h-full object-cover"
                         />
                       </button>
@@ -159,7 +159,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
                 disabled={pending}
                 aria-label="Delete photo"
                 className={cn(
-                  "h-10 px-3 rounded-md text-sm flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/40",
+                  "h-10 px-3 rounded-md text-sm flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/40 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                   pending && "opacity-50"
                 )}
               >
@@ -176,7 +176,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
                       setPicking((p) => !p);
                     }
                   }}
-                  className="h-10 px-3 rounded-md text-sm flex items-center gap-1.5 bg-surface text-foreground border border-border"
+                  className="h-10 px-3 rounded-md text-sm flex items-center gap-1.5 bg-surface text-foreground border border-border outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
                 >
                   <GitCompareArrows className="w-4 h-4" />
                   {compareWith ? "Clear" : picking ? "Cancel" : "Compare"}
@@ -186,7 +186,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
                 type="button"
                 onClick={closeModal}
                 aria-label="Close"
-                className="h-10 w-10 rounded-md flex items-center justify-center text-foreground-muted"
+                className="h-10 w-10 rounded-md flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -204,7 +204,7 @@ function PhotoFrame({ photo }: { photo: BodyPhotoRow }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={photo.signed_url}
-        alt=""
+        alt={`Progress photo ${format(new Date(photo.log_date + "T00:00:00"), "MMM d, yyyy")}`}
         className="w-full max-h-[42vh] object-contain rounded-md bg-black"
       />
       <span className="absolute bottom-2 left-2 text-[11px] tabular-nums bg-black/70 text-white px-2 py-1 rounded">

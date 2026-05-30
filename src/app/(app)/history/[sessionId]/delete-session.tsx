@@ -25,23 +25,28 @@ export function DeleteSessionButton({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={pending}
-      className={cn(
-        "w-full h-12 rounded-md text-sm font-medium transition-colors",
-        confirming
-          ? "bg-red-500 text-white"
-          : "border border-red-500/40 text-red-400",
-        pending && "opacity-50"
-      )}
-    >
-      {pending
-        ? "Deleting…"
-        : confirming
-          ? "Tap again to confirm — this is permanent"
-          : "Delete this workout"}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending}
+        className={cn(
+          "w-full h-12 rounded-md text-sm font-medium transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
+          confirming
+            ? "bg-red-500 text-white"
+            : "border border-red-500/40 text-red-400",
+          pending && "opacity-50"
+        )}
+      >
+        {pending
+          ? "Deleting…"
+          : confirming
+            ? "Tap again to confirm — this is permanent"
+            : "Delete this workout"}
+      </button>
+      <span aria-live="assertive" className="sr-only">
+        {confirming ? "Tap again to confirm — this is permanent." : ""}
+      </span>
+    </>
   );
 }
