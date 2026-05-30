@@ -5,10 +5,12 @@ import { Trash2, X } from "lucide-react";
 import { deleteSessionPhoto } from "@/app/actions/workout";
 import type { SessionPhoto } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { useDialog } from "@/lib/use-dialog";
 
 export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
   const [active, setActive] = useState<SessionPhoto | null>(null);
   const [pending, startTransition] = useTransition();
+  const dialogRef = useDialog<HTMLDivElement>(!!active, () => setActive(null));
 
   function onDelete(photo: SessionPhoto) {
     if (!confirm("Delete this photo?")) return;
@@ -45,7 +47,12 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
           onClick={() => setActive(null)}
         >
           <div
-            className="relative max-w-md w-full p-4"
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Workout photo"
+            tabIndex={-1}
+            className="relative max-w-md w-full p-4 outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

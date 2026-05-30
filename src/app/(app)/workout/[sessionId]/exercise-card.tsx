@@ -17,6 +17,7 @@ import { formatDuration, formatWeight, unitLabel } from "@/lib/format";
 import type { Units } from "@/lib/units";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { SwipeRow } from "@/components/swipe-row";
+import { useDialog } from "@/lib/use-dialog";
 import type { ExerciseRow, SetRow } from "./types";
 import { SetInputRow } from "./set-input-row";
 import { TimeSetInputRow } from "./time-set-input-row";
@@ -54,6 +55,7 @@ export function ExerciseCard({
     zIndex: isDragging ? 10 : undefined,
   };
   const [zoomed, setZoomed] = useState(false);
+  const zoomDialogRef = useDialog<HTMLDivElement>(zoomed, () => setZoomed(false));
   const allComplete =
     exercise.sets.length > 0 && exercise.sets.every((s) => s.completed);
   const [expanded, setExpanded] = useState(!allComplete);
@@ -238,11 +240,13 @@ export function ExerciseCard({
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
       >
         <div
+          ref={zoomDialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={`${exercise.name} animation`}
+          tabIndex={-1}
           onClick={(e) => e.stopPropagation()}
-          className="relative bg-surface border border-border rounded-2xl p-4 max-w-sm w-full flex flex-col items-center gap-3"
+          className="relative bg-surface border border-border rounded-2xl p-4 max-w-sm w-full flex flex-col items-center gap-3 outline-none"
         >
           <button
             type="button"

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type Ref } from "react";
 import { Camera, X } from "lucide-react";
+import { useDialog } from "@/lib/use-dialog";
 
 // The native file picker can't ghost a previous photo for angle alignment, so
 // we use an in-app getUserMedia camera that overlays the last photo at low
@@ -22,6 +23,7 @@ export function PhotoCapture({
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
+  const cameraDialogRef = useDialog<HTMLDivElement>(cameraOpen, closeCamera);
 
   const cameraSupported =
     typeof navigator !== "undefined" &&
@@ -116,7 +118,14 @@ export function PhotoCapture({
       </button>
 
       {cameraOpen ? (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+        <div
+          ref={cameraDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Camera"
+          tabIndex={-1}
+          className="fixed inset-0 z-50 bg-black flex flex-col outline-none"
+        >
           <div className="flex items-center justify-between p-3 text-white">
             <span className="text-sm">
               {lastPhotoUrl ? "Line up with your last photo" : "Take a photo"}
