@@ -56,6 +56,9 @@ export function BlankProgramForm() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect --
+       Reading sessionStorage must happen post-mount so SSR and the first
+       client render match; a lazy initializer would hydration-mismatch. */
     const draft = loadDraft();
     if (draft) {
       setName(draft.name);
@@ -64,6 +67,7 @@ export function BlankProgramForm() {
       setDays(draft.days);
     }
     setHydrated(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   useEffect(() => {

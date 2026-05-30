@@ -62,7 +62,6 @@ export async function addExerciseToProgram(
   if (error) throw error;
 
   revalidatePath("/program");
-  revalidatePath("/today");
   if (parsed.returnTo) {
     revalidatePath("/workout", "layout");
   }
@@ -90,7 +89,6 @@ export async function archiveExerciseFromProgram(
   if (error) throw error;
 
   revalidatePath("/program");
-  revalidatePath("/today");
 }
 
 export async function unarchiveExerciseFromProgram(
@@ -106,7 +104,31 @@ export async function unarchiveExerciseFromProgram(
   if (error) throw error;
 
   revalidatePath("/program");
-  revalidatePath("/today");
+}
+
+// Two-phase order_index rewrite: first push every row into a temporary high
+// range so the final 0..n-1 assignments can't collide with existing values.
+// order_index has no unique constraint today, but this keeps the write safe
+// if one is added later. Shared by setExerciseOrder and saveDayEdits.
+async function renumberExercises(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orderedIds: string[]
+) {
+  const OFFSET = 1_000_000;
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ order_index: OFFSET + i })
+      .eq("id", orderedIds[i]);
+    if (error) throw error;
+  }
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ order_index: i })
+      .eq("id", orderedIds[i]);
+    if (error) throw error;
+  }
 }
 
 const SetExerciseOrderSchema = z.object({
@@ -145,28 +167,9 @@ export async function setExerciseOrder(
     throw new Error("No matching exercises to reorder.");
   }
 
-  // Two-phase write: first push every row into a temporary high range so the
-  // final assignments can't collide with existing values. order_index has no
-  // unique constraint today, but the two-phase approach keeps this safe if
-  // we add one later.
-  const OFFSET = 1_000_000;
-  for (let i = 0; i < merged.length; i++) {
-    const { error } = await supabase
-      .from("program_exercises")
-      .update({ order_index: OFFSET + i })
-      .eq("id", merged[i]);
-    if (error) throw error;
-  }
-  for (let i = 0; i < merged.length; i++) {
-    const { error } = await supabase
-      .from("program_exercises")
-      .update({ order_index: i })
-      .eq("id", merged[i]);
-    if (error) throw error;
-  }
+  await renumberExercises(supabase, merged);
 
   revalidatePath("/program");
-  revalidatePath("/today");
 }
 
 const SaveDayEditsSchema = z.object({
@@ -203,24 +206,9 @@ export async function saveDayEdits(
     if (error) throw error;
   }
 
-  const OFFSET = 1_000_000;
-  for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await supabase
-      .from("program_exercises")
-      .update({ order_index: OFFSET + i })
-      .eq("id", orderedIds[i]);
-    if (error) throw error;
-  }
-  for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await supabase
-      .from("program_exercises")
-      .update({ order_index: i })
-      .eq("id", orderedIds[i]);
-    if (error) throw error;
-  }
+  await renumberExercises(supabase, orderedIds);
 
   revalidatePath("/program");
-  revalidatePath("/today");
 }
 
 // ──────────────────────────────────────────────
@@ -374,7 +362,6 @@ export async function createBlankProgram(
   if (dayErr) throw dayErr;
 
   revalidatePath("/program");
-  revalidatePath("/today");
   redirect("/program");
 }
 
@@ -406,7 +393,6 @@ export async function setActiveProgram(
   if (error) throw error;
 
   revalidatePath("/program");
-  revalidatePath("/today");
 }
 
 export async function archiveProgram(
@@ -414,6 +400,20 @@ export async function archiveProgram(
 ) {
   const { programId } = ProgramIdSchema.parse(input);
   const { supabase, user } = await requireUser();
+
+  // Same guard as setActiveProgram: archiving the active program promotes the
+  // other one, which would switch the active program out from under an open
+  // session. Block it.
+  const { data: inProgress, error: ipErr } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .is("ended_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (ipErr) throw ipErr;
+  if (inProgress) {
+    throw new Error("Finish your in-progress workout before archiving a program.");
+  }
 
   const { data: target, error: tErr } = await supabase
     .from("programs")
@@ -456,53 +456,11 @@ export async function archiveProgram(
   }
 
   revalidatePath("/program");
-  revalidatePath("/today");
-}
-
-// ──────────────────────────────────────────────
-// Program-level editing
-// ──────────────────────────────────────────────
-
-const RenameProgramSchema = z.object({
-  programId: z.string().uuid(),
-  name: z.string().min(1).max(80),
-});
-
-export async function renameProgram(
-  input: z.infer<typeof RenameProgramSchema>
-) {
-  const parsed = RenameProgramSchema.parse(input);
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("programs")
-    .update({ name: parsed.name })
-    .eq("id", parsed.programId);
-  if (error) throw error;
-  revalidatePath("/program");
-  revalidatePath("/today");
 }
 
 // ──────────────────────────────────────────────
 // Day-level editing
 // ──────────────────────────────────────────────
-
-const RenameDaySchema = z.object({
-  dayId: z.string().uuid(),
-  label: z.string().min(1).max(40),
-  title: z.string().min(1).max(80),
-});
-
-export async function renameDay(input: z.infer<typeof RenameDaySchema>) {
-  const parsed = RenameDaySchema.parse(input);
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("program_days")
-    .update({ label: parsed.label, title: parsed.title })
-    .eq("id", parsed.dayId);
-  if (error) throw error;
-  revalidatePath("/program");
-  revalidatePath("/today");
-}
 
 const AddDaySchema = z.object({
   programId: z.string().uuid(),
@@ -537,7 +495,6 @@ export async function addDay(input: z.infer<typeof AddDaySchema>) {
   if (error) throw error;
 
   revalidatePath("/program");
-  revalidatePath("/today");
   return { dayId: inserted.id };
 }
 
@@ -577,5 +534,4 @@ export async function reorderDay(input: z.infer<typeof ReorderDaySchema>) {
   if (error) throw error;
 
   revalidatePath("/program");
-  revalidatePath("/today");
 }

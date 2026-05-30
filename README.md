@@ -1,39 +1,40 @@
-# Workout Tracker
+# Trainly
 
-Mobile-first PWA for logging my 12-week program at the gym. Built with Next.js 16, Supabase, Tailwind v4.
+A mobile-first PWA for logging strength programs at the gym. Single user today, multi-user-ready (RLS on every table). Built with **Next.js 16** (App Router), **Supabase** (Postgres + Auth), and **Tailwind v4**.
+
+Ships with 4 preset templates (12-week strength, PPL, Upper/Lower, Full Body 3×) and a blank-program builder; up to 2 programs per user, one active.
+
+## Docs
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system map + diagrams (auth flow, ER schema, workout logging, progression model, PWA, onboarding).
+- [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md) — prioritized findings backlog (what's fixed, what's deferred).
+- [`CLAUDE.md`](CLAUDE.md) — conventions, invariants, and the "don't" list.
 
 ## One-time setup
 
 1. **Create a Supabase project** at https://supabase.com.
-   - Auth → Email → enable Magic Link, disable password.
-   - Auth → URL Configuration → add `http://localhost:3000/api/auth/callback` (and Vercel URL when deployed).
+   - Auth → Email → enable Magic Link / OTP, disable password.
+   - Auth → URL Configuration → add `http://localhost:3000/api/auth/callback` (and the Vercel URL when deployed).
 
-2. **Copy env vars**
+2. **Env vars**
    ```bash
    cp .env.local.example .env.local
-   # fill in NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+   # NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+   # (weekly email also needs RESEND_API_KEY, NEXT_PUBLIC_APP_URL, CRON_SECRET)
    ```
 
-3. **Apply migrations** (Supabase CLI)
+3. **Apply migrations + generate types** (Supabase CLI)
    ```bash
    npx supabase login
    npx supabase link --project-ref <your-ref>
-   npx supabase db push
-
-   npx supabase db push     # applies 20260427100000_archive_exercises.sql
-   npm run db:types         # regenerates database.types.ts
+   npx supabase db push       # apply all migrations
+   npm run db:types           # regenerate src/lib/supabase/database.types.ts
    ```
 
-4. **Generate typed DB client**
-   ```bash
-   npm run db:types
-   ```
-
-5. **Seed the 12-week program for your user**
+4. **Seed a program for your user** (idempotent — creates the auth user if missing)
    ```bash
    npx tsx scripts/seed-program.ts you@example.com
    ```
-   Creates the auth user (if missing) and inserts the program. Idempotent.
 
 ## Dev
 
@@ -48,36 +49,28 @@ npm run lint
 ```
 src/
 ├── app/
-│   ├── (auth)/login/        # magic-link form
-│   ├── (app)/               # auth-guarded routes (layout.tsx redirects to /login)
-│   │   ├── today/
-│   │   ├── workout/[sessionId]/   (Phase 2)
-│   │   ├── program/
-│   │   ├── history/         (Phase 3)
-│   │   └── settings/
-│   ├── api/auth/callback/   # Supabase OAuth code exchange
-│   ├── layout.tsx
-│   └── page.tsx             # → redirect to /today
-├── components/bottom-nav.tsx
+│   ├── (auth)/login/                  email → 6-digit OTP
+│   ├── (app)/                         auth-gated app shell
+│   │   ├── program/                   hub: day pills, next-up, start/redo, switcher
+│   │   ├── workout/[sessionId]/       active logging UI
+│   │   ├── progress/                  analytics + month grid
+│   │   ├── body/                      weight / measurements / photos
+│   │   ├── history/[sessionId]/       planned-vs-actual + edit
+│   │   ├── history/exercise/[id]/     per-exercise chart
+│   │   └── settings/                  prefs hub + detail spokes
+│   ├── actions/                       Zod-validated server actions (the only mutation path)
+│   ├── api/auth/callback/             Supabase code exchange
+│   ├── api/cron/weekly-summary/       Resend weekly email (cron)
+│   └── manifest.ts                    PWA manifest
+├── proxy.ts                           auth gate (Next 16's renamed middleware)
 ├── lib/
-│   ├── progression.ts       # progressive-overload math
-│   ├── utils.ts             # cn()
-│   └── supabase/
-│       ├── client.ts        # browser
-│       ├── server.ts        # RSC / server actions
-│       ├── middleware.ts    # session refresh
-│       └── database.types.ts (generated)
-├── middleware.ts            # auth gate for all (app) routes
-supabase/
-├── config.toml
-├── migrations/20260426000000_init.sql
-scripts/
-└── seed-program.ts
+│   ├── queries.ts                     server-only read layer (pages never query Supabase directly)
+│   ├── progression.ts                 progressive-overload math
+│   ├── supabase/{client,server,middleware}.ts
+│   └── …
+└── components/                        shell + shared client components
+supabase/migrations/                   16 migrations (see CLAUDE.md / ARCHITECTURE.md)
+scripts/                               seed, OTP, catalog refresh, email preview
 ```
 
-## Phases
-
-- ✅ **Phase 1** — Foundation (this commit)
-- ⏳ **Phase 2** — Logging MVP (`/today`, `/workout/[id]`, server actions)
-- ⏳ **Phase 3** — History (list, detail, per-exercise chart)
-- ⏳ **Phase 4** — Polish (PWA manifest, offline queue, rest timer)
+Two architecture rules: **reads** go through `lib/queries.ts` (`server-only`); **writes** go through Zod-validated server actions in `app/actions/`. There is no separate API layer, and **RLS is the only tenant boundary**.

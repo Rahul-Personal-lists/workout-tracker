@@ -4,7 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.clone();
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") ?? "/program";
+  // Only honor a same-origin absolute path (single leading slash, not "//"),
+  // so a crafted ?next can't point the post-login redirect somewhere unexpected.
+  const rawNext = url.searchParams.get("next");
+  const next =
+    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//")
+      ? rawNext
+      : "/program";
 
   if (code) {
     const supabase = await createClient();

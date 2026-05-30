@@ -7,28 +7,6 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { PHOTO_BUCKET } from "@/lib/photo-upload";
-import { isUnits } from "@/lib/units";
-
-const SetDisplayNameSchema = z.object({
-  name: z.string().trim().min(1).max(40),
-});
-
-export async function setDisplayName(
-  input: z.infer<typeof SetDisplayNameSchema>
-) {
-  const { name } = SetDisplayNameSchema.parse(input);
-  const { supabase, user } = await requireUser();
-
-  const { error } = await supabase.from("profiles").upsert({
-    user_id: user.id,
-    display_name: name,
-    updated_at: new Date().toISOString(),
-  });
-  if (error) throw error;
-
-  revalidatePath("/settings");
-  revalidatePath("/settings/profile");
-}
 
 const ProfileFieldsSchema = z.object({
   name: z.string().trim().min(1).max(40).optional(),
@@ -226,7 +204,3 @@ export async function deleteAccount() {
 
   redirect("/login");
 }
-
-// Note: setUnits already does revalidatePath layout-wide. The next read of
-// any RSC that calls getUnitsServer() will pick up the new cookie value.
-void isUnits;

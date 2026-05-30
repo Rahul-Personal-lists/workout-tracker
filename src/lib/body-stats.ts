@@ -35,15 +35,28 @@ function shiftDays(dateKey: string, days: number): string {
   return `${y}-${m}-${day}`;
 }
 
+// One window definition shared by windowSeries (the filter) and padToWindow
+// (the axis), so a point exactly at the boundary can't be kept by one and
+// dropped by the other. The window spans [today - N, today] inclusive.
+const WINDOW_DAYS: Record<Exclude<Range, "all">, number> = {
+  "1m": 30,
+  "3m": 90,
+  "6m": 180,
+  "1y": 365,
+};
+
+function windowStartKey(range: Exclude<Range, "all">, today: Date): string {
+  return shiftDays(todayKey(today), -WINDOW_DAYS[range]);
+}
+
 export function windowSeries<T extends { date: string }>(
   points: T[],
   range: Range,
   today = new Date()
 ): T[] {
   if (range === "all") return points;
-  const days = range === "1m" ? 31 : range === "3m" ? 92 : range === "6m" ? 184 : 366;
-  const cutoff = shiftDays(todayKey(today), -days);
-  return points.filter((p) => p.date > cutoff);
+  const startKey = windowStartKey(range, today);
+  return points.filter((p) => p.date >= startKey);
 }
 
 export function padToWindow<T extends { date: string }>(
@@ -53,10 +66,9 @@ export function padToWindow<T extends { date: string }>(
   today = new Date()
 ): T[] {
   if (range === "all") return points;
-  const days = range === "1m" ? 30 : range === "3m" ? 90 : range === "6m" ? 180 : 365;
   const realByDate = new Map(points.map((p) => [p.date, p]));
   const out: T[] = [];
-  const startKey = shiftDays(todayKey(today), -days);
+  const startKey = windowStartKey(range, today);
   const endKey = todayKey(today);
   let cursor = startKey;
   while (cursor <= endKey) {

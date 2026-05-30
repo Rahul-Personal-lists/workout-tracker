@@ -78,7 +78,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
                 : " Time to start the streak."}
             </Text>
             <Section style={{ textAlign: "center", margin: "28px 0 8px" }}>
-              <Button href={`${appUrl}/today`} style={styles.cta}>
+              <Button href={`${appUrl}/program`} style={styles.cta}>
                 Open today&apos;s workout
               </Button>
             </Section>
@@ -259,7 +259,7 @@ export function WeeklySummaryEmail({ summary, appUrl }: WeeklySummaryEmailProps)
           )}
 
           <Section style={{ textAlign: "center", margin: "28px 0 8px" }}>
-            <Button href={`${appUrl}/today`} style={styles.cta}>
+            <Button href={`${appUrl}/program`} style={styles.cta}>
               Plan next week
             </Button>
           </Section>

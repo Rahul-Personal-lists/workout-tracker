@@ -71,7 +71,7 @@ export function ProgramSwitcher({
         data-tour="open-new-program"
         className="h-9 px-3 text-xs rounded-md border border-border bg-surface text-foreground flex items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] disabled:opacity-50"
       >
-        <span>My Plan</span>
+        <span className="truncate max-w-[10rem]">{active?.name ?? "My Plan"}</span>
         <ChevronDown
           aria-hidden="true"
           className={cn(

@@ -41,9 +41,13 @@ export function TimeSetInputRow({
   useEffect(() => {
     if (endsAt === null || targetSec === null) return;
     if (now < endsAt) return;
+    // Timer-expiry auto-complete: setting state here is behaviour-correct (fires
+    // once as the countdown hits 0). Structural cleanup is deferred — see CODE_AUDIT P5.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setEndsAt(null);
     setTargetSec(null);
     setDurationStr(formatDuration(targetSec));
+    /* eslint-enable react-hooks/set-state-in-effect */
     onChange({ completed: true, actualSeconds: targetSec }, true);
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate?.([200, 80, 200]);

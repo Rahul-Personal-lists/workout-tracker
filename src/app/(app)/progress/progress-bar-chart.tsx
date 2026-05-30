@@ -36,32 +36,38 @@ export function ProgressBarChart({ buckets }: { buckets: ProgressBucket[] }) {
             margin={{ top: 8, right: 4, bottom: 4, left: 0 }}
             barCategoryGap="25%"
           >
-            <CartesianGrid stroke="#262626" strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid
+              stroke="var(--color-border)"
+              strokeDasharray="3 3"
+              vertical={false}
+            />
             <XAxis
               dataKey="label"
-              stroke="#737373"
+              stroke="var(--color-foreground-muted)"
               tick={{ fontSize: 11 }}
               tickLine={false}
-              axisLine={{ stroke: "#262626" }}
+              axisLine={{ stroke: "var(--color-border)" }}
               interval={0}
             />
             <YAxis
-              stroke="#737373"
+              stroke="var(--color-foreground-muted)"
               tick={{ fontSize: 11 }}
               tickLine={false}
-              axisLine={{ stroke: "#262626" }}
+              axisLine={{ stroke: "var(--color-border)" }}
               width={28}
               allowDecimals={false}
             />
             <Tooltip
-              cursor={{ fill: "rgba(163, 230, 53, 0.08)" }}
+              cursor={{
+                fill: "color-mix(in srgb, var(--color-accent) 8%, transparent)",
+              }}
               contentStyle={{
-                background: "#0a0a0a",
-                border: "1px solid #262626",
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
                 borderRadius: 6,
                 fontSize: 12,
               }}
-              labelStyle={{ color: "#a3a3a3" }}
+              labelStyle={{ color: "var(--color-foreground-muted)" }}
               formatter={(value: number) => [value, "Workouts"]}
             />
             <Bar

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,21 +12,21 @@ const THEMES = [
   { key: "rose",   label: "Rose",   color: "#fb7185" },
 ] as const;
 
-type ThemeKey = (typeof THEMES)[number]["key"];
+export type ThemeKey = (typeof THEMES)[number]["key"];
 
-export function ThemePicker() {
-  const [theme, setTheme] = useState<ThemeKey>("lime");
-
-  useEffect(() => {
-    const accentMatch = document.cookie.match(/(?:^|;\s*)accent-theme=([^;]+)/);
-    const storedAccent = (accentMatch?.[1] as ThemeKey | undefined) ?? "lime";
-    setTheme(storedAccent);
-  }, []);
+// initialTheme comes from the accent-theme cookie, read server-side in the
+// page so SSR and first client render agree (no post-mount setState needed).
+export function ThemePicker({ initialTheme }: { initialTheme: ThemeKey }) {
+  const [theme, setTheme] = useState<ThemeKey>(initialTheme);
 
   function pickAccent(key: ThemeKey) {
     setTheme(key);
+    // Writing the cookie + <html data-theme> from a click handler is intentional;
+    // the React Compiler immutability rule over-flags these external DOM writes.
+    /* eslint-disable react-hooks/immutability */
     document.cookie = `accent-theme=${key};path=/;max-age=31536000;samesite=lax`;
     document.documentElement.dataset.theme = key;
+    /* eslint-enable react-hooks/immutability */
   }
 
   return (

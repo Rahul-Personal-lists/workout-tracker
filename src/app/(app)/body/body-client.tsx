@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, Camera, Flame, Percent, Ruler, Scale, X } from "lucide-react";
 import {
   upsertBodyLog,
-  deleteBodyLog,
   recordBodyPhotos,
   upsertBodyMeasurement,
   deleteBodyMeasurement,
@@ -102,6 +101,12 @@ export function BodyClient({
     () => pickedPhotos.map((f) => URL.createObjectURL(f)),
     [pickedPhotos]
   );
+
+  // Revoke the previous batch of object URLs when the picked set changes or the
+  // component unmounts — otherwise each pick leaks blob URLs for the page's life.
+  useEffect(() => {
+    return () => previewUrls.forEach((u) => URL.revokeObjectURL(u));
+  }, [previewUrls]);
 
   function seriesFor(key: MetricKey): MetricSeriesPoint[] {
     const metric = METRIC_BY_KEY[key];

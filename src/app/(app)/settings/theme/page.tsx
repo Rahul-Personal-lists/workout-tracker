@@ -1,8 +1,16 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { ThemePicker } from "../theme-picker";
+import { ThemePicker, type ThemeKey } from "../theme-picker";
 
-export default function ThemePage() {
+const THEME_KEYS: ThemeKey[] = ["lime", "sky", "amber", "violet", "rose"];
+
+export default async function ThemePage() {
+  const raw = (await cookies()).get("accent-theme")?.value;
+  const initialTheme: ThemeKey = THEME_KEYS.includes(raw as ThemeKey)
+    ? (raw as ThemeKey)
+    : "lime";
+
   return (
     <div className="space-y-5">
       <header className="flex items-center gap-3">
@@ -15,7 +23,7 @@ export default function ThemePage() {
         </Link>
         <h1 className="text-xl font-semibold">Theme</h1>
       </header>
-      <ThemePicker />
+      <ThemePicker initialTheme={initialTheme} />
     </div>
   );
 }

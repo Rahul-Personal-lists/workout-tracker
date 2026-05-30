@@ -118,6 +118,8 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
+    // Zustand-persist hydration gate; a lazy initializer would SSR-mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHydrated(useTutorial.persist.hasHydrated());
     return useTutorial.persist.onFinishHydration(() => setHydrated(true));
   }, []);
@@ -138,11 +140,14 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
 
   useLayoutEffect(() => {
     if (!onTour) return;
+    // Measuring the viewport then setting state is the purpose of this layout effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setViewport({ w: window.innerWidth, h: window.innerHeight });
   }, [onTour]);
 
   useLayoutEffect(() => {
     if (!onTour) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRect(null);
       return;
     }
