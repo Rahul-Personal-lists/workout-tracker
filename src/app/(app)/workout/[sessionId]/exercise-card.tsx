@@ -23,6 +23,7 @@ import { SetInputRow } from "./set-input-row";
 import { TimeSetInputRow } from "./time-set-input-row";
 
 export function ExerciseCard({
+  sessionId,
   exercise,
   units,
   onChange,
@@ -30,6 +31,7 @@ export function ExerciseCard({
   onDeleteSet,
   onHide,
 }: {
+  sessionId: string;
   exercise: ExerciseRow;
   units: Units;
   onChange: (
@@ -205,6 +207,7 @@ export function ExerciseCard({
                 <TimeSetInputRow
                   key={set.setNumber}
                   set={set}
+                  setKey={`${sessionId}:${exercise.id}:${set.setNumber}`}
                   plannedSeconds={exercise.plannedSeconds}
                   lastSeconds={exercise.lastSeconds}
                   onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}

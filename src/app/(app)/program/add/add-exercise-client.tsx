@@ -60,6 +60,27 @@ const MUSCLE_GROUPS: { label: string; match: (e: CatalogEntry) => boolean }[] =
     },
   ];
 
+// Module-level cache: the catalog is a static public-domain JSON, so fetch +
+// parse it once per session instead of on every mount of the add screen.
+let catalogCache: CatalogEntry[] | null = null;
+let catalogPromise: Promise<CatalogEntry[]> | null = null;
+function loadCatalog(): Promise<CatalogEntry[]> {
+  if (catalogCache) return Promise.resolve(catalogCache);
+  if (!catalogPromise) {
+    catalogPromise = fetch("/data/exercises-catalog.json")
+      .then((r) => r.json())
+      .then((d: CatalogEntry[]) => {
+        catalogCache = d;
+        return d;
+      })
+      .catch(() => {
+        catalogPromise = null; // let a later mount retry
+        return [] as CatalogEntry[];
+      });
+  }
+  return catalogPromise;
+}
+
 export function AddExerciseClient({
   programDayId,
   redirectWeek,
@@ -69,25 +90,21 @@ export function AddExerciseClient({
   redirectWeek: number;
   returnTo: string | null;
 }) {
-  const [catalog, setCatalog] = useState<CatalogEntry[] | null>(null);
+  const [catalog, setCatalog] = useState<CatalogEntry[] | null>(catalogCache);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<CatalogEntry | null>(null);
   const [activeMuscles, setActiveMuscles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (catalog) return;
     let cancelled = false;
-    fetch("/data/exercises-catalog.json")
-      .then((r) => r.json())
-      .then((d: CatalogEntry[]) => {
-        if (!cancelled) setCatalog(d);
-      })
-      .catch(() => {
-        if (!cancelled) setCatalog([]);
-      });
+    loadCatalog().then((d) => {
+      if (!cancelled) setCatalog(d);
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [catalog]);
 
   const hasFilters = query.trim() !== "" || activeMuscles.size > 0;
 

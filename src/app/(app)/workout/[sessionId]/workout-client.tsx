@@ -57,6 +57,26 @@ type Props = {
   units: Units;
 };
 
+// Own 1s interval so the ticking clock re-renders only this tiny node, not the
+// whole exercise list (which used to re-render every second).
+function ElapsedClock({ startedAt }: { startedAt: string }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    function compute() {
+      const startMs = new Date(startedAt).getTime();
+      setElapsed(Math.max(0, Math.floor((Date.now() - startMs) / 1000)));
+    }
+    compute();
+    const id = setInterval(compute, 1000);
+    return () => clearInterval(id);
+  }, [startedAt]);
+  return (
+    <span className="text-sm tabular-nums text-neutral-300">
+      {formatDuration(elapsed)}
+    </span>
+  );
+}
+
 export function WorkoutClient({
   sessionId,
   dayId,
@@ -71,7 +91,6 @@ export function WorkoutClient({
   const router = useRouter();
   const [exercises, setExercises] = useState(initialExercises);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
-  const [elapsed, setElapsed] = useState(0);
   const [finishing, startFinish] = useTransition();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -91,16 +110,6 @@ export function WorkoutClient({
     const id = setTimeout(() => setReorderToast(null), 2200);
     return () => clearTimeout(id);
   }, [reorderToast]);
-
-  useEffect(() => {
-    function compute() {
-      const startMs = new Date(startedAt).getTime();
-      setElapsed(Math.max(0, Math.floor((Date.now() - startMs) / 1000)));
-    }
-    compute();
-    const id = setInterval(compute, 1000);
-    return () => clearInterval(id);
-  }, [startedAt]);
 
   const visibleExercises = useMemo(
     () => exercises.filter((e) => !hiddenIds.has(e.id)),
@@ -348,9 +357,7 @@ export function WorkoutClient({
               />
             ) : null}
           </h1>
-          <span className="text-sm tabular-nums text-neutral-300">
-            {formatDuration(elapsed)}
-          </span>
+          <ElapsedClock startedAt={startedAt} />
         </div>
         <p className="text-xs text-neutral-500">
           {completedCount}/{totalSetsCount} sets done
@@ -376,6 +383,7 @@ export function WorkoutClient({
             {visibleExercises.map((ex) => (
               <ExerciseCard
                 key={ex.id}
+                sessionId={sessionId}
                 exercise={ex}
                 units={units}
                 onChange={(setNumber, patch, persist) => {
