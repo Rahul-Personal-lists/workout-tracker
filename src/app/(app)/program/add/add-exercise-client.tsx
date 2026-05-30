@@ -6,80 +6,14 @@ import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { addExerciseToProgram } from "@/app/actions/program";
 import { parseDuration } from "@/lib/format";
-
-type CatalogEntry = {
-  id: string;
-  name: string;
-  equipment: string | null;
-  category: string;
-  force: string | null;
-  level: string | null;
-  primary: string[];
-  custom?: boolean;
-};
-
-const IMG = (slug: string) =>
-  `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${slug}/0.jpg`;
-
-const CUSTOM_IMG = "/icon-192.png";
-
-function imageFor(entry: CatalogEntry) {
-  return entry.custom ? CUSTOM_IMG : IMG(entry.id);
-}
-
-const MUSCLE_GROUPS: { label: string; match: (e: CatalogEntry) => boolean }[] =
-  [
-    { label: "Abs", match: (e) => e.primary.includes("abdominals") },
-    {
-      label: "Arms",
-      match: (e) =>
-        e.primary.some((m) => ["biceps", "triceps", "forearms"].includes(m)),
-    },
-    {
-      label: "Back",
-      match: (e) =>
-        e.primary.some((m) =>
-          ["lats", "lower back", "middle back", "traps"].includes(m)
-        ),
-    },
-    { label: "Calves", match: (e) => e.primary.includes("calves") },
-    { label: "Cardio", match: (e) => e.category === "cardio" },
-    { label: "Chest", match: (e) => e.primary.includes("chest") },
-    {
-      label: "Legs",
-      match: (e) =>
-        e.primary.some((m) =>
-          ["quadriceps", "hamstrings", "glutes", "adductors", "abductors"].includes(
-            m
-          )
-        ),
-    },
-    {
-      label: "Shoulders",
-      match: (e) => e.primary.some((m) => ["shoulders", "neck"].includes(m)),
-    },
-  ];
-
-// Module-level cache: the catalog is a static public-domain JSON, so fetch +
-// parse it once per session instead of on every mount of the add screen.
-let catalogCache: CatalogEntry[] | null = null;
-let catalogPromise: Promise<CatalogEntry[]> | null = null;
-function loadCatalog(): Promise<CatalogEntry[]> {
-  if (catalogCache) return Promise.resolve(catalogCache);
-  if (!catalogPromise) {
-    catalogPromise = fetch("/data/exercises-catalog.json")
-      .then((r) => r.json())
-      .then((d: CatalogEntry[]) => {
-        catalogCache = d;
-        return d;
-      })
-      .catch(() => {
-        catalogPromise = null; // let a later mount retry
-        return [] as CatalogEntry[];
-      });
-  }
-  return catalogPromise;
-}
+import {
+  type CatalogEntry,
+  MUSCLE_GROUPS,
+  CUSTOM_IMG,
+  imageForCatalogEntry,
+  loadCatalog,
+  getCachedCatalog,
+} from "@/lib/exercise-catalog";
 
 export function AddExerciseClient({
   programDayId,
@@ -90,7 +24,9 @@ export function AddExerciseClient({
   redirectWeek: number;
   returnTo: string | null;
 }) {
-  const [catalog, setCatalog] = useState<CatalogEntry[] | null>(catalogCache);
+  const [catalog, setCatalog] = useState<CatalogEntry[] | null>(
+    getCachedCatalog()
+  );
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<CatalogEntry | null>(null);
   const [activeMuscles, setActiveMuscles] = useState<Set<string>>(new Set());
@@ -236,7 +172,7 @@ export function AddExerciseClient({
                 className="w-full flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-2 text-left hover:border-neutral-700"
               >
                 <ExerciseAnimation
-                  url={imageFor(entry)}
+                  url={imageForCatalogEntry(entry)}
                   alt={entry.name}
                   size={64}
                 />
@@ -288,7 +224,7 @@ function ConfigForm({
   const [submitting, startSubmit] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const imgUrl = imageFor(entry);
+  const imgUrl = imageForCatalogEntry(entry);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();

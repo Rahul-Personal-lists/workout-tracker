@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import {
   getAllPrograms,
   getCompletedSlots,
@@ -124,6 +124,13 @@ export default async function ProgramPage({
     <div className="space-y-5 pb-4">
       <div className="flex items-center justify-between gap-2">
         <ProgramSwitcher programs={allPrograms} canAddProgram={canAddProgram} />
+        <Link
+          href="/program/exercises"
+          className="h-9 px-3 shrink-0 inline-flex items-center gap-1.5 rounded-md border border-border bg-surface text-xs text-foreground-muted hover:text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          Exercises
+        </Link>
       </div>
 
       {selectedDay ? (
