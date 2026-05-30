@@ -17,8 +17,6 @@ import { formatDateInTz, getUserTimezone } from "@/lib/tz";
 import { formatDuration, formatVolume, formatWeight } from "@/lib/format";
 import { getUnitsServer } from "@/lib/units-server";
 
-export const dynamic = "force-dynamic";
-
 export default async function SessionDetailPage({
   params,
 }: {

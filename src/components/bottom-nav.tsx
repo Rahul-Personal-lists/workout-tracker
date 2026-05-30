@@ -29,6 +29,7 @@ export function BottomNav() {
             <li key={href} className="flex">
               <Link
                 href={href}
+                prefetch
                 data-tour={`nav-${href.slice(1)}`}
                 aria-current={active ? "page" : undefined}
                 className={cn(

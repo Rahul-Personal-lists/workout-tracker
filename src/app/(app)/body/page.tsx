@@ -7,8 +7,6 @@ import {
 import { getUnitsServer } from "@/lib/units-server";
 import { BodyClient } from "./body-client";
 
-export const dynamic = "force-dynamic";
-
 export default async function BodyPage() {
   const [logs, measurements, photos, goalWeight, units] = await Promise.all([
     getBodyLogs(),

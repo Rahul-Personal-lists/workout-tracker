@@ -10,8 +10,6 @@ import { getProfile } from "@/lib/queries";
 import { GoalWeightField } from "./goal-weight-field";
 import { SettingsRow, SettingsSection, SettingsStaticRow } from "./settings-row";
 
-export const dynamic = "force-dynamic";
-
 export default async function SettingsPage() {
   const profile = await getProfile();
 
