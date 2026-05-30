@@ -19,9 +19,17 @@ Convention reminders before touching anything: reads → `lib/queries.ts`, write
 - **X3 — single source of truth.** `body/body-client.tsx` `logs`/`measurements` are now prop-derived (server-authoritative); the optimistic `useState` mirrors that diverged after `router.refresh()` were removed. Mutations still revalidate `/body` + `router.refresh()`.
 - **S8 — units from DB.** `settings/units/page.tsx` now reads `getProfile().units` like every other screen, not the cookie.
 
-### S9 · Standardize `requireUser()` across mutations (still open)
-- **Where:** `actions/workout.ts` (`logSet`, `editSetLog`, `deleteSetLog`, `editSessionDuration`, `finishWorkout`, `deleteSessionPhoto`, `deleteSession`) and several in `actions/program.ts` use bare `createClient()`.
-- **Fix:** call `requireUser()` at the top so an expired session fails loudly instead of silently no-op'ing. RLS still backstops; this is defense-in-depth + consistency.
+### X3 · body-client state/prop divergence
+- **Where:** `body/body-client.tsx` — `logs`/`measurements` are `useState` seeded once from props; `photos`/`goal`/`units` are prop-driven + `router.refresh()`.
+- **Fix:** pick one source of truth. Simplest: drop the `useState` mirrors and derive from props (rely on `revalidatePath("/body")` + `router.refresh()`), or keep optimistic state and drop the `router.refresh()` calls. Don't run both.
+- **Done when:** a server-side change (or second device) reflects in logs/measurements without a hard reload.
+
+### S8 · `/settings/units` reads cookie, not DB
+- **Where:** `settings/units/page.tsx` uses `getUnitsServer()` (cookie) while the hub + every other screen read `profile.units` via `getProfile()`.
+- **Fix:** read units from `getProfile()` here too, for one source of truth.
+
+### S9 · ✅ shipped (branch `fix/s9-require-user`)
+- 13 mutating actions in `actions/workout.ts` + `actions/program.ts` now use `requireUser()` — an expired session fails loudly ("Not authenticated") instead of a silent RLS no-op. **Exception:** `logSet` stays on the bare client (fires every set during a workout; the proxy already validates the session on the POST, so the extra Auth round-trip would only add latency on a flaky connection — and its caller swallows errors, so there's no user-facing benefit). RLS still backstops everywhere.
 
 ---
 
