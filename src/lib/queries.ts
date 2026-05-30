@@ -332,7 +332,7 @@ export async function getUndoableSkip(): Promise<UndoableSkip | null> {
     .from("workout_sessions")
     .select("ended_at, program_days ( label, title )")
     .eq("user_id", user.id)
-    .eq("duration_seconds", 0)
+    .eq("is_rest_skip", true)
     .order("ended_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -813,7 +813,7 @@ export async function getWeekStreak(tz: string): Promise<number> {
     .from("workout_sessions")
     .select("started_at")
     .not("ended_at", "is", null)
-    .or("duration_seconds.is.null,duration_seconds.gt.0");
+    .eq("is_rest_skip", false);
   if (error) throw error;
   if (!data || data.length === 0) return 0;
 
@@ -869,7 +869,7 @@ export async function getLatestSessionDateKey(
     .from("workout_sessions")
     .select("started_at")
     .not("ended_at", "is", null)
-    .or("duration_seconds.is.null,duration_seconds.gt.0")
+    .eq("is_rest_skip", false)
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -896,7 +896,7 @@ export async function getSessionsByDateForMonth(
     .select("id, started_at, ended_at")
     .gte("started_at", start.toISOString())
     .lt("started_at", end.toISOString())
-    .or("duration_seconds.is.null,duration_seconds.gt.0")
+    .eq("is_rest_skip", false)
     .order("started_at", { ascending: true });
   if (error) throw error;
 
@@ -955,7 +955,7 @@ export async function getProgressForRange(
     .gte("started_at", startISO)
     .lt("started_at", endISO)
     .not("ended_at", "is", null)
-    .or("duration_seconds.is.null,duration_seconds.gt.0");
+    .eq("is_rest_skip", false);
   if (sErr) throw sErr;
 
   const bucketKeySet = new Set(buckets.map((b) => b.key));

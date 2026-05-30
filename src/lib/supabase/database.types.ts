@@ -372,6 +372,7 @@ export type Database = {
           duration_seconds: number | null
           ended_at: string | null
           id: string
+          is_rest_skip: boolean
           notes: string | null
           paused_at: string | null
           program_day_id: string
@@ -384,6 +385,7 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          is_rest_skip?: boolean
           notes?: string | null
           paused_at?: string | null
           program_day_id: string
@@ -396,6 +398,7 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          is_rest_skip?: boolean
           notes?: string | null
           paused_at?: string | null
           program_day_id?: string

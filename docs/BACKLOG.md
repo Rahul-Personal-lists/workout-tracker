@@ -6,24 +6,10 @@ Convention reminders before touching anything: reads → `lib/queries.ts`, write
 
 ---
 
-## Tier 1 — real bugs / data-loss (do next)
+## Tier 1 — ✅ shipped (branch `fix/rest-skip-sentinel-and-tutorial-modal`)
 
-### B8 · Rest-day skip sentinel can delete a real workout  ⚠️ needs migration
-- **Where:** `lib/queries.ts` `getUndoableSkip`; `actions/workout.ts` `undoLastSkip` (+ `skipRestDay`), and the `duration_seconds.gt.0` filters in `getWeekStreak` / `getLatestSessionDateKey` / `getSessionsByDateForMonth` / `getProgressForRange`.
-- **Problem:** a rest-day skip is identified only by `duration_seconds = 0`. A genuine workout finished within one clock second (or where paused ≥ elapsed) also yields 0 → it can surface as an "undo skip" banner and be **deleted** within the 5-min window.
-- **Fix:** add a boolean column, set it in `skipRestDay`, and key all skip detection + the activity filters off it instead of the overloaded duration.
-  - Migration: `alter table workout_sessions add column is_rest_skip boolean not null default false;` then `npm run db:types`.
-  - `skipRestDay` insert sets `is_rest_skip: true`.
-  - `getUndoableSkip` / `undoLastSkip`: filter `.eq("is_rest_skip", true)` instead of `.eq("duration_seconds", 0)`.
-  - Activity filters: replace `or("duration_seconds.is.null,duration_seconds.gt.0")` with `.eq("is_rest_skip", false)`.
-  - **Stop-gap if avoiding a migration:** require zero `set_logs` for the candidate session before treating it as a skip (a true skip never logs sets).
-- **Done when:** a zero-duration *logged* session never appears in the undo banner and is never deleted by Undo.
-
-### B9 · Tutorial overlay isn't actually modal
-- **Where:** `components/tutorial-overlay.tsx` (~lines 382–396).
-- **Problem:** the `inset-0` "click-catcher" has no handler and default `pointer-events`, so taps pass through to the app mid-tour (e.g. a nav tab) and desync the tour, despite `role=dialog`/`aria-modal`.
-- **Fix:** give the catcher `pointer-events:auto` + an `onPointerDown`/`onClick` that `preventDefault()`+`stopPropagation()`s (or advances the tour deliberately); keep the card above it.
-- **Done when:** tapping outside the card during a tour doesn't navigate the app.
+- **B8 — explicit rest-skip flag.** Added `is_rest_skip` to `workout_sessions` (migration `20260530000000_rest_skip_flag.sql`, with an idempotent backfill of historical skips). `skipRestDay` sets it; `getUndoableSkip`/`undoLastSkip` and the activity filters in `getWeekStreak`/`getLatestSessionDateKey`/`getSessionsByDateForMonth`/`getProgressForRange` now key off it instead of `duration_seconds = 0`. Undo can no longer delete a real zero-duration workout. **⚠️ Deploy step:** apply the migration (`npx supabase db push`) **before** deploying the code, then `npm run db:types` (it will reproduce the bridged type in `database.types.ts`).
+- **B9 — modal tutorial overlay.** The click-catcher now swallows background taps (`onPointerDown`/`onClick` preventDefault+stopPropagation) so the bottom nav etc. can't be hit mid-tour. (Escape + arrow-key nav + `role=dialog` already existed.)
 
 ---
 

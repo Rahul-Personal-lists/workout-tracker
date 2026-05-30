@@ -385,7 +385,7 @@ flowchart LR
 
 - DB stores UTC. A client-set `tz` cookie (`tz-init.tsx`) drives `dateKeyInTz` (Intl `en-CA` → `YYYY-MM-DD`).
 - Range queries **pad ±1 UTC day** then **re-filter in JS** by the user-TZ date key. All calendar arithmetic uses UTC-midnight `Date` carriers as a TZ-neutral spine.
-- A session counts as "activity" when `ended_at IS NOT NULL AND (duration_seconds IS NULL OR > 0)`. `duration_seconds = 0` is the **rest-day-skip sentinel** and is excluded from streaks/progress/calendar.
+- A session counts as "activity" when it's **not a rest-day skip** (`is_rest_skip = false`). Rest-day skips are written by `skipRestDay` with `is_rest_skip = true` and excluded from streaks/progress/calendar. *(Earlier this was inferred from `duration_seconds = 0`, which could collide with a real zero-duration workout — replaced by the explicit `is_rest_skip` column in migration `20260530000000`.)*
 
 Muscle map: `exercises-catalog.json` primary muscles → `CATALOG_TO_TOP_LEVEL` (8 groups) → `MUSCLE_TO_GROUP` (vendored `react-body-highlighter` polygons) → SVG heat overlay (opacity scales by set count).
 
@@ -461,7 +461,7 @@ Prefer `bg-surface` / `border-border` / `text-foreground-muted` over raw `neutra
 4. Promote a program → demote the current active one first (partial unique index).
 5. `order_index` rewrites use a two-phase OFFSET pass (collision-safe even without a unique constraint).
 6. Time: store UTC, derive user-TZ keys via `dateKeyInTz`, pad ±1 day then re-filter.
-7. `duration_seconds = 0` ⇒ rest-day skip sentinel.
+7. Rest-day skips are flagged by `workout_sessions.is_rest_skip`, not inferred from `duration_seconds`.
 8. A11y baseline: pinch-zoom stays enabled, every interactive element gets a `:focus-visible` ring (via `--focus-ring-*`), bottom nav has `aria-label`/`aria-current`, skip-to-main link.
 
 ---
