@@ -385,8 +385,19 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
 
   return (
     <div className="fixed inset-0 z-50" aria-live="polite">
-      {/* Click-catcher: blocks taps on everything except the card. */}
-      <div className="absolute inset-0" aria-hidden="true" />
+      {/* Click-catcher: a full-screen scrim (the overlay is z-50, above the app)
+          that swallows taps so background controls — e.g. the bottom nav — can't
+          be hit mid-tour and desync it. The card is a later sibling, so it stays
+          interactive. */}
+      <div
+        className="absolute inset-0"
+        aria-hidden="true"
+        onPointerDown={(e) => e.preventDefault()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      />
 
       {/* Spotlight ring + dimming via huge spread shadow. Fallback to a plain
        * dim backdrop when the target can't be found. */}

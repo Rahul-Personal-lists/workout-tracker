@@ -65,6 +65,7 @@ export async function skipRestDay(input: z.infer<typeof SkipRestDaySchema>) {
     week_number: weekNumber,
     started_at: now,
     ended_at: now,
+    is_rest_skip: true,
   });
   if (error) throw error;
 
@@ -81,9 +82,9 @@ export async function undoLastSkip() {
 
   const { data: latest } = await supabase
     .from("workout_sessions")
-    .select("id, ended_at, duration_seconds")
+    .select("id, ended_at")
     .eq("user_id", user.id)
-    .eq("duration_seconds", 0)
+    .eq("is_rest_skip", true)
     .order("ended_at", { ascending: false })
     .limit(1)
     .maybeSingle();
