@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Camera, Image as ImageIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDialog } from "@/lib/use-dialog";
 import { PhotoThumb } from "./photo-thumb";
 
 export function FinishSheet({
@@ -33,12 +34,22 @@ export function FinishSheet({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const sheetRef = useDialog<HTMLDivElement>(true, onClose);
+  const pickerRef = useDialog<HTMLDivElement>(
+    pickerOpen,
+    () => setPickerOpen(false)
+  );
 
   return (
     <>
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70" onClick={onClose}>
       <div
-        className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-4"
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Finish workout"
+        tabIndex={-1}
+        className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-4 outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -171,7 +182,12 @@ export function FinishSheet({
         onClick={() => setPickerOpen(false)}
       >
         <div
-          className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-3"
+          ref={pickerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Add photo"
+          tabIndex={-1}
+          className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-3 outline-none"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">

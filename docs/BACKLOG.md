@@ -13,23 +13,13 @@ Convention reminders before touching anything: reads → `lib/queries.ts`, write
 
 ---
 
-## Tier 2 — solid improvements (no schema change)
+## Tier 2 — ✅ A1/X3/S8 shipped (branch `fix/tier2-a11y-modals-and-state`)
 
-### A1 · Modal dialogs: focus trap + Escape + focus return
-- **Where:** workout image-zoom (`workout/[sessionId]/exercise-card.tsx`), finish sheet + photo picker (`finish-sheet.tsx`), body photo lightbox (`body/body-photos.tsx`) + camera (`photo-capture.tsx`), session-photos lightbox (`history/[sessionId]/session-photos.tsx`).
-- **Fix:** add `role="dialog"` + `aria-modal` + `aria-label`, move focus in on open, trap Tab, close on Escape, restore focus on close. **`components/day-note-popover.tsx` already implements this** — mirror it (consider extracting a small `useDialog`/`<Modal>` helper since there are 5 sites).
-- **Done when:** each modal is keyboard-dismissable and traps focus.
+- **A1 — modal a11y.** New reusable `lib/use-dialog.ts` hook (initial focus + Tab trap + Escape + focus-return, with a stack so nested sheets only act on the top-most) applied to all 5 modals: workout image-zoom, finish sheet + photo picker, body photo lightbox, camera, session-photos lightbox. Each is now `role="dialog" aria-modal` with a label.
+- **X3 — single source of truth.** `body/body-client.tsx` `logs`/`measurements` are now prop-derived (server-authoritative); the optimistic `useState` mirrors that diverged after `router.refresh()` were removed. Mutations still revalidate `/body` + `router.refresh()`.
+- **S8 — units from DB.** `settings/units/page.tsx` now reads `getProfile().units` like every other screen, not the cookie.
 
-### X3 · body-client state/prop divergence
-- **Where:** `body/body-client.tsx` — `logs`/`measurements` are `useState` seeded once from props; `photos`/`goal`/`units` are prop-driven + `router.refresh()`.
-- **Fix:** pick one source of truth. Simplest: drop the `useState` mirrors and derive from props (rely on `revalidatePath("/body")` + `router.refresh()`), or keep optimistic state and drop the `router.refresh()` calls. Don't run both.
-- **Done when:** a server-side change (or second device) reflects in logs/measurements without a hard reload.
-
-### S8 · `/settings/units` reads cookie, not DB
-- **Where:** `settings/units/page.tsx` uses `getUnitsServer()` (cookie) while the hub + every other screen read `profile.units` via `getProfile()`.
-- **Fix:** read units from `getProfile()` here too, for one source of truth.
-
-### S9 · Standardize `requireUser()` across mutations
+### S9 · Standardize `requireUser()` across mutations (still open)
 - **Where:** `actions/workout.ts` (`logSet`, `editSetLog`, `deleteSetLog`, `editSessionDuration`, `finishWorkout`, `deleteSessionPhoto`, `deleteSession`) and several in `actions/program.ts` use bare `createClient()`.
 - **Fix:** call `requireUser()` at the top so an expired session fails loudly instead of silently no-op'ing. RLS still backstops; this is defense-in-depth + consistency.
 
