@@ -158,13 +158,18 @@ async function upsertSetLog(
 
 export async function logSet(input: z.infer<typeof LogSetSchema>) {
   const parsed = LogSetSchema.parse(input);
+  // Hot path: fires on every set toggle/commit during a workout. The proxy
+  // already validates the session (getUser) on this POST and RLS owner-scopes
+  // the upsert, so we deliberately skip requireUser's extra Auth round-trip
+  // here to keep set-logging snappy on a flaky gym connection. The other
+  // mutations use requireUser for a clean "Not authenticated" error.
   const supabase = await createClient();
   await upsertSetLog(supabase, parsed, { stampLoggedAt: true });
 }
 
 export async function editSetLog(input: z.infer<typeof LogSetSchema>) {
   const parsed = LogSetSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
   await upsertSetLog(supabase, parsed, { stampLoggedAt: false });
 
   revalidatePath(`/history/${parsed.sessionId}`);
@@ -181,7 +186,7 @@ const DeleteSetLogSchema = z.object({
 // logged — the swipe-to-delete UI calls this for unlogged rows too.
 export async function deleteSetLog(input: z.infer<typeof DeleteSetLogSchema>) {
   const parsed = DeleteSetLogSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { error } = await supabase
     .from("set_logs")
@@ -203,7 +208,7 @@ export async function editSessionDuration(
   input: z.infer<typeof EditDurationSchema>
 ) {
   const { sessionId, durationSeconds } = EditDurationSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { data: session, error: getErr } = await supabase
     .from("workout_sessions")
@@ -234,7 +239,7 @@ const FinishSchema = z.object({
 
 export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
   const { sessionId, notes } = FinishSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   // Idempotent: only stamp ended_at the first time, but always update notes
   // so the user can correct them on a re-finish (e.g. after a flaky-wifi retry).
@@ -313,7 +318,7 @@ const DeletePhotoSchema = z.object({
 
 export async function deleteSessionPhoto(input: z.infer<typeof DeletePhotoSchema>) {
   const { photoId } = DeletePhotoSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { data: photo, error: fetchErr } = await supabase
     .from("workout_session_photos")
@@ -339,7 +344,7 @@ const DeleteSessionSchema = z.object({
 
 export async function deleteSession(input: z.infer<typeof DeleteSessionSchema>) {
   const { sessionId } = DeleteSessionSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { data: photos, error: photoErr } = await supabase
     .from("workout_session_photos")

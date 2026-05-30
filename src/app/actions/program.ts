@@ -31,7 +31,7 @@ export async function addExerciseToProgram(
   input: z.infer<typeof AddExerciseSchema>
 ) {
   const parsed = AddExerciseSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { data: maxRow, error: maxErr } = await supabase
     .from("program_exercises")
@@ -80,7 +80,7 @@ export async function archiveExerciseFromProgram(
   input: z.infer<typeof ArchiveExerciseSchema>
 ) {
   const { exerciseId } = ArchiveExerciseSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { error } = await supabase
     .from("program_exercises")
@@ -95,7 +95,7 @@ export async function unarchiveExerciseFromProgram(
   input: z.infer<typeof ArchiveExerciseSchema>
 ) {
   const { exerciseId } = ArchiveExerciseSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { error } = await supabase
     .from("program_exercises")
@@ -140,7 +140,7 @@ export async function setExerciseOrder(
   input: z.infer<typeof SetExerciseOrderSchema>
 ) {
   const { dayId, orderedIds } = SetExerciseOrderSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { data: siblings, error: sErr } = await supabase
     .from("program_exercises")
@@ -184,7 +184,7 @@ export async function saveDayEdits(
   input: z.infer<typeof SaveDayEditsSchema>
 ) {
   const { dayId, orderedIds } = SaveDayEditsSchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { data: siblings, error: sErr } = await supabase
     .from("program_exercises")
@@ -470,7 +470,7 @@ const AddDaySchema = z.object({
 
 export async function addDay(input: z.infer<typeof AddDaySchema>) {
   const parsed = AddDaySchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { data: maxRow, error: maxErr } = await supabase
     .from("program_days")
@@ -505,7 +505,7 @@ const ReorderDaySchema = z.object({
 
 export async function reorderDay(input: z.infer<typeof ReorderDaySchema>) {
   const { dayId, direction } = ReorderDaySchema.parse(input);
-  const supabase = await createClient();
+  const { supabase } = await requireUser();
 
   const { data: target, error: tErr } = await supabase
     .from("program_days")
