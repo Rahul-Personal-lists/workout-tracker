@@ -241,7 +241,7 @@ export function ProfileClient({
           disabled={avatarPending}
           aria-label="Change avatar"
           className={cn(
-            "w-24 h-24 rounded-full border border-border bg-surface-subtle overflow-hidden flex items-center justify-center text-foreground-muted",
+            "w-24 h-24 rounded-full border border-border bg-surface-subtle overflow-hidden flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
             avatarPending && "opacity-60"
           )}
         >
@@ -268,7 +268,7 @@ export function ProfileClient({
             type="button"
             onClick={onRemoveAvatar}
             disabled={avatarPending}
-            className="text-xs text-foreground-muted underline disabled:opacity-50"
+            className="text-xs text-foreground-muted underline disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             Remove photo
           </button>
@@ -285,7 +285,8 @@ export function ProfileClient({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Add a name"
-            className="bg-transparent text-sm text-right outline-none w-full"
+            aria-label="Name"
+            className="bg-transparent text-sm text-right outline-none w-full focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           />
         </FieldRow>
 
@@ -298,7 +299,7 @@ export function ProfileClient({
                 onClick={() => setGender(gender === g ? null : g)}
                 aria-pressed={gender === g}
                 className={cn(
-                  "h-8 px-3 rounded-full text-xs capitalize border outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]",
+                  "h-8 px-3 rounded-full text-xs capitalize border outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                   gender === g
                     ? "bg-accent text-accent-foreground border-accent"
                     : "bg-surface-subtle text-foreground-muted border-border"
@@ -317,7 +318,8 @@ export function ProfileClient({
             value={age}
             onChange={(e) => setAge(e.target.value.replace(/[^\d]/g, "").slice(0, 3))}
             placeholder="—"
-            className="bg-transparent text-sm text-right outline-none w-20 tabular-nums"
+            aria-label="Age"
+            className="bg-transparent text-sm text-right outline-none w-20 tabular-nums focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           />
         </FieldRow>
 
@@ -331,7 +333,8 @@ export function ProfileClient({
                 setHeightCmInput(e.target.value.replace(/[^\d.]/g, "").slice(0, 5))
               }
               placeholder="—"
-              className="bg-transparent text-sm text-right outline-none w-24 tabular-nums"
+              aria-label="Height in centimeters"
+              className="bg-transparent text-sm text-right outline-none w-24 tabular-nums focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             />
           ) : (
             <div className="flex items-center gap-1.5">
@@ -343,7 +346,8 @@ export function ProfileClient({
                   setHeightFt(e.target.value.replace(/[^\d]/g, "").slice(0, 1))
                 }
                 placeholder="ft"
-                className="bg-surface-subtle border border-border rounded h-8 w-12 text-sm text-center outline-none tabular-nums"
+                aria-label="Height feet"
+                className="bg-surface-subtle border border-border rounded h-8 w-12 text-sm text-center outline-none tabular-nums focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               />
               <span className="text-xs text-foreground-muted">ft</span>
               <input
@@ -354,7 +358,8 @@ export function ProfileClient({
                   setHeightIn(e.target.value.replace(/[^\d]/g, "").slice(0, 2))
                 }
                 placeholder="in"
-                className="bg-surface-subtle border border-border rounded h-8 w-12 text-sm text-center outline-none tabular-nums"
+                aria-label="Height inches"
+                className="bg-surface-subtle border border-border rounded h-8 w-12 text-sm text-center outline-none tabular-nums focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               />
               <span className="text-xs text-foreground-muted">in</span>
             </div>
@@ -364,7 +369,7 @@ export function ProfileClient({
         <FieldRow label="Weight">
           <Link
             href="/body"
-            className="text-sm text-foreground-muted hover:text-foreground tabular-nums"
+            className="text-sm text-foreground-muted hover:text-foreground tabular-nums outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             {todayWeightLb !== null
               ? formatWeight(todayWeightLb, units)
@@ -377,14 +382,14 @@ export function ProfileClient({
         </FieldRow>
       </div>
 
-      {error ? <p className="text-xs text-red-400">{error}</p> : null}
+      {error ? <p role="alert" className="text-xs text-red-400">{error}</p> : null}
 
       <button
         type="button"
         onClick={onSaveForm}
         disabled={formPending || !isDirty}
         className={cn(
-          "w-full h-11 rounded-md text-sm font-medium bg-accent text-accent-foreground",
+          "w-full h-11 rounded-md text-sm font-medium bg-accent text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
           (formPending || !isDirty) && "opacity-50"
         )}
       >
@@ -395,7 +400,7 @@ export function ProfileClient({
         <button
           type="button"
           onClick={onSignOut}
-          className="w-full h-11 rounded-md text-sm border border-border bg-surface text-foreground flex items-center justify-center gap-2"
+          className="w-full h-11 rounded-md text-sm border border-border bg-surface text-foreground flex items-center justify-center gap-2 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
         >
           <LogOut className="w-4 h-4" />
           Log out
@@ -405,7 +410,7 @@ export function ProfileClient({
           onClick={armDelete}
           disabled={deletePending}
           className={cn(
-            "w-full h-11 rounded-md text-sm border flex items-center justify-center gap-2 transition-colors",
+            "w-full h-11 rounded-md text-sm border flex items-center justify-center gap-2 transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
             confirmingDelete
               ? "bg-red-500/20 border-red-500/60 text-red-300"
               : "border-red-500/40 text-red-400 bg-transparent",

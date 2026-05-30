@@ -13,6 +13,7 @@ export function DurationEditor({
   durationSeconds: number | null;
 }) {
   const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const initial = durationSeconds ?? 0;
@@ -28,9 +29,10 @@ export function DurationEditor({
     startTransition(async () => {
       try {
         await editSessionDuration({ sessionId, durationSeconds: total });
+        setError(null);
         setEditing(false);
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Could not save.");
+        setError(err instanceof Error ? err.message : "Could not save.");
       }
     });
   }
@@ -38,11 +40,13 @@ export function DurationEditor({
   function cancel() {
     setMins(String(Math.floor(initial / 60)));
     setSecs(String(initial % 60));
+    setError(null);
     setEditing(false);
   }
 
   if (editing) {
     return (
+      <span className="inline-flex flex-col gap-1">
       <span className="inline-flex items-center gap-1 tabular-nums">
         <input
           aria-label="Minutes"
@@ -64,7 +68,7 @@ export function DurationEditor({
           onClick={save}
           disabled={pending}
           aria-label="Save"
-          className="h-6 w-6 flex items-center justify-center text-emerald-400 disabled:opacity-50"
+          className="h-6 w-6 flex items-center justify-center text-emerald-400 disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
         >
           <Check className="w-3.5 h-3.5" />
         </button>
@@ -72,10 +76,12 @@ export function DurationEditor({
           type="button"
           onClick={cancel}
           aria-label="Cancel"
-          className="h-6 w-6 flex items-center justify-center text-neutral-500"
+          className="h-6 w-6 flex items-center justify-center text-neutral-500 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
         >
           <X className="w-3.5 h-3.5" />
         </button>
+      </span>
+      {error ? <span role="alert" className="text-[11px] text-red-400">{error}</span> : null}
       </span>
     );
   }
@@ -85,7 +91,7 @@ export function DurationEditor({
       type="button"
       onClick={() => setEditing(true)}
       aria-label="Edit duration"
-      className="inline-flex items-center gap-1 hover:text-neutral-200"
+      className="inline-flex items-center gap-1 hover:text-neutral-200 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
     >
       <span>{formatDuration(durationSeconds)}</span>
       <Pencil className="w-3 h-3 text-neutral-500" />

@@ -39,12 +39,14 @@ Convention reminders before touching anything: reads → `lib/queries.ts`, write
 
 ## Tier 4 — polish / hygiene
 
-### A11y (rest of the baseline)
-- **A2** focus-visible rings on set-row buttons (`set-editor.tsx`), photo thumbnails (`session-photos.tsx`), exercise-detail links — match `RedoSessionButton` and reference `--focus-ring-*`.
-- **A3** `aria-label`/`<label>` on login email/OTP inputs and profile Name/Age/Height inputs.
-- **A4** meaningful `alt`/`aria-label` on photo `<img>` inside buttons (currently `alt=""`).
-- **A5** `swipe-row.tsx` action is reachable only after a pointer swipe — add a non-pointer affordance.
-- **A6** wrap validation-error `<p>` in `role="alert"`/`aria-live`; set `aria-invalid`/`aria-describedby` on the field.
+### A11y baseline — ✅ A2–A6 shipped (branch `fix/tier4-a11y`)
+- **A2** — `:focus-visible` rings (canonical `--focus-ring-*` outline) added to every previously-bare interactive element across history / body / settings / login / workout finish-sheet & set rows / photo controls; `day-note-popover` switched off its hardcoded ring.
+- **A3** — `aria-label`s on the login email + OTP inputs, profile Name/Age/Height, goal-weight, metric quick-add, set-row weight/reps, and finish-sheet notes/file inputs.
+- **A4** — meaningful `alt` on the session + body photo thumbnails and lightbox/PhotoFrame images (decorative previews kept `alt=""`).
+- **A5** — `swipe-row` action is now keyboard-reachable: always focusable, reveal-on-focus (slides open), `opacity-0` when closed so it doesn't bleed through translucent rows, collapse on blur. (Trade-off: adds a tab stop per row.)
+- **A6** — validation/save errors announce via `role="alert"`; the `alert()` calls in set-editor + duration-editor were replaced with state-driven regions; delete-session got an `aria-live` confirm announcement.
+
+> Remaining `alert()` error-feedback in `/program` (`day-move-buttons`, `day-tabs`, `edit-client`, `program-switcher`) was out of this batch's mapped scope — small follow-up if desired.
 
 ### Tokens / consistency
 - **X5** per-screen semantic-token migration: `/workout/*` (header, exercise-card, finish-sheet, photo-thumb), `/history/*`, `/body`, `/login` still use raw `text-neutral-*` / `bg-neutral-*` / `border-neutral-*`. Migrate per-screen to `text-foreground-muted` / `bg-surface` / `border-border`.

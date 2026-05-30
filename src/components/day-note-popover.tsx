@@ -40,7 +40,7 @@ export function DayNotePopover({ notes, startedAt, weekNumber }: Props) {
         aria-label="Last session note"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full text-foreground-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full text-foreground-muted hover:text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
       >
         <Info className="w-4 h-4" />
       </button>
@@ -58,7 +58,7 @@ export function DayNotePopover({ notes, startedAt, weekNumber }: Props) {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close"
-              className="-mt-0.5 -mr-1 h-6 w-6 flex items-center justify-center text-foreground-muted hover:text-foreground"
+              className="-mt-0.5 -mr-1 h-6 w-6 flex items-center justify-center text-foreground-muted hover:text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             >
               <X className="w-3.5 h-3.5" />
             </button>

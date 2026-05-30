@@ -99,12 +99,13 @@ export function GoalWeightField({ initialGoalLb, units }: Props) {
             disabled={pending}
             inputMode="decimal"
             placeholder={units === "metric" ? "e.g. 79" : "e.g. 175"}
+            aria-label={`Goal weight (${unitLabel(units)})`}
             className={cn(
-              "w-full text-sm bg-transparent border-b border-accent outline-none tabular-nums",
+              "w-full text-sm bg-transparent border-b border-accent outline-none tabular-nums focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
               pending && "opacity-50"
             )}
           />
-          {errorMsg ? <p className="text-xs text-red-400">{errorMsg}</p> : null}
+          {errorMsg ? <p role="alert" className="text-xs text-red-400">{errorMsg}</p> : null}
           <p className="text-[11px] text-foreground-muted">
             Leave blank to clear.
           </p>
@@ -113,7 +114,7 @@ export function GoalWeightField({ initialGoalLb, units }: Props) {
         <button
           type="button"
           onClick={open}
-          className="group flex items-center gap-2 text-left w-full"
+          className="group flex items-center gap-2 text-left w-full outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
         >
           <span
             className={cn(

@@ -14,7 +14,7 @@ export function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => voi
         type="button"
         onClick={onRemove}
         aria-label="Remove photo"
-        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center"
+        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
       >
         <X className="w-3.5 h-3.5" />
       </button>

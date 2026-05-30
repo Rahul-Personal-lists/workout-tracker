@@ -380,7 +380,7 @@ export function BodyClient({
                 return next;
               });
             }}
-            className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong"
+            className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           />
         </label>
 
@@ -396,7 +396,7 @@ export function BodyClient({
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
               placeholder={units === "metric" ? "e.g. 56.5" : "e.g. 124.4"}
-              className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong"
+              className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             />
           </label>
           <label className="block">
@@ -410,7 +410,7 @@ export function BodyClient({
               value={bodyFat}
               onChange={(e) => setBodyFat(e.target.value)}
               placeholder="e.g. 18.5"
-              className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong"
+              className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             />
           </label>
         </div>
@@ -426,7 +426,7 @@ export function BodyClient({
             value={calories}
             onChange={(e) => setCalories(e.target.value.replace(/[^\d]/g, ""))}
             placeholder="e.g. 2400"
-            className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong"
+            className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           />
         </label>
 
@@ -449,7 +449,7 @@ export function BodyClient({
                   onChange={(e) =>
                     setCirc((prev) => ({ ...prev, [key]: e.target.value }))
                   }
-                  className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong"
+                  className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
                 />
               </label>
             ))}
@@ -478,7 +478,7 @@ export function BodyClient({
                     type="button"
                     onClick={() => removePickedPhoto(i)}
                     aria-label="Remove photo"
-                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -495,14 +495,14 @@ export function BodyClient({
           ) : null}
         </div>
 
-        {error ? <p className="text-xs text-red-400">{error}</p> : null}
+        {error ? <p role="alert" className="text-xs text-red-400">{error}</p> : null}
 
         <button
           type="button"
           onClick={onSaveEntry}
           disabled={pending}
           className={cn(
-            "w-full h-11 rounded-md font-medium text-sm bg-accent text-accent-foreground",
+            "w-full h-11 rounded-md font-medium text-sm bg-accent text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
             pending && "opacity-50"
           )}
         >
@@ -532,7 +532,7 @@ export function BodyClient({
                 ?.scrollIntoView({ behavior: "smooth", block: "start" });
               addPhotoButtonRef.current?.click();
             }}
-            className="w-full rounded-lg border border-dashed border-border-strong bg-surface px-3 py-6 flex flex-col items-center justify-center gap-1.5 text-foreground-muted"
+            className="w-full rounded-lg border border-dashed border-border-strong bg-surface px-3 py-6 flex flex-col items-center justify-center gap-1.5 text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <Camera className="w-5 h-5" />
             <span className="text-sm">Add your first progress photo</span>

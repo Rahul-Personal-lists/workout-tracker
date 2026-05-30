@@ -43,6 +43,7 @@ export function EditableSetRow({
 }: Props) {
   const isTime = plannedSeconds !== null || actualSeconds !== null;
   const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const [weight, setWeight] = useState(
@@ -75,9 +76,10 @@ export function EditableSetRow({
             actualSeconds: sec,
             completed: done,
           });
+          setError(null);
           setEditing(false);
         } catch (err) {
-          alert(err instanceof Error ? err.message : "Could not save.");
+          setError(err instanceof Error ? err.message : "Could not save.");
         }
       });
       return;
@@ -102,9 +104,10 @@ export function EditableSetRow({
           actualSeconds: null,
           completed: done,
         });
+        setError(null);
         setEditing(false);
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Could not save.");
+        setError(err instanceof Error ? err.message : "Could not save.");
       }
     });
   }
@@ -114,11 +117,13 @@ export function EditableSetRow({
     setReps(actualReps !== null ? String(actualReps) : "");
     setDuration(actualSeconds !== null ? formatDuration(actualSeconds) : "");
     setDone(completed);
+    setError(null);
     setEditing(false);
   }
 
   if (editing) {
     return (
+      <div className="space-y-1">
       <div className="grid grid-cols-[24px_1fr_auto] items-center gap-2 text-sm">
         <span className="text-neutral-500 tabular-nums">{setNumber}</span>
         <div className="flex items-center gap-1.5">
@@ -168,7 +173,7 @@ export function EditableSetRow({
             onClick={save}
             disabled={pending}
             aria-label="Save"
-            className="h-8 w-8 flex items-center justify-center text-emerald-400 disabled:opacity-50"
+            className="h-8 w-8 flex items-center justify-center text-emerald-400 disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <Check className="w-4 h-4" />
           </button>
@@ -176,11 +181,13 @@ export function EditableSetRow({
             type="button"
             onClick={cancel}
             aria-label="Cancel"
-            className="h-8 w-8 flex items-center justify-center text-neutral-500"
+            className="h-8 w-8 flex items-center justify-center text-neutral-500 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
+      </div>
+      {error ? <p role="alert" className="text-[11px] text-red-400">{error}</p> : null}
       </div>
     );
   }
@@ -199,7 +206,7 @@ export function EditableSetRow({
         type="button"
         onClick={() => setEditing(true)}
         className={cn(
-          "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-neutral-800/40",
+          "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-neutral-800/40 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
           dimmed && "text-neutral-500"
         )}
       >

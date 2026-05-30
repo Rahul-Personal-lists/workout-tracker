@@ -26,7 +26,7 @@ export function MeasuresList({
           <button
             type="button"
             onClick={() => onSelect(metric.key)}
-            className="w-full flex items-center gap-3 px-3 py-3 text-left"
+            className="w-full flex items-center gap-3 px-3 py-3 text-left rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:-outline-offset-2"
           >
             <span className="h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-surface-subtle text-foreground-muted">
               <metric.icon className="w-4 h-4" />
