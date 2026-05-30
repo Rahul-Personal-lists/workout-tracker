@@ -17,7 +17,7 @@ export async function startWorkout(input: z.infer<typeof StartSchema>) {
 
   const resumeId = await reapStaleSession(supabase, user.id);
   if (resumeId) {
-    revalidatePath("/today");
+    revalidatePath("/program");
     redirect(`/workout/${resumeId}`);
   }
 
@@ -32,7 +32,7 @@ export async function startWorkout(input: z.infer<typeof StartSchema>) {
     .single();
   if (error) throw error;
 
-  revalidatePath("/today");
+  revalidatePath("/program");
   redirect(`/workout/${data.id}`);
 }
 
@@ -115,50 +115,56 @@ const LogSetSchema = z.object({
   completed: z.boolean(),
 });
 
+// Shared upsert for logSet (live) and editSetLog (from history). When editing,
+// logged_at is left untouched: getExerciseHistory orders the progress chart by
+// logged_at, so rewriting it would teleport an edited old set to "now".
+async function upsertSetLog(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  parsed: z.infer<typeof LogSetSchema>,
+  opts: { stampLoggedAt: boolean }
+) {
+  const row: {
+    session_id: string;
+    program_exercise_id: string;
+    set_number: number;
+    planned_weight: number | null;
+    planned_reps: number | null;
+    actual_weight: number | null;
+    actual_reps: number | null;
+    planned_seconds: number | null;
+    actual_seconds: number | null;
+    completed: boolean;
+    logged_at?: string;
+  } = {
+    session_id: parsed.sessionId,
+    program_exercise_id: parsed.programExerciseId,
+    set_number: parsed.setNumber,
+    planned_weight: parsed.plannedWeight,
+    planned_reps: parsed.plannedReps,
+    actual_weight: parsed.actualWeight,
+    actual_reps: parsed.actualReps,
+    planned_seconds: parsed.plannedSeconds,
+    actual_seconds: parsed.actualSeconds,
+    completed: parsed.completed,
+  };
+  if (opts.stampLoggedAt) row.logged_at = new Date().toISOString();
+
+  const { error } = await supabase
+    .from("set_logs")
+    .upsert(row, { onConflict: "session_id,program_exercise_id,set_number" });
+  if (error) throw error;
+}
+
 export async function logSet(input: z.infer<typeof LogSetSchema>) {
   const parsed = LogSetSchema.parse(input);
   const supabase = await createClient();
-
-  const { error } = await supabase.from("set_logs").upsert(
-    {
-      session_id: parsed.sessionId,
-      program_exercise_id: parsed.programExerciseId,
-      set_number: parsed.setNumber,
-      planned_weight: parsed.plannedWeight,
-      planned_reps: parsed.plannedReps,
-      actual_weight: parsed.actualWeight,
-      actual_reps: parsed.actualReps,
-      planned_seconds: parsed.plannedSeconds,
-      actual_seconds: parsed.actualSeconds,
-      completed: parsed.completed,
-      logged_at: new Date().toISOString(),
-    },
-    { onConflict: "session_id,program_exercise_id,set_number" }
-  );
-  if (error) throw error;
+  await upsertSetLog(supabase, parsed, { stampLoggedAt: true });
 }
 
 export async function editSetLog(input: z.infer<typeof LogSetSchema>) {
   const parsed = LogSetSchema.parse(input);
   const supabase = await createClient();
-
-  const { error } = await supabase.from("set_logs").upsert(
-    {
-      session_id: parsed.sessionId,
-      program_exercise_id: parsed.programExerciseId,
-      set_number: parsed.setNumber,
-      planned_weight: parsed.plannedWeight,
-      planned_reps: parsed.plannedReps,
-      actual_weight: parsed.actualWeight,
-      actual_reps: parsed.actualReps,
-      planned_seconds: parsed.plannedSeconds,
-      actual_seconds: parsed.actualSeconds,
-      completed: parsed.completed,
-      logged_at: new Date().toISOString(),
-    },
-    { onConflict: "session_id,program_exercise_id,set_number" }
-  );
-  if (error) throw error;
+  await upsertSetLog(supabase, parsed, { stampLoggedAt: false });
 
   revalidatePath(`/history/${parsed.sessionId}`);
   revalidatePath("/progress");
@@ -252,7 +258,6 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
     .eq("id", sessionId);
   if (error) throw error;
 
-  revalidatePath("/today");
   revalidatePath("/progress");
   revalidatePath("/program");
   revalidatePath(`/history/${sessionId}`);
@@ -354,7 +359,6 @@ export async function deleteSession(input: z.infer<typeof DeleteSessionSchema>) 
     .eq("id", sessionId);
   if (error) throw error;
 
-  revalidatePath("/today");
   revalidatePath("/progress");
   revalidatePath("/program");
   redirect("/progress");

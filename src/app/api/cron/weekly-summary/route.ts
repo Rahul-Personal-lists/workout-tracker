@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { formatInTimeZone } from "date-fns-tz";
 import {
   createAdminClient,
@@ -14,7 +15,12 @@ export async function POST(req: Request) {
     if (!secret) {
       return Response.json({ error: "CRON_SECRET not configured" }, { status: 500 });
     }
-    if (req.headers.get("authorization") !== `Bearer ${secret}`) {
+    const provided = Buffer.from(req.headers.get("authorization") ?? "");
+    const expected = Buffer.from(`Bearer ${secret}`);
+    if (
+      provided.length !== expected.length ||
+      !timingSafeEqual(provided, expected)
+    ) {
       return new Response("unauthorized", { status: 401 });
     }
 

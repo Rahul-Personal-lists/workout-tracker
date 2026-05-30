@@ -41,6 +41,8 @@ export function OnboardingPicker() {
 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
+    // Zustand-persist hydration gate; a lazy initializer would SSR-mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHydrated(useTutorial.persist.hasHydrated());
     return useTutorial.persist.onFinishHydration(() => setHydrated(true));
   }, []);

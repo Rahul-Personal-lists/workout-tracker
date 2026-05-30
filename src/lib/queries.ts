@@ -123,16 +123,6 @@ export type ProgramSummary = {
   created_at: string;
 };
 
-export async function getDisplayName(): Promise<string | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .maybeSingle();
-  if (error) throw error;
-  return data?.display_name ?? null;
-}
-
 export type ProfileRow = {
   display_name: string | null;
   gender: "male" | "female" | "other" | null;
@@ -185,11 +175,9 @@ export async function getProfile(): Promise<ProfileRow> {
 
 export async function getTodayWeightLb(): Promise<number | null> {
   const supabase = await createClient();
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = String(today.getMonth() + 1).padStart(2, "0");
-  const d = String(today.getDate()).padStart(2, "0");
-  const key = `${y}-${m}-${d}`;
+  // Use the user's tz, not the server's, so "today" matches every other
+  // date-key path (getNextWorkout, progress, calendar) on a UTC runtime.
+  const key = dateKeyInTz(new Date(), await getUserTimezone());
   const { data, error } = await supabase
     .from("body_logs")
     .select("weight_lb")
@@ -461,16 +449,6 @@ export async function getLastSessionHints(
   }
   return out;
 }
-
-export type SessionSummary = {
-  id: string;
-  started_at: string;
-  ended_at: string | null;
-  duration_seconds: number | null;
-  week_number: number;
-  notes: string | null;
-  day: { id: string; day_number: number; label: string; title: string } | null;
-};
 
 export async function getSession(sessionId: string) {
   const supabase = await createClient();

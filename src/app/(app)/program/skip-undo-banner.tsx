@@ -13,10 +13,9 @@ export function SkipUndoBanner({ skip }: { skip: UndoableSkip }) {
 
   useEffect(() => {
     const ms = skip.expiresAt - Date.now();
-    if (ms <= 0) {
-      setExpired(true);
-      return;
-    }
+    // `expired` is already lazy-initialized to (now >= expiresAt), so if the
+    // window has passed there's nothing left to schedule.
+    if (ms <= 0) return;
     const t = setTimeout(() => setExpired(true), ms);
     return () => clearTimeout(t);
   }, [skip.expiresAt]);

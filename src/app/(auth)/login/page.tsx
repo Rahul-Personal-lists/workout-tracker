@@ -15,9 +15,12 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Client-only hydration gate + one-time read of the ?error param.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setMounted(true);
     const err = new URLSearchParams(window.location.search).get("error");
     if (err) setErrorMsg(err);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   async function sendCode() {

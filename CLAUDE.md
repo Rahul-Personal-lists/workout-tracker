@@ -24,15 +24,15 @@ Mobile-first PWA Rahul uses to log strength programs at the gym. Personal app, s
 - **Server Actions** live in `src/app/actions/*.ts`. All mutations go through Zod-validated actions. No separate API layer.
 - **DB queries** centralized in [src/lib/queries.ts](src/lib/queries.ts) (`import "server-only"`). Don't query Supabase directly from pages — call a query helper.
 - **Image source** for exercise reference pics is `yuhonas/free-exercise-db` (public domain). Each exercise has `/0.jpg` (start) and `/1.jpg` (end). UI in [src/components/exercise-animation.tsx](src/components/exercise-animation.tsx) layers them and CSS-flips opacity (`@keyframes exercise-flip` in globals.css). No JS animation loop.
-- **Bottom nav** ([src/components/bottom-nav.tsx](src/components/bottom-nav.tsx)) auto-hides on `/workout/*` so the Finish button isn't covered and the user stays focused mid-set.
-- **Auth gate** is in [src/middleware.ts](src/middleware.ts) → [src/lib/supabase/middleware.ts](src/lib/supabase/middleware.ts). The `(app)` layout also redirects, defense-in-depth.
+- **Bottom nav** ([src/components/bottom-nav.tsx](src/components/bottom-nav.tsx)) — 4 tabs (Program / Progress / Body / Settings). Auto-hides on `/workout/*` and `/program/edit` so the action footer isn't covered and the user stays focused mid-set.
+- **Auth gate** is in [src/proxy.ts](src/proxy.ts) → `updateSession()` in [src/lib/supabase/middleware.ts](src/lib/supabase/middleware.ts). (Next.js 16 renamed the `middleware.ts` file convention to `proxy.ts`; `updateSession` itself still lives in `lib/supabase/middleware.ts`, which was **not** renamed.) This is the **single** auth gate — the `(app)` layout is presentational and does **not** re-check auth, so correctness depends on the proxy matcher staying correct plus RLS.
 - **Design tokens.** Semantic CSS variables in [globals.css](src/app/globals.css) under `@theme`:
   - Surfaces — `--color-surface` (cards), `--color-surface-hover`, `--color-surface-subtle`
   - Borders — `--color-border` (default), `--color-border-strong` (dashed CTAs)
   - Foreground — `--color-foreground` (primary), `--color-foreground-muted` (single muted tier; the dark palette has no contrast headroom for a third tier — there is no `subtle`)
   - Focus ring — `--focus-ring-width` / `--focus-ring-offset` / `--focus-ring-color` (refs `--color-accent`, theme-aware)
 
-  Prefer `bg-surface` / `border-border` / `text-foreground-muted` over `bg-neutral-900` / `border-neutral-800` / `text-neutral-{400,500}` in new code. `/today` and `bottom-nav` are migrated; other screens still use raw `text-neutral-*` and migrate per-screen.
+  Prefer `bg-surface` / `border-border` / `text-foreground-muted` over `bg-neutral-900` / `border-neutral-800` / `text-neutral-{400,500}` in new code. `/program`, `/progress`, and `bottom-nav` are migrated; other screens (`/workout/*`, `/history/*`, `/body`, `/settings` detail, `/login`) still use raw `text-neutral-*` and migrate per-screen.
 - **A11y baseline** (from the `/today` audit, applies app-wide): pinch-zoom must stay enabled, every interactive element needs a `:focus-visible` ring, the bottom nav has `aria-label="Primary"` + `aria-current="page"` on the active tab, and `(app)/layout.tsx` carries a skip-to-main link targeting `<main id="main">`.
 
 ## DB schema (all RLS-owner-scoped)
@@ -50,13 +50,22 @@ workout_sessions      — started_at, ended_at, week_number, generated duration_
 - **`planned_weight` / `planned_reps`** in `set_logs` are **snapshotted at log time** so changing the program later doesn't rewrite history.
 
 Migrations to date:
-- `20260426000000_init.sql` — base schema
+- `20260426000000_init.sql` — base schema (5 tables, RLS, generated `duration_seconds`)
 - `20260427000000_add_exercise_image.sql` — `image_url`
 - `20260427100000_archive_exercises.sql` — `archived_at` on `program_exercises`
-- `20260427200000_photos_and_body_logs.sql` — session photos, body logs
+- `20260427200000_photos_and_body_logs.sql` — `workout_session_photos`, `body_logs`, `workout-photos` bucket
 - `20260428000000_programs_editing.sql` — `is_active` + `archived_at` on `programs`, `archived_at` on `program_days`, partial unique index for active program
+- `20260430000000_swap_day_order.sql` — `swap_day_order` RPC (two later same-name files `20260501030916` / `20260501031002` are **empty no-ops**)
+- `20260502000000_profiles.sql` — `profiles` (display_name)
+- `20260503000000_progression_weeks.sql` — per-exercise `progression_weeks` (1–8)
+- `20260504000000_pause_session.sql` — `paused_at` + `total_paused_seconds`; **redefines** `duration_seconds` to subtract paused time; `resume_session()` RPC
+- `20260516000000_cardio_exercises.sql` — `kind`/`target_seconds` + `planned_seconds`/`actual_seconds` (+ cardio backfill)
+- `20260519000000_peak_taper.sql` — `peak_taper` boolean
+- `20260528000000_body_goals_and_photos.sql` — `goal_weight_lb`, `body_fat_pct`, `body_log_photos`
+- `20260529000000_body_measurements.sql` — `body_measurements` table ⚠️ shares its timestamp with the next file
+- `20260529000000_settings_extras.sql` — profile gender/age/height/avatar/units/sound prefs ⚠️ duplicate timestamp; give fresh-env migrations distinct timestamps going forward
 
-After a migration: `npx supabase db push && npm run db:types`. Don't hand-edit `database.types.ts`.
+After a migration: `npx supabase db push && npm run db:types`. Don't hand-edit `database.types.ts`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full ER diagram and [docs/CODE_AUDIT.md](docs/CODE_AUDIT.md) for the prioritized findings backlog.
 
 ## Progressive overload
 
@@ -71,26 +80,37 @@ Don't change the math without flagging — Rahul has explicit weekly expectation
 
 ```
 src/app/
-├── (auth)/login                   magic-link form
+├── (auth)/login                   email → 6-digit OTP form
 ├── (app)/
-│   ├── today                      next-up workout card → starts session
-│   ├── workout/[sessionId]        active logging UI (RestTimerBar lives here)
-│   ├── program                    template picker (empty) OR week selector + day cards (Start W{n}, rename day, + Add day, + Add exercise) and 2-program switcher
+│   ├── program                    HUB: day pills across the program, next-up card,
+│   │                              Start/Redo, 2-program switcher, rest-day skip/undo.
+│   │                              Empty state = preset picker. (Absorbed the old /today.)
 │   │   ├── add                    catalog search → config form
-│   │   └── new                    blank-program builder (name, weeks, deloads, days)
-│   ├── calendar                   month grid of tracked sessions (?m=YYYY-MM); tap a day → /history/[sessionId]
+│   │   ├── edit                   reorder / delete a day's exercises
+│   │   └── new (+ new/custom)     template chooser + blank-program builder
+│   ├── workout/[sessionId]        active logging UI (RestTimerBar lives here)
+│   ├── progress                   analytics: range tabs, stat cards, workout-count chart,
+│   │                              muscle-map, + a month grid (tap a day → /history/[sessionId])
+│   ├── body                       weight / measurements / progress photos + trends
 │   ├── history                    (no list page; only the detail routes below)
-│   │   ├── [sessionId]            session detail with planned-vs-actual; "Delete this workout" button at the bottom (2-tap-within-4s confirm via DeleteSessionButton)
+│   │   ├── [sessionId]            session detail (planned-vs-actual); Redo + "Delete this
+│   │   │                          workout" (2-tap-within-4s confirm via DeleteSessionButton)
 │   │   └── exercise/[id]          Recharts top-set-per-session
-│   └── settings                   user info, accent picker, sign out
+│   └── settings (+profile/units/sounds/theme/help)   prefs hub + detail spokes; sign-out
+│                                  lives inside /settings/profile
 └── api/auth/callback              Supabase code exchange
+    api/cron/weekly-summary        Resend weekly email (Bearer + Sunday-window gate)
 ```
+
+Bottom nav is 4 tabs: **Program / Progress / Body / Settings**. There is **no `/today`** (removed; `/program` absorbed it) and **no `/calendar`** (the month grid lives inside `/progress`).
 
 Workouts are deleted **one at a time** from the history detail page; there is no bulk "wipe all sessions" action. The previous `wipeAllSessions` was removed — `deleteSession(sessionId)` is the only delete path. It cleans up the session's photos in storage first, then deletes the row (set_logs and workout_session_photos cascade via FK on session_id).
 
 Server actions:
-- [src/app/actions/workout.ts](src/app/actions/workout.ts) — startWorkout, logSet, editSetLog, editSessionDuration, finishWorkout, uploadSessionPhotos, deleteSessionPhoto, deleteSession
-- [src/app/actions/program.ts](src/app/actions/program.ts) — addExerciseToProgram, archive/unarchiveExerciseFromProgram, seedPresetProgram, createBlankProgram, setActiveProgram, archiveProgram, addDay, renameDay
+- [src/app/actions/workout.ts](src/app/actions/workout.ts) — startWorkout, skipRestDay, undoLastSkip, logSet, editSetLog, deleteSetLog, editSessionDuration, finishWorkout, recordSessionPhotos, deleteSessionPhoto, deleteSession
+- [src/app/actions/program.ts](src/app/actions/program.ts) — addExerciseToProgram, archive/unarchiveExerciseFromProgram, setExerciseOrder, saveDayEdits, seedPresetProgram, createBlankProgram, setActiveProgram, archiveProgram, addDay, reorderDay
+- [src/app/actions/body.ts](src/app/actions/body.ts) — upsert/deleteBodyLog, upsert/deleteBodyMeasurement, setGoalWeight, recordBodyPhotos, deleteBodyPhoto
+- [src/app/actions/profile.ts](src/app/actions/profile.ts) — setProfileFields, setAvatar, clearAvatar, setUnits, setSoundPrefs, deleteAccount
 
 ## Setup / run
 
@@ -110,7 +130,7 @@ The seed script auto-creates the auth user (admin API) if missing, and on re-run
 
 ## Previewing auth-gated pages (for Claude)
 
-Every `(app)/*` route is behind the magic-link OTP gate in [src/middleware.ts](src/middleware.ts).
+Every `(app)/*` route is behind the magic-link OTP gate in [src/proxy.ts](src/proxy.ts) (Next.js 16's renamed `middleware` convention).
 
 **Use the test account `claude-test@example.com` for any verification that touches workout/program/session data.** Rahul's real account (`rahul@satel.ca`) tracks his actual program — starting a workout, skipping rest days, or reordering exercises there mutates real data he needs at the gym. The test account is a throwaway with the same seeded 12-week program, so all flows render identically.
 

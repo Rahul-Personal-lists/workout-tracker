@@ -30,7 +30,15 @@ export default async function ExerciseHistoryPage({
     const value = isTime ? p.actual_seconds : p.actual_weight;
     if (value === null) continue;
     const slot = bySession.get(p.session_id);
-    if (!slot || value > slot.value) {
+    // Top set = highest value; for reps exercises, ties broken by higher reps
+    // (matches getAllTimeTopByExercise and the session-detail top-set logic).
+    const better =
+      !slot ||
+      value > slot.value ||
+      (value === slot.value &&
+        !isTime &&
+        (p.actual_reps ?? 0) > (slot.reps ?? 0));
+    if (better) {
       bySession.set(p.session_id, {
         date: p.logged_at,
         value,
