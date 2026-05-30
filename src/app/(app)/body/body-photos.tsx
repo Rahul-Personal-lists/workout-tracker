@@ -7,6 +7,7 @@ import { GitCompareArrows, Trash2, X } from "lucide-react";
 import { deleteBodyPhoto } from "@/app/actions/body";
 import type { BodyPhotoRow } from "@/lib/queries";
 import { cn } from "@/lib/utils";
+import { useDialog } from "@/lib/use-dialog";
 
 const PHOTOS_INITIAL_GROUPS = 2;
 const PHOTOS_PAGE_GROUPS = 4;
@@ -20,6 +21,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
     PHOTOS_INITIAL_GROUPS
   );
   const [pending, startTransition] = useTransition();
+  const dialogRef = useDialog<HTMLDivElement>(!!active, closeModal);
 
   const grouped = useMemo(() => {
     const map = new Map<string, BodyPhotoRow[]>();
@@ -112,7 +114,12 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
           onClick={closeModal}
         >
           <div
-            className="relative max-w-md w-full p-4 mt-4 space-y-2"
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Progress photo"
+            tabIndex={-1}
+            className="relative max-w-md w-full p-4 mt-4 space-y-2 outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <PhotoFrame photo={active} />

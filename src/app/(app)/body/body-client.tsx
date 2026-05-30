@@ -45,9 +45,6 @@ function todayLocalISODate() {
   return `${y}-${m}-${day}`;
 }
 
-const byDateDesc = (a: { log_date: string }, b: { log_date: string }) =>
-  b.log_date.localeCompare(a.log_date);
-
 export function BodyClient({
   initialLogs,
   initialMeasurements,
@@ -62,8 +59,12 @@ export function BodyClient({
   units: Units;
 }) {
   const router = useRouter();
-  const [logs, setLogs] = useState(initialLogs);
-  const [measurements, setMeasurements] = useState(initialMeasurements);
+  // logs/measurements are server-authoritative: every mutation revalidates
+  // /body and calls router.refresh(), so these always reflect the DB. (Previously
+  // they were optimistic useState mirrors seeded once, which diverged from the
+  // refreshed props and from a second device's edits.)
+  const logs = initialLogs;
+  const measurements = initialMeasurements;
   const [selected, setSelected] = useState<MetricKey | null>(null);
 
   const today = todayLocalISODate();
@@ -242,22 +243,6 @@ export function BodyClient({
         }
         const photoErr = await uploadPhotos(date);
 
-        setLogs((prev) =>
-          [
-            { log_date: date, weight_lb: w, calories: cal, body_fat_pct: bf, note: null },
-            ...prev.filter((l) => l.log_date !== date),
-          ].sort(byDateDesc)
-        );
-        setMeasurements((prev) => {
-          let next = prev.filter(
-            (m) => !(m.log_date === date && MEASUREMENT_KEYS.includes(m.metric as MeasurementKey))
-          );
-          for (const { key, value } of circParsed) {
-            next = [...next, { log_date: date, metric: key, value_cm: value }];
-          }
-          return next.sort(byDateDesc);
-        });
-
         setWeight("");
         setCalories("");
         setBodyFat("");
@@ -293,12 +278,6 @@ export function BodyClient({
             metric: key as MeasurementKey,
             valueCm: value,
           });
-          setMeasurements((prev) =>
-            [
-              ...prev.filter((m) => !(m.log_date === d && m.metric === key)),
-              { log_date: d, metric: key, value_cm: value },
-            ].sort(byDateDesc)
-          );
         } else {
           const existing = logs.find((l) => l.log_date === d) ?? null;
           const weightLb = key === "weight" ? value : existing?.weight_lb;
@@ -317,12 +296,6 @@ export function BodyClient({
             bodyFatPct: bf,
             note: null,
           });
-          setLogs((prev) =>
-            [
-              { log_date: d, weight_lb: weightLb, calories: cal, body_fat_pct: bf, note: null },
-              ...prev.filter((l) => l.log_date !== d),
-            ].sort(byDateDesc)
-          );
         }
         router.refresh();
       } catch (err) {
@@ -334,9 +307,6 @@ export function BodyClient({
   function onDeleteMeasurement(key: MetricKey, d: string) {
     startTransition(async () => {
       await deleteBodyMeasurement({ date: d, metric: key as MeasurementKey });
-      setMeasurements((prev) =>
-        prev.filter((m) => !(m.log_date === d && m.metric === key))
-      );
       router.refresh();
     });
   }
