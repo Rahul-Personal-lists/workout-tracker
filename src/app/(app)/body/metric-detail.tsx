@@ -6,6 +6,7 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 import type { Units } from "@/lib/units";
 import type { MetricConfig } from "@/lib/body-metrics";
 import { cn } from "@/lib/utils";
+import { todayLocalISODate } from "@/lib/local-date";
 import {
   avgWeight,
   emaSeries,
@@ -39,13 +40,18 @@ export function MetricDetail({
   units: Units;
   goalWeight: number | null;
   onBack: () => void;
-  onQuickAdd: (valueStr: string) => void;
+  onQuickAdd: (valueStr: string, date: string) => void;
   onDeleteEntry: (date: string) => void;
   pending: boolean;
   error: string | null;
 }) {
+  const today = todayLocalISODate();
   const [range, setRange] = useState<Range>("3m");
-  const [input, setInput] = useState("");
+  const [logDate, setLogDate] = useState(today);
+  const [input, setInput] = useState(() => {
+    const existing = points.find((p) => p.date === today);
+    return existing ? metric.formatShort(existing.value, units) : "";
+  });
 
   const isWeight = metric.kind === "weight";
   const decimals = metric.kind === "count" ? 0 : 1;
@@ -93,8 +99,7 @@ export function MetricDetail({
 
   function submitQuickAdd() {
     if (input.trim() === "") return;
-    onQuickAdd(input);
-    setInput("");
+    onQuickAdd(input, logDate);
   }
 
   return (
@@ -116,8 +121,25 @@ export function MetricDetail({
 
       <div className="rounded-lg border border-border bg-surface p-3 space-y-2">
         <span className="text-[11px] uppercase tracking-wide text-foreground-muted">
-          Log today ({metric.unitLabel(units)})
+          Log entry ({metric.unitLabel(units)})
         </span>
+        <label className="block">
+          <span className="block text-[11px] uppercase tracking-wide text-foreground-muted mb-1">
+            Date
+          </span>
+          <input
+            type="date"
+            value={logDate}
+            max={today}
+            onChange={(e) => {
+              const d = e.target.value;
+              setLogDate(d);
+              const existing = points.find((p) => p.date === d);
+              setInput(existing ? metric.formatShort(existing.value, units) : "");
+            }}
+            className="w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+          />
+        </label>
         <div className="flex gap-2">
           <input
             type="text"

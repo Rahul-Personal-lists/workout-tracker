@@ -59,10 +59,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
   }
 
   return (
-    <section className="space-y-2">
-      <h2 className="text-xs uppercase tracking-wide text-foreground-muted">
-        Progress photos
-      </h2>
+    <div className="space-y-2">
       <div className="space-y-3">
         {visibleGroups.map(([date, dayPhotos]) => (
           <div key={date} className="space-y-1.5">
@@ -194,7 +191,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
           </div>
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
 
