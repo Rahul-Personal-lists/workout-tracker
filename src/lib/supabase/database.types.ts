@@ -54,7 +54,7 @@ export type Database = {
           note: string | null
           updated_at: string
           user_id: string
-          weight_lb: number
+          weight_lb: number | null
         }
         Insert: {
           body_fat_pct?: number | null
@@ -63,7 +63,7 @@ export type Database = {
           note?: string | null
           updated_at?: string
           user_id: string
-          weight_lb: number
+          weight_lb?: number | null
         }
         Update: {
           body_fat_pct?: number | null
@@ -72,7 +72,7 @@ export type Database = {
           note?: string | null
           updated_at?: string
           user_id?: string
-          weight_lb?: number
+          weight_lb?: number | null
         }
         Relationships: []
       }

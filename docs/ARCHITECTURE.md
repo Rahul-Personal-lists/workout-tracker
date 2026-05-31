@@ -246,7 +246,7 @@ erDiagram
     body_logs {
         uuid user_id PK
         date log_date PK
-        numeric weight_lb "required"
+        numeric weight_lb "nullable; >=1 metric required"
         int calories
         numeric body_fat_pct
     }
@@ -395,7 +395,7 @@ Muscle map: `exercises-catalog.json` primary muscles → `CATALOG_TO_TOP_LEVEL` 
 
 Canonical units in the DB: **lb** (weight), **cm** (circumference). Conversion happens only at the edge, driven by the `units` cookie + `MetricConfig` registry (`body-metrics.ts`).
 
-- **Two separate tables**: `body_logs` (weight required; bodyfat/calories optional, one row/day) and `body_measurements` (circumferences, decoupled so a tape-measure day needs no weigh-in).
+- **Two separate tables**: `body_logs` (one row/day shared by weight + bodyfat + calories; any one of them is enough — a `num_nonnulls(...) > 0` CHECK just forbids a fully empty row) and `body_measurements` (circumferences, decoupled so a tape-measure day needs no weigh-in).
 - **Two photo systems share one bucket**: `workout_session_photos` (per session) and `body_log_photos` (per body-log date, composite FK requires a `body_logs` row first).
 - Trend math (`body-stats.ts`): EMA smoothing (α by range), 7-day average, weekly rate from the EMA tail, linear goal-date projection (null unless trending toward goal).
 

@@ -65,6 +65,7 @@ Migrations to date:
 - `20260529000000_body_measurements.sql` — `body_measurements` table ⚠️ shares its timestamp with the next file
 - `20260529000000_settings_extras.sql` — profile gender/age/height/avatar/units/sound prefs ⚠️ duplicate timestamp; give fresh-env migrations distinct timestamps going forward
 - `20260530000000_rest_skip_flag.sql` — `is_rest_skip` on `workout_sessions` (explicit rest-day-skip flag; replaces the `duration_seconds = 0` sentinel so Undo can't delete a real zero-duration workout)
+- `20260530120000_body_log_weight_optional.sql` — `weight_lb` on `body_logs` made **nullable** so body fat / calories can be logged for a date without a weight; replaces the implicit "weight required" rule with a `num_nonnulls(weight_lb, body_fat_pct, calories) > 0` CHECK (`body_logs_at_least_one_metric`) so the shared daily row still can't be empty
 
 After a migration: `npx supabase db push && npm run db:types`. Don't hand-edit `database.types.ts`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full ER diagram and [docs/CODE_AUDIT.md](docs/CODE_AUDIT.md) for the prioritized findings backlog.
 

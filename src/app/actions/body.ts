@@ -8,13 +8,21 @@ const PHOTO_BUCKET = "workout-photos";
 
 const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date");
 
-const UpsertSchema = z.object({
-  date: DateSchema,
-  weightLb: z.number().positive().lt(2000),
-  calories: z.number().int().min(0).lt(100000).nullable(),
-  bodyFatPct: z.number().positive().lt(100).nullable().optional(),
-  note: z.string().max(500).nullable(),
-});
+const UpsertSchema = z
+  .object({
+    date: DateSchema,
+    weightLb: z.number().positive().lt(2000).nullable(),
+    calories: z.number().int().min(0).lt(100000).nullable(),
+    bodyFatPct: z.number().positive().lt(100).nullable().optional(),
+    note: z.string().max(500).nullable(),
+  })
+  // Weight is no longer required — body fat / calories can be logged for a date
+  // on their own. But the row must carry at least one metric (mirrors the DB
+  // CHECK body_logs_at_least_one_metric) so we never write an empty row.
+  .refine(
+    (v) => v.weightLb != null || v.calories != null || v.bodyFatPct != null,
+    { message: "Log at least one of weight, body fat, or calories" }
+  );
 
 export async function upsertBodyLog(input: z.infer<typeof UpsertSchema>) {
   const parsed = UpsertSchema.parse(input);
@@ -157,7 +165,7 @@ export async function recordBodyPhotos(input: z.infer<typeof RecordPhotosSchema>
     .eq("log_date", logDate)
     .maybeSingle();
   if (logErr) throw logErr;
-  if (!log) throw new Error("Log a weight for this date first");
+  if (!log) throw new Error("Log an entry for this date first");
 
   const { error: insErr } = await supabase.from("body_log_photos").insert(
     paths.map((p) => ({

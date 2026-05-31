@@ -54,7 +54,9 @@ export function BodyClient({
         .filter((m) => m.metric === key)
         .map((m) => ({ date: m.log_date, value: m.value_cm }));
     } else if (key === "weight") {
-      pts = logs.map((l) => ({ date: l.log_date, value: l.weight_lb }));
+      pts = logs
+        .filter((l) => l.weight_lb !== null)
+        .map((l) => ({ date: l.log_date, value: l.weight_lb as number }));
     } else if (key === "bodyfat") {
       pts = logs
         .filter((l) => l.body_fat_pct !== null)
@@ -100,12 +102,12 @@ export function BodyClient({
             valueCm: value,
           });
         } else {
+          // Metrics share one body_logs row per date. Merge the edited metric
+          // onto whatever is already logged for that date — weight included, so
+          // logging body fat / calories no longer needs a weight first.
           const existing = logs.find((l) => l.log_date === date) ?? null;
-          const weightLb = key === "weight" ? value : existing?.weight_lb;
-          if (weightLb === undefined) {
-            setError("Log weight for that date first.");
-            return;
-          }
+          const weightLb =
+            key === "weight" ? value : (existing?.weight_lb ?? null);
           const cal =
             key === "calories" ? value : (existing?.calories ?? null);
           const bf =
@@ -115,7 +117,7 @@ export function BodyClient({
             weightLb,
             calories: cal,
             bodyFatPct: bf,
-            note: null,
+            note: existing?.note ?? null,
           });
         }
         router.refresh();
@@ -183,7 +185,7 @@ export function BodyClient({
           <BodyPhotos photos={initialPhotos} />
         ) : (
           <p className="text-xs text-foreground-muted">
-            No photos yet — add one for a day you&apos;ve logged a weight.
+            No photos yet — add one for a day you&apos;ve logged an entry.
           </p>
         )}
       </section>

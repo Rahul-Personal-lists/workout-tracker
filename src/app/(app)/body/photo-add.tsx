@@ -22,8 +22,9 @@ export function PhotoAdd({
 }: {
   lastPhotoUrl: string | null;
   // Photos FK to body_logs(user_id, log_date), so a photo can only attach to a
-  // date that already has a weight entry. Gate the UI on these dates rather than
-  // letting recordBodyPhotos throw after a wasted upload.
+  // date that already has a logged entry (weight, body fat, or calories). Gate
+  // the UI on these dates rather than letting recordBodyPhotos throw after a
+  // wasted upload.
   loggedDates: Set<string>;
 }) {
   const router = useRouter();
@@ -173,7 +174,7 @@ export function PhotoAdd({
           </div>
           {!hasLog ? (
             <p className="text-xs text-foreground-muted">
-              Log a weight for this date first — photos attach to a logged day.
+              Log an entry for this date first — photos attach to a logged day.
             </p>
           ) : null}
         </>

@@ -670,7 +670,7 @@ export async function getSessionPhotos(sessionId: string): Promise<SessionPhoto[
 
 export type BodyLogRow = {
   log_date: string;
-  weight_lb: number;
+  weight_lb: number | null;
   calories: number | null;
   body_fat_pct: number | null;
   note: string | null;
@@ -685,7 +685,7 @@ export async function getBodyLogs(): Promise<BodyLogRow[]> {
   if (error) throw error;
   return (data ?? []).map((r) => ({
     log_date: r.log_date,
-    weight_lb: Number(r.weight_lb),
+    weight_lb: r.weight_lb !== null ? Number(r.weight_lb) : null,
     calories: r.calories,
     body_fat_pct: r.body_fat_pct !== null ? Number(r.body_fat_pct) : null,
     note: r.note,
