@@ -7,7 +7,7 @@ export type TourId = "today" | "createProgram";
 
 export const TUTORIAL_STEP_COUNT: Record<TourId, number> = {
   today: 5,
-  createProgram: 6,
+  createProgram: 7,
 };
 
 type TutorialState = {

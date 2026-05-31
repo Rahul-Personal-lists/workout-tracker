@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TimezoneInit } from "@/components/tz-init";
+import { AppSplash } from "@/components/app-splash";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,6 +55,7 @@ export default async function RootLayout({
         <TimezoneInit />
         {children}
         <ServiceWorkerRegister />
+        <AppSplash />
       </body>
     </html>
   );

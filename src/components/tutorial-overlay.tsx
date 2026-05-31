@@ -58,10 +58,16 @@ const TOUR_STEPS: Record<TourId, Step[]> = {
   ],
   createProgram: [
     {
+      target: "preset-templates",
+      route: "/program",
+      title: "Use a template",
+      body: "Fastest start — tap 'Use this program' on any ready-made plan and you'll be training today. No setup needed.",
+    },
+    {
       target: "open-new-program",
       route: "/program",
-      title: "Make a program",
-      body: "Programs live here. Tap Next to walk through building one.",
+      title: "Or build your own",
+      body: "Want full control? Tap here to build from a blank program — we'll walk you through it.",
     },
     {
       target: "np-name",

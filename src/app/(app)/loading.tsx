@@ -1,16 +1,19 @@
-import { Loader2 } from "lucide-react";
+import { LogoKettlePop } from "@/components/logo-kettle-pop";
+import { BrandWordmark } from "@/components/brand-wordmark";
 
 export default function Loading() {
   return (
     <div
-      className="flex items-center justify-center py-24"
+      className="flex flex-col items-center justify-center gap-4 py-24 text-center"
       aria-busy="true"
       aria-label="Loading"
     >
-      <Loader2
-        aria-hidden="true"
-        className="w-6 h-6 animate-spin text-foreground-muted"
-      />
+      <div className="animate-logo-enter">
+        <LogoKettlePop size={64} />
+      </div>
+      <h1 className="text-xl font-semibold animate-title-enter">
+        <BrandWordmark />
+      </h1>
     </div>
   );
 }
