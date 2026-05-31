@@ -136,6 +136,17 @@
   }
 }
 
+/* Installed PWA: the OS already showed the logo on a black background as its
+ * launch splash for 2-3s, so popping the logo back in from opacity:0 reads as
+ * "logo blinks off then re-pops" — a jarring discontinuity. Skip just the
+ * logo entrance so it stays visibly continuous with the OS splash, while the
+ * wordmark (title-enter + per-letter bounce) still animates in below it. */
+@media (display-mode: standalone) {
+  .animate-logo-enter {
+    animation: none !important;
+  }
+}
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);
