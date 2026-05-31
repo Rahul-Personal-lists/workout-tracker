@@ -4,7 +4,7 @@ import { getProfile } from "@/lib/queries";
 import { SoundsClient } from "./sounds-client";
 
 export default async function SoundsPage() {
-  const profile = await getProfile();
+  const profile = await getProfile({ signAvatar: false });
   return (
     <div className="space-y-5">
       <header className="flex items-center gap-3">

@@ -136,7 +136,13 @@ export type ProfileRow = {
   vibration_lead_seconds: number | null;
 };
 
-export async function getProfile(): Promise<ProfileRow> {
+// `signAvatar` controls the extra storage round-trip that mints a signed avatar
+// URL. Screens that don't render the avatar (units, sounds) pass `false` to skip
+// it — one fewer network hop behind their loading skeleton. Defaults to true so
+// the hub and profile screens are unaffected.
+export async function getProfile(
+  { signAvatar = true }: { signAvatar?: boolean } = {}
+): Promise<ProfileRow> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
@@ -147,7 +153,7 @@ export async function getProfile(): Promise<ProfileRow> {
   if (error) throw error;
 
   let avatarSignedUrl: string | null = null;
-  if (data?.avatar_path) {
+  if (signAvatar && data?.avatar_path) {
     const { data: signed } = await supabase.storage
       .from("workout-photos")
       .createSignedUrl(data.avatar_path, 60 * 60);
