@@ -78,6 +78,12 @@ const PRESET_STARTER_12WK: StarterProgram = {
     {
       day_number: 3,
       label: "Day 3",
+      title: "Rest",
+      exercises: [],
+    },
+    {
+      day_number: 4,
+      label: "Day 4",
       title: "Upper — Hypertrophy",
       exercises: [
         { name: "Incline DB Press",          sets: 4, base_reps: 10, increment: 5,   start_weight: 25, tracked: false, image_url: IMG("Incline_Dumbbell_Press") },
@@ -89,8 +95,8 @@ const PRESET_STARTER_12WK: StarterProgram = {
       ],
     },
     {
-      day_number: 4,
-      label: "Day 4",
+      day_number: 5,
+      label: "Day 5",
       title: "Lower — Hypertrophy",
       exercises: [
         { name: "DB Good Morning",            sets: 3, base_reps: 12, increment: 10,  start_weight: 20,   tracked: false, image_url: IMG("Good_Morning") },
@@ -136,6 +142,12 @@ const PRESET_PPL_6WK: StarterProgram = {
     {
       day_number: 3,
       label: "Day 3",
+      title: "Rest",
+      exercises: [],
+    },
+    {
+      day_number: 4,
+      label: "Day 4",
       title: "Legs",
       exercises: [
         { name: "Barbell Back Squat",        sets: 4, base_reps: 10, increment: 10,  start_weight: 60, tracked: true,  image_url: IMG("Barbell_Squat") },
@@ -179,6 +191,12 @@ const PRESET_UPPER_LOWER_8WK: StarterProgram = {
     {
       day_number: 3,
       label: "Day 3",
+      title: "Rest",
+      exercises: [],
+    },
+    {
+      day_number: 4,
+      label: "Day 4",
       title: "Upper B",
       exercises: [
         { name: "Incline DB Press",          sets: 4, base_reps: 10, increment: 5,   start_weight: 25, tracked: false, image_url: IMG("Incline_Dumbbell_Press") },
@@ -190,8 +208,8 @@ const PRESET_UPPER_LOWER_8WK: StarterProgram = {
       ],
     },
     {
-      day_number: 4,
-      label: "Day 4",
+      day_number: 5,
+      label: "Day 5",
       title: "Lower B",
       exercises: [
         { name: "Bulgarian Split Squat",  sets: 3, base_reps: 10, increment: 10,  start_weight: 20, tracked: false, image_url: IMG("One_Leg_Barbell_Squat"), note: "per side, DB" },
@@ -231,6 +249,12 @@ const PRESET_FULL_BODY_3X_6WK: StarterProgram = {
     {
       day_number: 3,
       label: "Day 3",
+      title: "Rest",
+      exercises: [],
+    },
+    {
+      day_number: 4,
+      label: "Day 4",
       title: "Full Body C",
       exercises: [
         { name: "Barbell Back Squat",        sets: 3, base_reps: 10, increment: 10,  start_weight: 60, tracked: true,  image_url: IMG("Barbell_Squat") },
@@ -244,22 +268,22 @@ const PRESET_FULL_BODY_3X_6WK: StarterProgram = {
 export const PRESET_PROGRAMS: PresetProgram[] = [
   {
     id: "starter-12wk",
-    description: "Strength + hypertrophy split. 4 days. Deloads on weeks 4, 8, 12.",
+    description: "Strength + hypertrophy split. 4 training days + rest. Deloads on weeks 4, 8, 12.",
     ...PRESET_STARTER_12WK,
   },
   {
     id: "ppl-6wk",
-    description: "Classic push/pull/legs. 3 days, no deloads, light progression.",
+    description: "Classic push/pull/legs with a midweek rest. No deloads, light progression.",
     ...PRESET_PPL_6WK,
   },
   {
     id: "upper-lower-8wk",
-    description: "4-day upper/lower split. Deload on week 8.",
+    description: "Upper/lower split with a midweek rest. Deload on week 8.",
     ...PRESET_UPPER_LOWER_8WK,
   },
   {
     id: "full-body-3x-6wk",
-    description: "Compound-focused full body, 3 days/week.",
+    description: "Compound-focused full body, 3 training days + rest.",
     ...PRESET_FULL_BODY_3X_6WK,
   },
 ];

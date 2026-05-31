@@ -6,6 +6,7 @@ import {
   upsertBodyLog,
   upsertBodyMeasurement,
   deleteBodyMeasurement,
+  deleteBodyLogMetric,
 } from "@/app/actions/body";
 import type {
   BodyLogRow,
@@ -126,10 +127,25 @@ export function BodyClient({
     });
   }
 
-  function onDeleteMeasurement(key: MetricKey, d: string) {
+  function deleteMetricEntry(key: MetricKey, d: string) {
+    const metric = METRIC_BY_KEY[key];
     startTransition(async () => {
-      await deleteBodyMeasurement({ date: d, metric: key as MeasurementKey });
-      router.refresh();
+      try {
+        if (metric.source === "body_measurements") {
+          await deleteBodyMeasurement({
+            date: d,
+            metric: key as MeasurementKey,
+          });
+        } else {
+          await deleteBodyLogMetric({
+            date: d,
+            metric: key as "weight" | "bodyfat" | "calories",
+          });
+        }
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Delete failed");
+      }
     });
   }
 
@@ -156,7 +172,7 @@ export function BodyClient({
           setError(null);
         }}
         onQuickAdd={(v, d) => onQuickAdd(selected, v, d)}
-        onDeleteEntry={(d) => onDeleteMeasurement(selected, d)}
+        onDeleteEntry={(d) => deleteMetricEntry(selected, d)}
         pending={pending}
         error={error}
       />

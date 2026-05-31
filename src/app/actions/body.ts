@@ -47,14 +47,15 @@ export async function upsertBodyLog(input: z.infer<typeof UpsertSchema>) {
 
 const DeleteSchema = z.object({ date: DateSchema });
 
-export async function deleteBodyLog(input: z.infer<typeof DeleteSchema>) {
-  const { date } = DeleteSchema.parse(input);
-  const { supabase, user } = await requireUser();
-
+async function deleteBodyLogRow(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  date: string
+) {
   const { data: photos, error: photoErr } = await supabase
     .from("body_log_photos")
     .select("storage_path")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("log_date", date);
   if (photoErr) throw photoErr;
 
@@ -67,9 +68,75 @@ export async function deleteBodyLog(input: z.infer<typeof DeleteSchema>) {
   const { error } = await supabase
     .from("body_logs")
     .delete()
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("log_date", date);
   if (error) throw error;
+}
+
+export async function deleteBodyLog(input: z.infer<typeof DeleteSchema>) {
+  const { date } = DeleteSchema.parse(input);
+  const { supabase, user } = await requireUser();
+  await deleteBodyLogRow(supabase, user.id, date);
+  revalidatePath("/body");
+}
+
+const DeleteBodyLogMetricSchema = z.object({
+  date: DateSchema,
+  metric: z.enum(["weight", "bodyfat", "calories"]),
+});
+
+const METRIC_COL: Record<
+  z.infer<typeof DeleteBodyLogMetricSchema>["metric"],
+  "weight_lb" | "body_fat_pct" | "calories"
+> = {
+  weight: "weight_lb",
+  bodyfat: "body_fat_pct",
+  calories: "calories",
+};
+
+export async function deleteBodyLogMetric(
+  input: z.infer<typeof DeleteBodyLogMetricSchema>
+) {
+  const { date, metric } = DeleteBodyLogMetricSchema.parse(input);
+  const { supabase, user } = await requireUser();
+
+  const { data: row, error: fetchErr } = await supabase
+    .from("body_logs")
+    .select("weight_lb, body_fat_pct, calories")
+    .eq("user_id", user.id)
+    .eq("log_date", date)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+  if (!row) return;
+
+  const col = METRIC_COL[metric];
+  // After clearing `col`, would all three metrics be null? If so we have to
+  // delete the row entirely — the body_logs_at_least_one_metric CHECK rejects
+  // an all-null row.
+  const remainingCount =
+    (col !== "weight_lb" && row.weight_lb !== null ? 1 : 0) +
+    (col !== "body_fat_pct" && row.body_fat_pct !== null ? 1 : 0) +
+    (col !== "calories" && row.calories !== null ? 1 : 0);
+
+  if (remainingCount === 0) {
+    await deleteBodyLogRow(supabase, user.id, date);
+  } else {
+    const now = new Date().toISOString();
+    // Supabase's update type is column-tight — pick the literal column at the
+    // call site so the dynamic dispatch doesn't widen to a broad index sig.
+    const update =
+      col === "weight_lb"
+        ? { weight_lb: null, updated_at: now }
+        : col === "body_fat_pct"
+          ? { body_fat_pct: null, updated_at: now }
+          : { calories: null, updated_at: now };
+    const { error } = await supabase
+      .from("body_logs")
+      .update(update)
+      .eq("user_id", user.id)
+      .eq("log_date", date);
+    if (error) throw error;
+  }
 
   revalidatePath("/body");
 }
