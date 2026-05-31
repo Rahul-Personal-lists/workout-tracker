@@ -5,9 +5,10 @@ import { PresetPreview } from "./preset-preview";
 export function PresetList() {
   return (
     <ul className="space-y-2">
-      {PRESET_PROGRAMS.map((p) => (
+      {PRESET_PROGRAMS.map((p, i) => (
         <li
           key={p.id}
+          data-tour={i === 0 ? "preset-templates" : undefined}
           className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 space-y-2"
         >
           <div>

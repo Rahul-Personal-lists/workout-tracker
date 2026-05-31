@@ -23,7 +23,7 @@ const OPTIONS: Option[] = [
   {
     tour: "createProgram",
     title: "Make your first program",
-    caption: "6 steps · build a program",
+    caption: "7 steps · templates or build your own",
     route: "/program",
   },
 ];

@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { ArrowLeft, Camera, X } from "lucide-react";
 import { recordBodyPhotos } from "@/app/actions/body";
 import { createClient } from "@/lib/supabase/client";
+import type { BodyPhotoRow } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import {
   MAX_PHOTO_BYTES,
@@ -15,26 +16,31 @@ import {
 } from "@/lib/photo-upload";
 import { todayLocalISODate } from "@/lib/local-date";
 import { PhotoCapture } from "./photo-capture";
+import { BodyPhotos } from "./body-photos";
 
-export function PhotoAdd({
-  lastPhotoUrl,
+// Drilldown that mirrors MetricDetail: a date-first "Log photo" card on top, the
+// photo history below. Photos FK to body_logs(user_id, log_date), so a photo can
+// only attach to a date that already has a logged metric — the Save button gates
+// on that and the hint explains it rather than letting the action throw after a
+// wasted upload.
+export function PhotoDetail({
+  photos,
   loggedDates,
+  onBack,
 }: {
-  lastPhotoUrl: string | null;
-  // Photos FK to body_logs(user_id, log_date), so a photo can only attach to a
-  // date that already has a logged entry (weight, body fat, or calories). Gate
-  // the UI on these dates rather than letting recordBodyPhotos throw after a
-  // wasted upload.
+  photos: BodyPhotoRow[];
   loggedDates: Set<string>;
+  onBack: () => void;
 }) {
   const router = useRouter();
   const today = todayLocalISODate();
-  const [date, setDate] = useState(today);
+  const [logDate, setLogDate] = useState(today);
   const [pickedPhotos, setPickedPhotos] = useState<File[]>([]);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const hasLog = loggedDates.has(date);
+  const hasLog = loggedDates.has(logDate);
+  const lastPhotoUrl = photos[0]?.signed_url ?? null;
 
   const previewUrls = useMemo(
     () => pickedPhotos.map((f) => URL.createObjectURL(f)),
@@ -47,7 +53,7 @@ export function PhotoAdd({
     return () => previewUrls.forEach((u) => URL.revokeObjectURL(u));
   }, [previewUrls]);
 
-  function addPickedPhotos(file: File) {
+  function addPickedPhoto(file: File) {
     setError(null);
     setPickedPhotos((prev) => [...prev, file].slice(0, 3));
   }
@@ -105,25 +111,56 @@ export function PhotoAdd({
     if (pickedPhotos.length === 0 || !hasLog) return;
     setError(null);
     startTransition(async () => {
-      const photoErr = await uploadPhotos(date);
+      const photoErr = await uploadPhotos(logDate);
       if (photoErr) {
         setError(photoErr);
         return;
       }
       setPickedPhotos([]);
-      setDate(today);
+      setLogDate(today);
       router.refresh();
     });
   }
 
   return (
-    <div className="space-y-2">
-      {pickedPhotos.length < 3 ? (
-        <PhotoCapture onCapture={addPickedPhotos} lastPhotoUrl={lastPhotoUrl} />
-      ) : null}
+    <div className="space-y-4">
+      <header className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to measures"
+          className="h-9 w-9 -ml-1 flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <span className="h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-surface-subtle text-foreground-muted">
+          <Camera className="w-4 h-4" />
+        </span>
+        <h1 className="text-xl font-semibold">Photos</h1>
+      </header>
 
-      {pickedPhotos.length > 0 ? (
-        <>
+      <div className="rounded-lg border border-border bg-surface p-3 space-y-2">
+        <span className="text-[11px] uppercase tracking-wide text-foreground-muted">
+          Log photo
+        </span>
+        <label className="block">
+          <span className="block text-[11px] uppercase tracking-wide text-foreground-muted mb-1">
+            Date
+          </span>
+          <input
+            type="date"
+            value={logDate}
+            max={today}
+            onChange={(e) => setLogDate(e.target.value)}
+            className="w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+          />
+        </label>
+
+        {pickedPhotos.length < 3 ? (
+          <PhotoCapture onCapture={addPickedPhoto} lastPhotoUrl={lastPhotoUrl} />
+        ) : null}
+
+        {pickedPhotos.length > 0 ? (
           <div className="grid grid-cols-3 gap-2">
             {pickedPhotos.map((file, i) => (
               <div
@@ -147,40 +184,43 @@ export function PhotoAdd({
               </div>
             ))}
           </div>
-          <div className="flex items-end gap-2">
-            <label className="flex-1">
-              <span className="block text-[11px] uppercase tracking-wide text-foreground-muted mb-1">
-                Date
-              </span>
-              <input
-                type="date"
-                value={date}
-                max={today}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={pending || !hasLog}
-              className={cn(
-                "h-11 px-4 rounded-md font-medium text-sm bg-accent text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
-                (pending || !hasLog) && "opacity-50"
-              )}
-            >
-              {pending ? "Saving…" : "Save photos"}
-            </button>
-          </div>
-          {!hasLog ? (
-            <p className="text-xs text-foreground-muted">
-              Log an entry for this date first — photos attach to a logged day.
-            </p>
-          ) : null}
-        </>
-      ) : null}
+        ) : null}
 
-      {error ? <p role="alert" className="text-xs text-red-400">{error}</p> : null}
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={pending || pickedPhotos.length === 0 || !hasLog}
+          className={cn(
+            "w-full h-11 px-4 rounded-md font-medium text-sm bg-accent text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
+            (pending || pickedPhotos.length === 0 || !hasLog) && "opacity-50"
+          )}
+        >
+          {pending ? "Saving…" : "Save photos"}
+        </button>
+
+        {!hasLog ? (
+          <p className="text-xs text-foreground-muted">
+            Log a weight, body fat, or calories entry for this date first —
+            photos attach to a logged day.
+          </p>
+        ) : null}
+        {error ? (
+          <p role="alert" className="text-xs text-red-400">
+            {error}
+          </p>
+        ) : null}
+      </div>
+
+      <section className="space-y-2">
+        <h2 className="text-xs uppercase tracking-wide text-foreground-muted">
+          History
+        </h2>
+        {photos.length > 0 ? (
+          <BodyPhotos photos={photos} />
+        ) : (
+          <p className="text-sm text-foreground-muted">No photos yet.</p>
+        )}
+      </section>
     </div>
   );
 }

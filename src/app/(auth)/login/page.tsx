@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LogoKettlePop } from "@/components/logo-kettle-pop";
+import { BrandWordmark } from "@/components/brand-wordmark";
 
 type Status = "idle" | "sending" | "sent" | "verifying";
 
@@ -86,17 +87,7 @@ export default function LoginPage() {
             <LogoKettlePop size={72} />
           </div>
           <h1 className="text-2xl font-semibold text-center animate-title-enter">
-            <span className="inline-flex" aria-label="Trainly">
-              {"Trainly".split("").map((ch, i) => (
-                <span
-                  key={i}
-                  className="inline-block animate-letter-bounce"
-                  style={{ animationDelay: `${0.45 + i * 0.06}s` }}
-                >
-                  {ch}
-                </span>
-              ))}
-            </span>
+            <BrandWordmark />
           </h1>
         </div>
 

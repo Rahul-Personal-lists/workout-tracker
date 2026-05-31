@@ -21,8 +21,7 @@ import {
 } from "@/lib/body-metrics";
 import { MeasuresList, type MeasureRow } from "./measures-list";
 import { MetricDetail, type MetricSeriesPoint } from "./metric-detail";
-import { BodyPhotos } from "./body-photos";
-import { PhotoAdd } from "./photo-add";
+import { PhotoDetail } from "./photo-detail";
 
 export function BodyClient({
   initialLogs,
@@ -42,7 +41,7 @@ export function BodyClient({
   // /body and calls router.refresh(), so these always reflect the DB.
   const logs = initialLogs;
   const measurements = initialMeasurements;
-  const [selected, setSelected] = useState<MetricKey | null>(null);
+  const [selected, setSelected] = useState<MetricKey | "photos" | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -134,6 +133,16 @@ export function BodyClient({
     });
   }
 
+  if (selected === "photos") {
+    return (
+      <PhotoDetail
+        photos={initialPhotos}
+        loggedDates={new Set(logs.map((l) => l.log_date))}
+        onBack={() => setSelected(null)}
+      />
+    );
+  }
+
   if (selected) {
     const metric = METRIC_BY_KEY[selected];
     return (
@@ -167,27 +176,18 @@ export function BodyClient({
         <h2 className="text-xs uppercase tracking-wide text-foreground-muted">
           Measures
         </h2>
-        <MeasuresList rows={measureRows} units={units} onSelect={setSelected} />
+        <MeasuresList
+          rows={measureRows}
+          units={units}
+          onSelect={setSelected}
+          photoRow={{
+            dayCount: new Set(initialPhotos.map((p) => p.log_date)).size,
+            onSelect: () => setSelected("photos"),
+          }}
+        />
         <p className="text-xs text-foreground-muted">
           Tap a measure to log a value or see its trend.
         </p>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-xs uppercase tracking-wide text-foreground-muted">
-          Progress photos
-        </h2>
-        <PhotoAdd
-          lastPhotoUrl={initialPhotos[0]?.signed_url ?? null}
-          loggedDates={new Set(logs.map((l) => l.log_date))}
-        />
-        {initialPhotos.length > 0 ? (
-          <BodyPhotos photos={initialPhotos} />
-        ) : (
-          <p className="text-xs text-foreground-muted">
-            No photos yet — add one for a day you&apos;ve logged an entry.
-          </p>
-        )}
       </section>
     </div>
   );
