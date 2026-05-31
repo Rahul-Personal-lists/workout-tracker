@@ -267,7 +267,7 @@ export async function renderAndSend(
   summary: WeeklySummary
 ): Promise<{ id: string | null }> {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM ?? "TrainMe <onboarding@resend.dev>";
+  const from = process.env.RESEND_FROM ?? "Trainr <onboarding@resend.dev>";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   if (!apiKey) throw new Error("Missing RESEND_API_KEY");
 

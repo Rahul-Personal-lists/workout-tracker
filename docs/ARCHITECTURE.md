@@ -1,4 +1,4 @@
-# TrainMe — Architecture
+# Trainr — Architecture
 
 A mobile-first PWA for logging strength programs at the gym. Single user today, multi-user-ready (RLS on every table). This document is the map of how the pieces fit together; for day-to-day conventions and the "don't" list, see [`CLAUDE.md`](../CLAUDE.md).
 
