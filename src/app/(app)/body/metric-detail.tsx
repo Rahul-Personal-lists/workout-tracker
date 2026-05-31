@@ -96,6 +96,14 @@ export function MetricDetail({
   }, [isWeight, goalWeight, stats]);
 
   const desc = useMemo(() => points.slice().reverse(), [points]);
+  const HISTORY_INITIAL = 5;
+  const HISTORY_PAGE = 10;
+  const [visibleCount, setVisibleCount] = useState(HISTORY_INITIAL);
+  const visibleDesc = useMemo(
+    () => desc.slice(0, visibleCount),
+    [desc, visibleCount]
+  );
+  const remaining = Math.max(0, desc.length - visibleCount);
 
   function submitQuickAdd() {
     if (input.trim() === "") return;
@@ -173,13 +181,7 @@ export function MetricDetail({
               <Stat
                 label="Δ vs prior wk"
                 value={metric.formatSigned(stats.delta, units)}
-                tone={
-                  stats.delta !== null && stats.delta < 0
-                    ? "good"
-                    : stats.delta !== null && stats.delta > 0
-                      ? "warn"
-                      : undefined
-                }
+                tone={weightChangeTone(stats.delta, stats.avg7, goalWeight)}
               />
               <Stat
                 label={`${metric.unitLabel(units)} / wk`}
@@ -235,19 +237,19 @@ export function MetricDetail({
         {desc.length === 0 ? (
           <p className="text-sm text-foreground-muted">No entries yet.</p>
         ) : (
-          <ul className="rounded-lg border border-border bg-surface divide-y divide-[color:var(--color-border)]">
-            {desc.map((p) => (
-              <li
-                key={p.date}
-                className="flex items-center gap-3 px-3 py-2.5 text-sm"
-              >
-                <div className="w-20 text-foreground-muted tabular-nums text-xs">
-                  {format(new Date(p.date + "T00:00:00"), "MMM d")}
-                </div>
-                <div className="flex-1 tabular-nums font-medium">
-                  {metric.format(p.value, units)}
-                </div>
-                {metric.source === "body_measurements" ? (
+          <>
+            <ul className="rounded-lg border border-border bg-surface divide-y divide-[color:var(--color-border)]">
+              {visibleDesc.map((p) => (
+                <li
+                  key={p.date}
+                  className="flex items-center gap-3 px-3 py-2.5 text-sm"
+                >
+                  <div className="w-20 text-foreground-muted tabular-nums text-xs">
+                    {format(new Date(p.date + "T00:00:00"), "MMM d")}
+                  </div>
+                  <div className="flex-1 tabular-nums font-medium">
+                    {metric.format(p.value, units)}
+                  </div>
                   <button
                     type="button"
                     onClick={() => onDeleteEntry(p.date)}
@@ -256,16 +258,57 @@ export function MetricDetail({
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
-                ) : (
-                  <span className="w-8" />
-                )}
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+            {remaining > 0 || visibleCount > HISTORY_INITIAL ? (
+              <div className="flex items-center justify-center gap-3 pt-1">
+                {remaining > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVisibleCount((v) =>
+                        Math.min(v + HISTORY_PAGE, desc.length)
+                      )
+                    }
+                    className="text-xs text-foreground-muted hover:text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+                  >
+                    Show more ({remaining} more)
+                  </button>
+                ) : null}
+                {visibleCount > HISTORY_INITIAL ? (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount(HISTORY_INITIAL)}
+                    className="text-xs text-foreground-muted hover:text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+                  >
+                    Show less
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </>
         )}
       </section>
     </div>
   );
+}
+
+// Color the week-over-week change by whether it moves toward the goal weight:
+// green = toward goal, red = away. Neutral when there's no goal or no change to
+// judge against — so a user gaining toward a higher goal sees a drop as red,
+// and a user cutting toward a lower goal sees the same drop as green.
+function weightChangeTone(
+  delta: number | null,
+  avg7: number | null,
+  goalWeight: number | null
+): "good" | "bad" | undefined {
+  if (delta === null || delta === 0 || avg7 === null || goalWeight === null) {
+    return undefined;
+  }
+  const wantGain = goalWeight > avg7;
+  const gaining = delta > 0;
+  return gaining === wantGain ? "good" : "bad";
 }
 
 function Stat({
@@ -275,7 +318,7 @@ function Stat({
 }: {
   label: string;
   value: string;
-  tone?: "good" | "warn";
+  tone?: "good" | "bad";
 }) {
   return (
     <div>
@@ -283,7 +326,7 @@ function Stat({
         className={cn(
           "text-base",
           tone === "good" && "text-emerald-400",
-          tone === "warn" && "text-amber-400"
+          tone === "bad" && "text-red-400"
         )}
       >
         {value}

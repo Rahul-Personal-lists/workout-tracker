@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Check, ChevronLeft, ChevronRight, Dumbbell, Moon, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  Moon,
+  Plus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDay } from "@/app/actions/program";
 
@@ -34,6 +42,10 @@ export function DayTabs({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
+  // null = step 1 (pick type); "rest" | "training" = step 2 (pick position)
+  const [pendingKind, setPendingKind] = useState<"rest" | "training" | null>(
+    null,
+  );
 
   const completedSet = useMemo(
     () => new Set(completedSlots),
@@ -75,15 +87,21 @@ export function DayTabs({
   const prevSlot = slots[selectedGlobalNumber - 2] ?? null;
   const nextSlot = slots[selectedGlobalNumber] ?? null;
 
-  function onAddDay(title: string) {
-    if (pending) return;
+  function closeMenu() {
     setMenuOpen(false);
+    setPendingKind(null);
+  }
+
+  function onInsertDay(title: string, position: number) {
+    if (pending) return;
+    closeMenu();
     startTransition(async () => {
       try {
         const { dayId } = await addDay({
           programId,
-          label: `Day ${templateCount + 1}`,
+          label: `Day ${position}`,
           title,
+          position,
         });
         router.push(`/program?week=${selectedWeek}&day=${dayId}`);
         router.refresh();
@@ -155,56 +173,6 @@ export function DayTabs({
               </Link>
             );
           })}
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => setMenuOpen((v) => !v)}
-              disabled={pending}
-              aria-label="Add day"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              className={cn(
-                "h-9 w-9 rounded-full inline-flex items-center justify-center border border-dashed border-border text-foreground-muted outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]",
-                pending && "opacity-50",
-              )}
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-            {menuOpen ? (
-              <>
-                <button
-                  type="button"
-                  aria-hidden="true"
-                  tabIndex={-1}
-                  onClick={() => setMenuOpen(false)}
-                  className="fixed inset-0 z-40 cursor-default"
-                />
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-border bg-surface p-1 shadow-lg"
-                >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => onAddDay("New day")}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
-                  >
-                    <Dumbbell className="w-4 h-4 text-foreground-muted" />
-                    Training day
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => onAddDay("Rest")}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
-                  >
-                    <Moon className="w-4 h-4 text-foreground-muted" />
-                    Rest day
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </div>
         </div>
       </div>
       <Link
@@ -224,6 +192,119 @@ export function DayTabs({
       >
         <ChevronRight className="w-4 h-4" />
       </Link>
+      {/* Add-day control sits OUTSIDE the overflow-x-auto strip: that container
+          forces overflow-y to compute to `auto`, which would clip this dropdown. */}
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          onClick={() => {
+            if (menuOpen) closeMenu();
+            else setMenuOpen(true);
+          }}
+          disabled={pending}
+          aria-label="Add day"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          className={cn(
+            "h-9 w-9 rounded-full inline-flex items-center justify-center border border-dashed border-border text-foreground-muted outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]",
+            pending && "opacity-50",
+          )}
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+        {menuOpen ? (
+          <>
+            <button
+              type="button"
+              aria-hidden="true"
+              tabIndex={-1}
+              onClick={closeMenu}
+              className="fixed inset-0 z-40 cursor-default"
+            />
+            <div
+              role="menu"
+              className="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border border-border bg-surface p-1 shadow-lg"
+            >
+              {pendingKind === null ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => setPendingKind("training")}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                  >
+                    <Dumbbell className="w-4 h-4 text-foreground-muted" />
+                    Training day
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => setPendingKind("rest")}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                  >
+                    <Moon className="w-4 h-4 text-foreground-muted" />
+                    Rest day
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1 px-1 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => setPendingKind(null)}
+                      aria-label="Back"
+                      className="h-7 w-7 flex items-center justify-center rounded-md text-foreground-muted hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs uppercase tracking-wide text-foreground-muted">
+                      {pendingKind === "rest"
+                        ? "Insert rest day"
+                        : "Insert training day"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() =>
+                      onInsertDay(pendingKind === "rest" ? "Rest" : "New day", 1)
+                    }
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                  >
+                    Before Day 1
+                  </button>
+                  {Array.from({ length: templateCount }, (_, i) => {
+                    const after = i + 1;
+                    const position = after + 1;
+                    const isEnd = after === templateCount;
+                    return (
+                      <button
+                        key={after}
+                        type="button"
+                        role="menuitem"
+                        onClick={() =>
+                          onInsertDay(
+                            pendingKind === "rest" ? "Rest" : "New day",
+                            position,
+                          )
+                        }
+                        className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm text-foreground hover:bg-surface-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+                      >
+                        <span>After Day {after}</span>
+                        {isEnd ? (
+                          <span className="text-[10px] uppercase tracking-wide text-foreground-muted">
+                            End
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }

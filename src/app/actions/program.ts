@@ -466,6 +466,9 @@ const AddDaySchema = z.object({
   programId: z.string().uuid(),
   label: z.string().min(1).max(40),
   title: z.string().min(1).max(80),
+  // 1-indexed insertion slot. If omitted, append after the last day (legacy
+  // behavior). If provided, day_numbers >= position shift up by 1.
+  position: z.number().int().min(1).max(20).optional(),
 });
 
 export async function addDay(input: z.infer<typeof AddDaySchema>) {
@@ -480,13 +483,48 @@ export async function addDay(input: z.infer<typeof AddDaySchema>) {
     .limit(1)
     .maybeSingle();
   if (maxErr) throw maxErr;
-  const nextDay = (maxRow?.day_number ?? 0) + 1;
+  const maxDay = maxRow?.day_number ?? 0;
+
+  // Clamp position so the caller can't leave a gap (e.g. position 7 with
+  // only 3 existing days). Treat anything past max+1 as an append.
+  const targetPosition =
+    parsed.position !== undefined ? Math.min(parsed.position, maxDay + 1) : maxDay + 1;
+
+  if (targetPosition <= maxDay) {
+    // Shift in descending order so each update lands in a slot just vacated
+    // by the row above it — the unique (program_id, day_number) constraint
+    // only allows one row per number at a time.
+    const { data: toShift, error: shiftErr } = await supabase
+      .from("program_days")
+      .select("id, day_number, label")
+      .eq("program_id", parsed.programId)
+      .gte("day_number", targetPosition)
+      .order("day_number", { ascending: false });
+    if (shiftErr) throw shiftErr;
+
+    for (const d of toShift ?? []) {
+      const newNum = d.day_number + 1;
+      const updates: { day_number: number; label?: string } = {
+        day_number: newNum,
+      };
+      // Only renumber auto-generated "Day N" labels — leave custom labels
+      // ("Squat day") alone.
+      if (d.label === `Day ${d.day_number}`) {
+        updates.label = `Day ${newNum}`;
+      }
+      const { error } = await supabase
+        .from("program_days")
+        .update(updates)
+        .eq("id", d.id);
+      if (error) throw error;
+    }
+  }
 
   const { data: inserted, error } = await supabase
     .from("program_days")
     .insert({
       program_id: parsed.programId,
-      day_number: nextDay,
+      day_number: targetPosition,
       label: parsed.label,
       title: parsed.title,
     })
