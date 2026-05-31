@@ -1,4 +1,4 @@
-# Trainly — Code Audit & Improvement Plan
+# TrainMe — Code Audit & Improvement Plan
 
 Repo-wide scan (2026-05-29) across all 12 subsystems, cross-verified against the source. Findings are grouped by theme and prioritized. Each is tagged:
 

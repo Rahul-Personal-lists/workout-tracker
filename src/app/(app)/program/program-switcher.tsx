@@ -49,7 +49,7 @@ export function ProgramSwitcher({
   }
 
   function remove(p: ProgramSummary) {
-    if (!confirm(`Delete "${p.name}"? Past sessions will be kept.`)) return;
+    if (!confirm(`Are you sure you want to delete "${p.name}"? Past sessions will be kept.`)) return;
     setOpen(false);
     startTransition(async () => {
       try {

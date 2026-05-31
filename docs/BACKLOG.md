@@ -1,4 +1,4 @@
-# Trainly — Deferred backlog
+# TrainMe — Deferred backlog
 
 Action list for items found in the 2026-05-29 audit but **not** applied in PR #77 (they need a schema migration, are larger refactors, or are judgment calls). IDs cross-reference [`CODE_AUDIT.md`](./CODE_AUDIT.md). Each entry is sized to be picked up independently.
 

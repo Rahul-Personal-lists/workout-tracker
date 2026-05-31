@@ -1,4 +1,4 @@
-# Trainly
+# TrainMe
 
 A mobile-first PWA for logging strength programs at the gym. Single user today, multi-user-ready (RLS on every table). Built with **Next.js 16** (App Router), **Supabase** (Postgres + Auth), and **Tailwind v4**.
 

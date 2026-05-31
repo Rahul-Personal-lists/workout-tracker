@@ -17,13 +17,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Trainly",
+  title: "TrainMe",
   description: "Turn every workout into measurable progress.",
-  applicationName: "Trainly",
+  applicationName: "TrainMe",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Trainly",
+    title: "TrainMe",
   },
   formatDetection: { telephone: false },
 };
