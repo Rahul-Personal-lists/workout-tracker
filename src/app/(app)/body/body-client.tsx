@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Camera, Flame, Percent, Ruler, Scale, X } from "lucide-react";
 import {
   upsertBodyLog,
-  recordBodyPhotos,
   upsertBodyMeasurement,
   deleteBodyMeasurement,
 } from "@/app/actions/body";
@@ -14,36 +12,17 @@ import type {
   BodyMeasurementRow,
   BodyPhotoRow,
 } from "@/lib/queries";
-import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
-import {
-  MAX_PHOTO_BYTES,
-  PHOTO_BUCKET,
-  isLikelyImage,
-  photoContentType,
-  photoExt,
-} from "@/lib/photo-upload";
 import type { Units } from "@/lib/units";
-import { formatWeightShort } from "@/lib/format";
 import {
   METRICS,
   METRIC_BY_KEY,
-  MEASUREMENT_KEYS,
   type MeasurementKey,
   type MetricKey,
 } from "@/lib/body-metrics";
 import { MeasuresList, type MeasureRow } from "./measures-list";
 import { MetricDetail, type MetricSeriesPoint } from "./metric-detail";
 import { BodyPhotos } from "./body-photos";
-import { PhotoCapture } from "./photo-capture";
-
-function todayLocalISODate() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+import { PhotoAdd } from "./photo-add";
 
 export function BodyClient({
   initialLogs,
@@ -60,54 +39,12 @@ export function BodyClient({
 }) {
   const router = useRouter();
   // logs/measurements are server-authoritative: every mutation revalidates
-  // /body and calls router.refresh(), so these always reflect the DB. (Previously
-  // they were optimistic useState mirrors seeded once, which diverged from the
-  // refreshed props and from a second device's edits.)
+  // /body and calls router.refresh(), so these always reflect the DB.
   const logs = initialLogs;
   const measurements = initialMeasurements;
   const [selected, setSelected] = useState<MetricKey | null>(null);
-
-  const today = todayLocalISODate();
-  const todayLog = initialLogs.find((l) => l.log_date === today) ?? null;
-
-  const [date, setDate] = useState(today);
-  const [weight, setWeight] = useState(
-    todayLog ? formatWeightShort(todayLog.weight_lb, units) : ""
-  );
-  const [calories, setCalories] = useState(
-    todayLog && todayLog.calories !== null ? String(todayLog.calories) : ""
-  );
-  const [bodyFat, setBodyFat] = useState(
-    todayLog && todayLog.body_fat_pct !== null
-      ? String(todayLog.body_fat_pct)
-      : ""
-  );
-  const [circ, setCirc] = useState<Record<MeasurementKey, string>>(() => {
-    const init = {} as Record<MeasurementKey, string>;
-    for (const key of MEASUREMENT_KEYS) {
-      const m = initialMeasurements.find(
-        (x) => x.log_date === today && x.metric === key
-      );
-      const metric = METRIC_BY_KEY[key];
-      init[key] = m ? metric.formatShort(m.value_cm, units) : "";
-    }
-    return init;
-  });
-  const [pickedPhotos, setPickedPhotos] = useState<File[]>([]);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const addPhotoButtonRef = useRef<HTMLButtonElement>(null);
-
-  const previewUrls = useMemo(
-    () => pickedPhotos.map((f) => URL.createObjectURL(f)),
-    [pickedPhotos]
-  );
-
-  // Revoke the previous batch of object URLs when the picked set changes or the
-  // component unmounts — otherwise each pick leaks blob URLs for the page's life.
-  useEffect(() => {
-    return () => previewUrls.forEach((u) => URL.revokeObjectURL(u));
-  }, [previewUrls]);
 
   function seriesFor(key: MetricKey): MetricSeriesPoint[] {
     const metric = METRIC_BY_KEY[key];
@@ -145,122 +82,7 @@ export function BodyClient({
     [logs, measurements]
   );
 
-  function addPickedPhotos(file: File) {
-    setPickedPhotos((prev) => [...prev, file].slice(0, 3));
-  }
-
-  function removePickedPhoto(idx: number) {
-    setPickedPhotos((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  async function uploadPhotos(forDate: string): Promise<string | null> {
-    if (pickedPhotos.length === 0) return null;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return "Saved, but not signed in for photo upload.";
-
-    const uploadedPaths: string[] = [];
-    let firstUploadError: string | null = null;
-    for (const file of pickedPhotos) {
-      try {
-        if (file.size > MAX_PHOTO_BYTES) {
-          throw new Error(
-            `Photo too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 25 MB.`
-          );
-        }
-        if (!isLikelyImage(file)) {
-          throw new Error(`Unsupported file: ${file.name || "(unnamed)"}`);
-        }
-        const ext = photoExt(file);
-        const path = `${user.id}/body/${forDate}/${crypto.randomUUID()}.${ext}`;
-        const contentType = photoContentType(file, ext);
-        const { error: upErr } = await supabase.storage
-          .from(PHOTO_BUCKET)
-          .upload(path, file, { contentType, upsert: false });
-        if (upErr) throw upErr;
-        uploadedPaths.push(path);
-      } catch (err) {
-        if (firstUploadError === null) {
-          firstUploadError =
-            err instanceof Error ? err.message : "Photo upload failed";
-        }
-      }
-    }
-    if (uploadedPaths.length > 0) {
-      try {
-        await recordBodyPhotos({ logDate: forDate, paths: uploadedPaths });
-      } catch (err) {
-        await supabase.storage.from(PHOTO_BUCKET).remove(uploadedPaths);
-        return err instanceof Error ? err.message : "Couldn't save photos";
-      }
-    }
-    return firstUploadError;
-  }
-
-  function onSaveEntry() {
-    setError(null);
-    const w = METRIC_BY_KEY.weight.parse(weight, units);
-    if (w === null) {
-      setError("Enter a valid weight");
-      return;
-    }
-    const cal = calories.trim() === "" ? null : METRIC_BY_KEY.calories.parse(calories, units);
-    if (calories.trim() !== "" && cal === null) {
-      setError("Calories must be a positive number");
-      return;
-    }
-    const bf = bodyFat.trim() === "" ? null : METRIC_BY_KEY.bodyfat.parse(bodyFat, units);
-    if (bodyFat.trim() !== "" && bf === null) {
-      setError("Body fat must be between 0 and 100");
-      return;
-    }
-
-    const circParsed: { key: MeasurementKey; value: number }[] = [];
-    for (const key of MEASUREMENT_KEYS) {
-      const raw = circ[key];
-      if (raw.trim() === "") continue;
-      const v = METRIC_BY_KEY[key].parse(raw, units);
-      if (v === null) {
-        setError(`Invalid ${METRIC_BY_KEY[key].label.toLowerCase()}`);
-        return;
-      }
-      circParsed.push({ key, value: v });
-    }
-
-    startTransition(async () => {
-      try {
-        await upsertBodyLog({
-          date,
-          weightLb: w,
-          calories: cal,
-          bodyFatPct: bf,
-          note: null,
-        });
-        for (const { key, value } of circParsed) {
-          await upsertBodyMeasurement({ date, metric: key, valueCm: value });
-        }
-        const photoErr = await uploadPhotos(date);
-
-        setWeight("");
-        setCalories("");
-        setBodyFat("");
-        setCirc(() => {
-          const cleared = {} as Record<MeasurementKey, string>;
-          for (const key of MEASUREMENT_KEYS) cleared[key] = "";
-          return cleared;
-        });
-        setPickedPhotos([]);
-        if (photoErr) setError(photoErr);
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Save failed");
-      }
-    });
-  }
-
-  function onQuickAdd(key: MetricKey, valueStr: string) {
+  function onQuickAdd(key: MetricKey, valueStr: string, date: string) {
     setError(null);
     const metric = METRIC_BY_KEY[key];
     const value = metric.parse(valueStr, units);
@@ -268,21 +90,20 @@ export function BodyClient({
       setError(`Enter a valid ${metric.label.toLowerCase()}`);
       return;
     }
-    const d = todayLocalISODate();
 
     startTransition(async () => {
       try {
         if (metric.source === "body_measurements") {
           await upsertBodyMeasurement({
-            date: d,
+            date,
             metric: key as MeasurementKey,
             valueCm: value,
           });
         } else {
-          const existing = logs.find((l) => l.log_date === d) ?? null;
+          const existing = logs.find((l) => l.log_date === date) ?? null;
           const weightLb = key === "weight" ? value : existing?.weight_lb;
           if (weightLb === undefined) {
-            setError("Log weight for today first.");
+            setError("Log weight for that date first.");
             return;
           }
           const cal =
@@ -290,7 +111,7 @@ export function BodyClient({
           const bf =
             key === "bodyfat" ? value : (existing?.body_fat_pct ?? null);
           await upsertBodyLog({
-            date: d,
+            date,
             weightLb,
             calories: cal,
             bodyFatPct: bf,
@@ -323,15 +144,13 @@ export function BodyClient({
           setSelected(null);
           setError(null);
         }}
-        onQuickAdd={(v) => onQuickAdd(selected, v)}
+        onQuickAdd={(v, d) => onQuickAdd(selected, v, d)}
         onDeleteEntry={(d) => onDeleteMeasurement(selected, d)}
         pending={pending}
         error={error}
       />
     );
   }
-
-  const existingEntry = logs.find((l) => l.log_date === date) ?? null;
 
   return (
     <div className="space-y-5">
@@ -342,206 +161,32 @@ export function BodyClient({
         </p>
       </header>
 
-      <div
-        id="body-entry-card"
-        className="rounded-lg border border-border bg-surface p-3 space-y-3 scroll-mt-4"
-      >
-        <label className="block">
-          <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-foreground-muted">
-            <Calendar className="w-3.5 h-3.5 shrink-0" /> Date
-          </span>
-          <input
-            type="date"
-            value={date}
-            max={today}
-            onChange={(e) => {
-              const d = e.target.value;
-              setDate(d);
-              const found = logs.find((l) => l.log_date === d);
-              setWeight(found ? formatWeightShort(found.weight_lb, units) : "");
-              setCalories(
-                found && found.calories !== null ? String(found.calories) : ""
-              );
-              setBodyFat(
-                found && found.body_fat_pct !== null
-                  ? String(found.body_fat_pct)
-                  : ""
-              );
-              setCirc(() => {
-                const next = {} as Record<MeasurementKey, string>;
-                for (const key of MEASUREMENT_KEYS) {
-                  const m = measurements.find(
-                    (x) => x.log_date === d && x.metric === key
-                  );
-                  next[key] = m
-                    ? METRIC_BY_KEY[key].formatShort(m.value_cm, units)
-                    : "";
-                }
-                return next;
-              });
-            }}
-            className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-          />
-        </label>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-foreground-muted">
-              <Scale className="w-3.5 h-3.5 shrink-0" /> Weight (
-              {METRIC_BY_KEY.weight.unitLabel(units)})
-            </span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              placeholder={units === "metric" ? "e.g. 56.5" : "e.g. 124.4"}
-              className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-            />
-          </label>
-          <label className="block">
-            <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-foreground-muted">
-              <Percent className="w-3.5 h-3.5 shrink-0" /> Body fat{" "}
-              <span className="opacity-60">(opt)</span>
-            </span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={bodyFat}
-              onChange={(e) => setBodyFat(e.target.value)}
-              placeholder="e.g. 18.5"
-              className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-            />
-          </label>
-        </div>
-
-        <label className="block">
-          <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-foreground-muted">
-            <Flame className="w-3.5 h-3.5 shrink-0" /> Calories{" "}
-            <span className="opacity-60">(optional)</span>
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={calories}
-            onChange={(e) => setCalories(e.target.value.replace(/[^\d]/g, ""))}
-            placeholder="e.g. 2400"
-            className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-          />
-        </label>
-
-        <div className="space-y-1.5">
-          <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-foreground-muted">
-            <Ruler className="w-3.5 h-3.5 shrink-0" /> Measurements (
-            {METRIC_BY_KEY.chest.unitLabel(units)}){" "}
-            <span className="opacity-60">(optional)</span>
-          </span>
-          <div className="grid grid-cols-2 gap-3">
-            {MEASUREMENT_KEYS.map((key) => (
-              <label key={key} className="block">
-                <span className="text-[11px] uppercase tracking-wide text-foreground-muted">
-                  {METRIC_BY_KEY[key].label}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={circ[key]}
-                  onChange={(e) =>
-                    setCirc((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
-                  className="mt-1 w-full h-11 rounded-md bg-surface-subtle border border-border px-3 text-base tabular-nums outline-none focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-                />
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-foreground-muted">
-            <Camera className="w-3.5 h-3.5 shrink-0" /> Progress photos{" "}
-            <span className="opacity-60">(up to 3)</span>
-          </span>
-          {pickedPhotos.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2">
-              {pickedPhotos.map((file, i) => (
-                <div
-                  key={`${file.name}-${i}`}
-                  className="relative aspect-square rounded-md overflow-hidden bg-surface-subtle border border-border"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={previewUrls[i]}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePickedPhoto(i)}
-                    aria-label="Remove photo"
-                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white flex items-center justify-center outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {pickedPhotos.length < 3 ? (
-            <PhotoCapture
-              onCapture={addPickedPhotos}
-              lastPhotoUrl={initialPhotos[0]?.signed_url ?? null}
-              triggerRef={addPhotoButtonRef}
-            />
-          ) : null}
-        </div>
-
-        {error ? <p role="alert" className="text-xs text-red-400">{error}</p> : null}
-
-        <button
-          type="button"
-          onClick={onSaveEntry}
-          disabled={pending}
-          className={cn(
-            "w-full h-11 rounded-md font-medium text-sm bg-accent text-accent-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
-            pending && "opacity-50"
-          )}
-        >
-          {pending ? "Saving…" : existingEntry ? "Update entry" : "Save entry"}
-        </button>
-      </div>
-
       <section className="space-y-2">
         <h2 className="text-xs uppercase tracking-wide text-foreground-muted">
           Measures
         </h2>
         <MeasuresList rows={measureRows} units={units} onSelect={setSelected} />
+        <p className="text-xs text-foreground-muted">
+          Tap a measure to log a value or see its trend.
+        </p>
       </section>
 
-      {initialPhotos.length > 0 ? (
-        <BodyPhotos photos={initialPhotos} />
-      ) : (
-        <section className="space-y-2">
-          <h2 className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-foreground-muted">
-            <Camera className="w-3.5 h-3.5 shrink-0" /> Progress photos
-          </h2>
-          <button
-            type="button"
-            onClick={() => {
-              document
-                .getElementById("body-entry-card")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              addPhotoButtonRef.current?.click();
-            }}
-            className="w-full rounded-lg border border-dashed border-border-strong bg-surface px-3 py-6 flex flex-col items-center justify-center gap-1.5 text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-          >
-            <Camera className="w-5 h-5" />
-            <span className="text-sm">Add your first progress photo</span>
-            <span className="text-xs opacity-70">
-              Track visual changes over time
-            </span>
-          </button>
-        </section>
-      )}
+      <section className="space-y-2">
+        <h2 className="text-xs uppercase tracking-wide text-foreground-muted">
+          Progress photos
+        </h2>
+        <PhotoAdd
+          lastPhotoUrl={initialPhotos[0]?.signed_url ?? null}
+          loggedDates={new Set(logs.map((l) => l.log_date))}
+        />
+        {initialPhotos.length > 0 ? (
+          <BodyPhotos photos={initialPhotos} />
+        ) : (
+          <p className="text-xs text-foreground-muted">
+            No photos yet — add one for a day you&apos;ve logged a weight.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

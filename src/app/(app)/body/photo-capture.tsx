@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type Ref } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, X } from "lucide-react";
 import { useDialog } from "@/lib/use-dialog";
 
@@ -11,12 +11,10 @@ export function PhotoCapture({
   onCapture,
   lastPhotoUrl,
   disabled,
-  triggerRef,
 }: {
   onCapture: (file: File) => void;
   lastPhotoUrl?: string | null;
   disabled?: boolean;
-  triggerRef?: Ref<HTMLButtonElement>;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -108,7 +106,6 @@ export function PhotoCapture({
         className="hidden"
       />
       <button
-        ref={triggerRef}
         type="button"
         onClick={openCamera}
         disabled={disabled}
