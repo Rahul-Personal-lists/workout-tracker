@@ -125,7 +125,7 @@
 }
 
 /* Honor reduced-motion: drop the brand entrance animations so the logo and
- * "Trainly" wordmark render instantly at their resting state (opacity 1) rather
+ * "Trainr" wordmark render instantly at their resting state (opacity 1) rather
  * than holding the keyframe's opacity:0 start. The splash's opacity fade is
  * opacity-only and left intact. */
 @media (prefers-reduced-motion: reduce) {

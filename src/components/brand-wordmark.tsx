@@ -3,8 +3,8 @@
 // spans drive the staggered bounce-in; aria-label keeps it one word for SR.
 export function BrandWordmark({ className }: { className?: string }) {
   return (
-    <span className={className ?? "inline-flex"} aria-label="Trainly">
-      {"Trainly".split("").map((ch, i) => (
+    <span className={className ?? "inline-flex"} aria-label="Trainr">
+      {"Trainr".split("").map((ch, i) => (
         <span
           key={i}
           className="inline-block animate-letter-bounce"
