@@ -54,7 +54,7 @@ export function InstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="fixed top-0 inset-x-0 z-50 safe-top animate-slide-down">
+    <div className="fixed top-0 inset-x-0 z-50 animate-slide-down pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-md px-3 pt-2 pb-2">
         <div className="flex items-center gap-3 rounded-xl bg-surface border border-border px-4 py-3 shadow-lg">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent/15">
