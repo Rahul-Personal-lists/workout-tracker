@@ -3,6 +3,7 @@ import { InstallPrompt } from "@/components/install-prompt";
 import { TutorialOverlay } from "@/components/tutorial-overlay";
 import { OnboardingPicker } from "@/components/onboarding-picker";
 import { OnboardingRedirector } from "@/components/onboarding-redirector";
+import { Toaster } from "@/components/toast";
 
 export default async function AppLayout({
   children,
@@ -22,6 +23,7 @@ export default async function AppLayout({
         {children}
       </main>
       <BottomNav />
+      <Toaster />
       <TutorialOverlay tour="today" />
       <TutorialOverlay tour="createProgram" />
       <OnboardingPicker />

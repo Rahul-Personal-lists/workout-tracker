@@ -6,6 +6,8 @@ import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { archiveProgram, setActiveProgram } from "@/app/actions/program";
 import type { ProgramSummary } from "@/lib/queries";
+import { ConfirmSheet } from "@/components/confirm-sheet";
+import { toast } from "@/components/toast";
 
 export function ProgramSwitcher({
   programs,
@@ -16,6 +18,8 @@ export function ProgramSwitcher({
 }) {
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<ProgramSummary | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,19 +47,27 @@ export function ProgramSwitcher({
       try {
         await setActiveProgram({ programId });
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Could not switch.");
+        toast(err instanceof Error ? err.message : "Could not switch.");
       }
     });
   }
 
-  function remove(p: ProgramSummary) {
-    if (!confirm(`Are you sure you want to delete "${p.name}"? Past sessions will be kept.`)) return;
+  function requestRemove(p: ProgramSummary) {
+    setDeleteError(null);
     setOpen(false);
+    setConfirmTarget(p);
+  }
+
+  function confirmRemove() {
+    const p = confirmTarget;
+    if (!p) return;
+    setDeleteError(null);
     startTransition(async () => {
       try {
         await archiveProgram({ programId: p.id });
+        setConfirmTarget(null);
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Could not delete.");
+        setDeleteError(err instanceof Error ? err.message : "Could not delete.");
       }
     });
   }
@@ -104,7 +116,7 @@ export function ProgramSwitcher({
               {canDelete ? (
                 <button
                   type="button"
-                  onClick={() => remove(p)}
+                  onClick={() => requestRemove(p)}
                   disabled={pending}
                   aria-label={`Delete ${p.name}`}
                   className="h-9 w-9 shrink-0 rounded-lg inline-flex items-center justify-center text-foreground-muted hover:bg-surface-hover hover:text-foreground disabled:opacity-40 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
@@ -131,6 +143,15 @@ export function ProgramSwitcher({
           ) : null}
         </div>
       ) : null}
+      <ConfirmSheet
+        open={confirmTarget !== null}
+        title={confirmTarget ? `Delete “${confirmTarget.name}”?` : ""}
+        description="Your logged workouts are kept — only the program is removed."
+        pending={pending}
+        error={deleteError}
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

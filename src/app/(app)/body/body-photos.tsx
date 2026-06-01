@@ -8,6 +8,8 @@ import { deleteBodyPhoto } from "@/app/actions/body";
 import type { BodyPhotoRow } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useDialog } from "@/lib/use-dialog";
+import { ConfirmSheet } from "@/components/confirm-sheet";
+import { toast } from "@/components/toast";
 
 const PHOTOS_INITIAL_GROUPS = 2;
 const PHOTOS_PAGE_GROUPS = 4;
@@ -17,6 +19,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
   const [active, setActive] = useState<BodyPhotoRow | null>(null);
   const [compareWith, setCompareWith] = useState<BodyPhotoRow | null>(null);
   const [picking, setPicking] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<BodyPhotoRow | null>(null);
   const [groupsVisibleCount, setGroupsVisibleCount] = useState(
     PHOTOS_INITIAL_GROUPS
   );
@@ -49,12 +52,19 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
     setPicking(false);
   }
 
-  function onDelete(photo: BodyPhotoRow) {
-    if (!confirm("Delete this photo?")) return;
+  function doDelete() {
+    const photo = confirmDelete;
+    if (!photo) return;
     startTransition(async () => {
-      await deleteBodyPhoto({ photoId: photo.id });
-      closeModal();
-      router.refresh();
+      try {
+        await deleteBodyPhoto({ photoId: photo.id });
+        setConfirmDelete(null);
+        closeModal();
+        router.refresh();
+      } catch (err) {
+        setConfirmDelete(null);
+        toast(err instanceof Error ? err.message : "Could not delete photo.");
+      }
     });
   }
 
@@ -152,7 +162,7 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
             <div className="flex items-center justify-between gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => onDelete(active)}
+                onClick={() => setConfirmDelete(active)}
                 disabled={pending}
                 aria-label="Delete photo"
                 className={cn(
@@ -191,6 +201,14 @@ export function BodyPhotos({ photos }: { photos: BodyPhotoRow[] }) {
           </div>
         </div>
       ) : null}
+      <ConfirmSheet
+        open={confirmDelete !== null}
+        title="Delete this photo?"
+        description="This can’t be undone."
+        pending={pending}
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }
