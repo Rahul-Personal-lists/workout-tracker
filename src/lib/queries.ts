@@ -253,7 +253,7 @@ export async function getNextWorkout(
 
   const { data: lastFinished } = await supabase
     .from("workout_sessions")
-    .select("week_number, program_day_id, ended_at")
+    .select("week_number, program_day_id, ended_at, is_rest_skip")
     .in("program_day_id", dayIds)
     .not("ended_at", "is", null)
     .order("ended_at", { ascending: false })
@@ -275,7 +275,11 @@ export async function getNextWorkout(
   // timezone), keep "next" pointing at that same day so the /program page sits
   // on today's completed workout instead of skipping ahead. Tomorrow this
   // comparison flips false and the normal cycle advance below runs.
-  if (lastFinished.ended_at) {
+  //
+  // Rest-day *skips* are excluded: a skip exists precisely to advance past the
+  // rest day, so pinning the page to the just-skipped day until tomorrow would
+  // strand the user on it. Skips always fall through to the cycle advance.
+  if (lastFinished.ended_at && !lastFinished.is_rest_skip) {
     const tz = await getUserTimezone();
     const finishedDate = dateKeyInTz(new Date(lastFinished.ended_at), tz);
     const todayDate = dateKeyInTz(new Date(), tz);
