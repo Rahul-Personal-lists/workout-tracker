@@ -6,17 +6,27 @@ import { deleteSessionPhoto } from "@/app/actions/workout";
 import type { SessionPhoto } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 import { useDialog } from "@/lib/use-dialog";
+import { ConfirmSheet } from "@/components/confirm-sheet";
+import { toast } from "@/components/toast";
 
 export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
   const [active, setActive] = useState<SessionPhoto | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<SessionPhoto | null>(null);
   const [pending, startTransition] = useTransition();
   const dialogRef = useDialog<HTMLDivElement>(!!active, () => setActive(null));
 
-  function onDelete(photo: SessionPhoto) {
-    if (!confirm("Delete this photo?")) return;
+  function doDelete() {
+    const photo = confirmDelete;
+    if (!photo) return;
     startTransition(async () => {
-      await deleteSessionPhoto({ photoId: photo.id });
-      setActive(null);
+      try {
+        await deleteSessionPhoto({ photoId: photo.id });
+        setConfirmDelete(null);
+        setActive(null);
+      } catch (err) {
+        setConfirmDelete(null);
+        toast(err instanceof Error ? err.message : "Could not delete photo.");
+      }
     });
   }
 
@@ -64,7 +74,7 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
             <div className="flex items-center justify-between mt-3">
               <button
                 type="button"
-                onClick={() => onDelete(active)}
+                onClick={() => setConfirmDelete(active)}
                 disabled={pending}
                 className={cn(
                   "h-10 px-4 rounded-md text-sm flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/40 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
@@ -85,6 +95,14 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
           </div>
         </div>
       ) : null}
+      <ConfirmSheet
+        open={confirmDelete !== null}
+        title="Delete this photo?"
+        description="This can’t be undone."
+        pending={pending}
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

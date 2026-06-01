@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDay } from "@/app/actions/program";
+import { toast } from "@/components/toast";
 
 type Template = { id: string };
 
@@ -107,7 +108,7 @@ export function DayTabs({
         router.refresh();
       } catch (err) {
         console.error("addDay failed", err);
-        alert(err instanceof Error ? err.message : "Could not add day.");
+        toast(err instanceof Error ? err.message : "Could not add day.");
       }
     });
   }

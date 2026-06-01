@@ -26,6 +26,7 @@ import { ExerciseAnimation } from "@/components/exercise-animation";
 import { formatWeight } from "@/lib/format";
 import type { Units } from "@/lib/units";
 import { saveDayEdits } from "@/app/actions/program";
+import { toast } from "@/components/toast";
 
 type Row = {
   id: string;
@@ -87,13 +88,13 @@ export function EditDayClient({
         router.refresh();
       } catch (err) {
         console.error("saveDayEdits failed", err);
-        alert(err instanceof Error ? err.message : "Could not save.");
+        toast(err instanceof Error ? err.message : "Could not save.");
       }
     });
   }
 
   function notImplemented(label: string) {
-    alert(`${label} — coming soon.`);
+    toast(`${label} — coming soon.`, "info");
   }
 
   const stageLabel = isToday ? "Today's Workout" : "Upcoming Workout";

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { reorderDay } from "@/app/actions/program";
+import { toast } from "@/components/toast";
 
 export function DayMoveButtons({
   dayId,
@@ -26,7 +27,7 @@ export function DayMoveButtons({
         router.refresh();
       } catch (err) {
         console.error("reorderDay failed", err);
-        alert(err instanceof Error ? err.message : "Could not move day.");
+        toast(err instanceof Error ? err.message : "Could not move day.");
       }
     });
   }
