@@ -333,15 +333,14 @@ export type UndoableSkip = {
 
 export async function getUndoableSkip(): Promise<UndoableSkip | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims.sub;
+  if (!userId) return null;
 
   const { data } = await supabase
     .from("workout_sessions")
     .select("ended_at, program_days ( label, title )")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("is_rest_skip", true)
     .order("ended_at", { ascending: false })
     .limit(1)

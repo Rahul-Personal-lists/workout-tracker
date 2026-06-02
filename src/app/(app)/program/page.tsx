@@ -36,10 +36,9 @@ export default async function ProgramPage({
   // current one and the page sticks on the wrong day. Mirrors the call /today
   // used to make before /today was deleted.
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) await reapStaleSession(supabase, user.id);
+  const { data: auth } = await supabase.auth.getClaims();
+  const userId = auth?.claims.sub;
+  if (userId) await reapStaleSession(supabase, userId);
 
   const [program, allPrograms, units] = await Promise.all([
     getCurrentProgram(),
