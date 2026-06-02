@@ -6,6 +6,11 @@ import { cn } from "@/lib/utils";
 import { formatDuration, parseDuration } from "@/lib/format";
 import { SwipeRow } from "@/components/swipe-row";
 import { useTimeSetTimer } from "@/lib/stores/time-set-timer";
+import {
+  type StepLead,
+  unlockStepCueAudio,
+  useStepCues,
+} from "@/lib/step-cue";
 import type { SetRow } from "./types";
 
 export function TimeSetInputRow({
@@ -13,6 +18,8 @@ export function TimeSetInputRow({
   setKey,
   plannedSeconds,
   lastSeconds,
+  soundLead,
+  vibrationLead,
   onChange,
   onDelete,
 }: {
@@ -20,6 +27,8 @@ export function TimeSetInputRow({
   setKey: string;
   plannedSeconds: number | null;
   lastSeconds: number | null;
+  soundLead: StepLead;
+  vibrationLead: StepLead;
   onChange: (patch: Partial<SetRow>, persist: boolean) => void;
   onDelete: () => void;
 }) {
@@ -68,6 +77,8 @@ export function TimeSetInputRow({
     return () => clearInterval(id);
   }, [endsAt]);
 
+  useStepCues({ endsAt, soundLead, vibrationLead, now });
+
   useEffect(() => {
     if (endsAt === null || targetSec === null) return;
     if (now < endsAt) return;
@@ -78,9 +89,6 @@ export function TimeSetInputRow({
     /* eslint-enable react-hooks/set-state-in-effect */
     stopTimer();
     onChangeRef.current({ completed: true, actualSeconds: targetSec }, true);
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate?.([200, 80, 200]);
-    }
   }, [endsAt, targetSec, now, stopTimer]);
 
   function commitOnBlur() {
@@ -96,6 +104,7 @@ export function TimeSetInputRow({
 
   function startCountdown() {
     if (!canStart || startTarget === null) return;
+    unlockStepCueAudio();
     setNow(Date.now());
     startTimer(setKey, startTarget);
   }

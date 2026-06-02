@@ -31,6 +31,7 @@ import {
 import { RestTimerBar } from "@/components/rest-timer";
 import { DayNotePopover } from "@/components/day-note-popover";
 import { useRestTimer } from "@/lib/stores/rest-timer";
+import { normalizeStepLead, unlockStepCueAudio } from "@/lib/step-cue";
 import { createClient } from "@/lib/supabase/client";
 import type { PreviousDayNote } from "@/lib/queries";
 import {
@@ -55,6 +56,8 @@ type Props = {
   exercises: ExerciseRow[];
   previousDayNote: PreviousDayNote | null;
   units: Units;
+  soundLeadSeconds: number | null;
+  vibrationLeadSeconds: number | null;
 };
 
 // Own 1s interval so the ticking clock re-renders only this tiny node, not the
@@ -87,7 +90,11 @@ export function WorkoutClient({
   exercises: initialExercises,
   previousDayNote,
   units,
+  soundLeadSeconds,
+  vibrationLeadSeconds,
 }: Props) {
+  const soundLead = normalizeStepLead(soundLeadSeconds);
+  const vibrationLead = normalizeStepLead(vibrationLeadSeconds);
   const router = useRouter();
   const [exercises, setExercises] = useState(initialExercises);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
@@ -104,6 +111,11 @@ export function WorkoutClient({
     "saved" | "error" | null
   >(null);
   const startRest = useRestTimer((s) => s.start);
+
+  function startRestTimer() {
+    unlockStepCueAudio();
+    startRest();
+  }
 
   useEffect(() => {
     if (reorderToast === null) return;
@@ -364,7 +376,7 @@ export function WorkoutClient({
         </p>
       </header>
 
-      <RestTimerBar />
+      <RestTimerBar soundLead={soundLead} vibrationLead={vibrationLead} />
 
       <p className="text-[11px] text-foreground-muted">
         Tip: swipe a set left to delete it.
@@ -386,12 +398,14 @@ export function WorkoutClient({
                 sessionId={sessionId}
                 exercise={ex}
                 units={units}
+                soundLead={soundLead}
+                vibrationLead={vibrationLead}
                 onChange={(setNumber, patch, persist) => {
                   const prev = ex.sets.find((s) => s.setNumber === setNumber);
                   updateSet(ex.id, setNumber, patch);
                   if (persist && prev) persistSet(ex, { ...prev, ...patch });
                   if (patch.completed === true && prev && !prev.completed) {
-                    startRest();
+                    startRestTimer();
                   }
                 }}
                 onAddSet={() => addSet(ex.id)}
@@ -431,7 +445,11 @@ export function WorkoutClient({
 
       <div className="fixed bottom-0 inset-x-0 z-30 bg-gradient-to-t from-black via-black/95 to-transparent pt-6 pb-[calc(env(safe-area-inset-bottom)+1rem)] px-4">
         <div className="max-w-md mx-auto space-y-3">
-          <RestTimerBar floating />
+          <RestTimerBar
+            floating
+            soundLead={soundLead}
+            vibrationLead={vibrationLead}
+          />
           <button
             type="button"
             onClick={() => setSheetOpen(true)}

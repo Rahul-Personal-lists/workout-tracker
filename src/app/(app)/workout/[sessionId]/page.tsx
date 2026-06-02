@@ -3,6 +3,7 @@ import {
   getCurrentProgram,
   getLastSessionHints,
   getPreviousDayNote,
+  getProfile,
   getSession,
   getSessionLogs,
   type ProgramExercise,
@@ -29,7 +30,7 @@ export default async function WorkoutPage({
   const day = program.days.find((d) => d.id === session.program_day_id);
   if (!day) notFound();
 
-  const [logs, hints, previousDayNote, units] = await Promise.all([
+  const [logs, hints, previousDayNote, units, profile] = await Promise.all([
     getSessionLogs(sessionId),
     getLastSessionHints(
       day.exercises.map((e) => e.id),
@@ -37,6 +38,7 @@ export default async function WorkoutPage({
     ),
     getPreviousDayNote(session.program_day_id, sessionId),
     getUnitsServer(),
+    getProfile({ signAvatar: false }),
   ]);
 
   const exercises: ExerciseRow[] = day.exercises.map((ex: ProgramExercise) => {
@@ -109,6 +111,8 @@ export default async function WorkoutPage({
       exercises={exercises}
       previousDayNote={previousDayNote}
       units={units}
+      soundLeadSeconds={profile.sound_lead_seconds}
+      vibrationLeadSeconds={profile.vibration_lead_seconds}
     />
   );
 }
