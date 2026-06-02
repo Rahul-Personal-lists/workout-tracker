@@ -15,6 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatWeight, unitLabel } from "@/lib/format";
 import type { Units } from "@/lib/units";
+import type { StepLead } from "@/lib/step-cue";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { SwipeRow } from "@/components/swipe-row";
 import { useDialog } from "@/lib/use-dialog";
@@ -26,6 +27,8 @@ export function ExerciseCard({
   sessionId,
   exercise,
   units,
+  soundLead,
+  vibrationLead,
   onChange,
   onAddSet,
   onDeleteSet,
@@ -34,6 +37,8 @@ export function ExerciseCard({
   sessionId: string;
   exercise: ExerciseRow;
   units: Units;
+  soundLead: StepLead;
+  vibrationLead: StepLead;
   onChange: (
     setNumber: number,
     patch: Partial<SetRow>,
@@ -210,6 +215,8 @@ export function ExerciseCard({
                   setKey={`${sessionId}:${exercise.id}:${set.setNumber}`}
                   plannedSeconds={exercise.plannedSeconds}
                   lastSeconds={exercise.lastSeconds}
+                  soundLead={soundLead}
+                  vibrationLead={vibrationLead}
                   onChange={(patch, persist) => onChange(set.setNumber, patch, persist)}
                   onDelete={() => onDeleteSet(set.setNumber)}
                 />

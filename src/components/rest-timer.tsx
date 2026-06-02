@@ -9,6 +9,11 @@ import {
   useRestTimer,
 } from "@/lib/stores/rest-timer";
 import { formatDuration } from "@/lib/format";
+import {
+  type StepLead,
+  unlockStepCueAudio,
+  useStepCues,
+} from "@/lib/step-cue";
 
 // `floating` splits the component into two complementary mounts:
 //   - default (inline): renders the idle settings disclosure when no timer is
@@ -17,7 +22,15 @@ import { formatDuration } from "@/lib/format";
 //   - floating: returns null when idle; renders the active countdown bar when
 //     a timer is running. Caller is responsible for positioning the parent
 //     (e.g. inside the fixed-bottom Finish footer in workout-client).
-export function RestTimerBar({ floating = false }: { floating?: boolean } = {}) {
+export function RestTimerBar({
+  floating = false,
+  soundLead,
+  vibrationLead,
+}: {
+  floating?: boolean;
+  soundLead: StepLead;
+  vibrationLead: StepLead;
+}) {
   const endsAt = useRestTimer((s) => s.endsAt);
   const pausedAt = useRestTimer((s) => s.pausedAt);
   const defaultDuration = useRestTimer((s) => s.defaultDuration);
@@ -33,15 +46,22 @@ export function RestTimerBar({ floating = false }: { floating?: boolean } = {}) 
     return () => clearInterval(id);
   }, [endsAt, pausedAt]);
 
+  useStepCues({
+    // Only the floating mount runs cues — inline + floating are both mounted while
+    // a timer is active, but inline returns null and would double-fire otherwise.
+    endsAt: floating ? endsAt : null,
+    soundLead,
+    vibrationLead,
+    now,
+    paused: pausedAt !== null,
+  });
+
   useEffect(() => {
-    if (endsAt === null || pausedAt !== null) return;
+    if (!floating || endsAt === null || pausedAt !== null) return;
     if (Date.now() >= endsAt) {
       stop();
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        navigator.vibrate?.([200, 80, 200]);
-      }
     }
-  }, [endsAt, pausedAt, now, stop]);
+  }, [floating, endsAt, pausedAt, now, stop]);
 
   if (endsAt === null) {
     if (floating) return null;
@@ -68,7 +88,10 @@ export function RestTimerBar({ floating = false }: { floating?: boolean } = {}) 
           ))}
           <button
             type="button"
-            onClick={() => start()}
+            onClick={() => {
+              unlockStepCueAudio();
+              start();
+            }}
             className="ml-auto h-8 px-3 rounded-lg text-xs border border-border text-foreground hover:bg-surface-hover"
           >
             Start
