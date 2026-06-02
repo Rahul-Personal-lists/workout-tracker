@@ -30,20 +30,23 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verify the JWT locally against the project's asymmetric signing keys — no
+  // auth-server round-trip on the request that gates first paint. An expired
+  // session still refreshes via getSession() inside getClaims(), rotating the
+  // cookies through the setAll callback above.
+  const { data } = await supabase.auth.getClaims();
+  const isAuthed = !!data?.claims;
 
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
-  if (!user && !isPublic) {
+  if (!isAuthed && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && pathname === "/login") {
+  if (isAuthed && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/program";
     return NextResponse.redirect(url);
