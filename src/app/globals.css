@@ -56,6 +56,13 @@
    * borderline on black (4.68:1). On this palette there is no contrast
    * headroom for a third tier — collapsed into muted. */
   --color-foreground-muted: var(--color-neutral-400);
+
+  /* Program-library goal labels — fixed semantic colors, independent of the
+   * user's accent theme (Build Muscle = orange, Get Lean = teal,
+   * Overall Fitness = rose). Aliased to Tailwind's palette to stay in oklch. */
+  --color-goal-build-muscle: var(--color-orange-400);
+  --color-goal-get-lean: var(--color-teal-400);
+  --color-goal-overall-fitness: var(--color-rose-400);
 }
 
 :root[data-theme="lime"]   { --color-accent: #a3e635; }

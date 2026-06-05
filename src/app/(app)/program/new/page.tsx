@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { getGoalWeight, getTodayWeightLb } from "@/lib/queries";
 import { PresetList } from "../preset-list";
 
@@ -31,6 +31,12 @@ export default async function NewProgramPage() {
           Start From a Template
         </h2>
         <PresetList weightLb={weightLb} />
+        <Link
+          href="/program/library"
+          className="btn-ghost-add h-12 px-3 text-sm"
+        >
+          <BookOpen className="w-4 h-4" /> Browse the full library
+        </Link>
       </section>
 
       <section className="space-y-2">

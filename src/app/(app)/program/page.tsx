@@ -69,6 +69,12 @@ export default async function ProgramPage({
         </header>
         <PresetList weightLb={weightLb} />
         <Link
+          href="/program/library"
+          className="btn-ghost-add h-12 px-3 text-sm"
+        >
+          <BookOpen className="w-4 h-4" /> Browse the program library
+        </Link>
+        <Link
           href="/program/new"
           data-tour="open-new-program"
           className="btn-ghost-add h-12 px-3 text-sm"
