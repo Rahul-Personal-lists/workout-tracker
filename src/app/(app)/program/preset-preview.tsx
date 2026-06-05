@@ -3,15 +3,36 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PresetProgram } from "@/lib/starter-program";
+import { estimatePlanStats, type EstimateExercise } from "@/lib/estimates";
+import { PlanStats } from "@/components/plan-stats";
+import type {
+  PresetProgram,
+  StarterExercise,
+} from "@/lib/starter-program";
 
-function setsLabel(e: PresetProgram["days"][number]["exercises"][number]) {
+function setsLabel(e: StarterExercise) {
   if (e.kind === "time" && e.target_seconds) return `${e.sets} × ${e.target_seconds}s`;
   if (e.base_reps) return `${e.sets} × ${e.base_reps}`;
   return `${e.sets} sets`;
 }
 
-export function PresetPreview({ preset }: { preset: PresetProgram }) {
+function toEstimate(e: StarterExercise): EstimateExercise {
+  return {
+    sets: e.sets,
+    base_reps: e.base_reps,
+    kind: e.kind ?? "reps",
+    target_seconds: e.target_seconds ?? null,
+    tracked: e.tracked,
+  };
+}
+
+export function PresetPreview({
+  preset,
+  weightLb,
+}: {
+  preset: PresetProgram;
+  weightLb: number;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -38,6 +59,22 @@ export function PresetPreview({ preset }: { preset: PresetProgram }) {
               <p className="text-[11px] font-medium text-neutral-300">
                 {d.label} · {d.title}
               </p>
+              {d.exercises.length > 0
+                ? (() => {
+                    const stats = estimatePlanStats(
+                      d.exercises.map(toEstimate),
+                      { weightLb }
+                    );
+                    return (
+                      <PlanStats
+                        exerciseCount={stats.count}
+                        durationSec={stats.durationSec}
+                        calories={stats.calories}
+                        className="mt-1"
+                      />
+                    );
+                  })()
+                : null}
               <ul className="mt-1 space-y-0.5">
                 {d.exercises.map((e, i) => (
                   <li

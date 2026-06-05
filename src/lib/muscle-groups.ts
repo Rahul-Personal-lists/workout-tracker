@@ -1,4 +1,8 @@
 import catalogJson from "../../public/data/exercises-catalog.json";
+import {
+  regionsFromCatalogMuscles,
+  type MuscleRegion,
+} from "@/lib/muscle-regions";
 
 export const TOP_LEVEL_GROUPS = [
   "chest",
@@ -75,4 +79,17 @@ export function getMuscleGroupsForExercise(
 
 export function muscleLabel(group: TopLevelGroup): string {
   return group.charAt(0).toUpperCase() + group.slice(1);
+}
+
+// Granular-region resolver mirroring getMuscleGroupsForExercise. Server-side
+// only — this module statically imports the ~145KB catalog JSON. Client callers
+// that already hold a CatalogEntry should use regionsFromCatalogMuscles() from
+// muscle-regions.ts instead (no JSON dependency).
+export function getMuscleRegionsForExercise(
+  name: string,
+  imageUrl: string | null | undefined
+): MuscleRegion[] {
+  const slug = slugFromImageUrl(imageUrl);
+  const entry = (slug && bySlug.get(slug)) || byName.get(name.toLowerCase());
+  return entry ? regionsFromCatalogMuscles(entry.primary) : [];
 }

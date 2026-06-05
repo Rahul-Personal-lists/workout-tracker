@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { Search, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
+import { InteractiveBodyFigure } from "@/components/interactive-body-figure";
+import { MuscleBadge } from "@/components/muscle-badge";
 import { useDialog } from "@/lib/use-dialog";
+import { toggleFavorite } from "@/app/actions/favorites";
+import { toast } from "@/components/toast";
+import {
+  MUSCLE_REGIONS,
+  REGION_META,
+  regionsFromCatalogMuscles,
+  type BodyView,
+  type MuscleRegion,
+} from "@/lib/muscle-regions";
 import {
   type CatalogEntry,
-  MUSCLE_GROUPS,
   imageForCatalogEntry,
   loadCatalog,
   getCachedCatalog,
@@ -25,13 +35,54 @@ function titleCase(s: string): string {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function ExerciseLibrary() {
+// Filter pills: Cardio + every granular muscle. A common subset shows by default;
+// the rest hide behind "Show more" so the row stays short.
+const FILTER_PILLS: { key: string; label: string }[] = [
+  { key: "cardio", label: "Cardio" },
+  ...MUSCLE_REGIONS.map((r) => ({ key: r.key as string, label: r.label })),
+];
+const PRIMARY_PILL_KEYS = new Set([
+  "cardio",
+  "chest",
+  "shoulders",
+  "biceps",
+  "triceps",
+  "abs",
+  "lats",
+  "glutes",
+  "quads",
+]);
+const PRIMARY_PILLS = FILTER_PILLS.filter((p) => PRIMARY_PILL_KEYS.has(p.key));
+const MORE_PILLS = FILTER_PILLS.filter((p) => !PRIMARY_PILL_KEYS.has(p.key));
+
+export function ExerciseLibrary({
+  initialFavorites = [],
+  initialRegion,
+}: {
+  initialFavorites?: string[];
+  initialRegion?: MuscleRegion;
+}) {
   const [catalog, setCatalog] = useState<CatalogEntry[] | null>(
     getCachedCatalog()
   );
   const [query, setQuery] = useState("");
-  const [activeMuscles, setActiveMuscles] = useState<Set<string>>(new Set());
+  // Single active filter key: one MuscleRegion or "cardio" (or null). Shared by
+  // the body-map callouts and the pill row — selecting one clears the previous.
+  const [activeKey, setActiveKey] = useState<string | null>(
+    initialRegion ?? null
+  );
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  const [view, setView] = useState<BodyView>(() =>
+    initialRegion && REGION_META[initialRegion].view === "back"
+      ? "back"
+      : "front"
+  );
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(
+    () => new Set(initialFavorites)
+  );
   const [selected, setSelected] = useState<CatalogEntry | null>(null);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     if (catalog) return;
@@ -44,36 +95,102 @@ export function ExerciseLibrary() {
     };
   }, [catalog]);
 
-  const hasFilters = query.trim() !== "" || activeMuscles.size > 0;
+  const hasFilters =
+    query.trim() !== "" || activeKey !== null || favoritesOnly;
 
   const { items, total } = useMemo(() => {
     if (!catalog) return { items: [] as CatalogEntry[], total: 0 };
     const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    const matchers = MUSCLE_GROUPS.filter((g) => activeMuscles.has(g.label));
+    const regionKey =
+      activeKey && activeKey !== "cardio" ? (activeKey as MuscleRegion) : null;
+    const cardioActive = activeKey === "cardio";
     const matched = catalog.filter((e) => {
+      if (favoritesOnly && !favorites.has(e.id)) return false;
       if (tokens.length > 0) {
         const hay =
           `${e.name} ${e.equipment ?? ""} ${e.primary.join(" ")}`.toLowerCase();
         if (!tokens.every((t) => hay.includes(t))) return false;
       }
-      if (matchers.length > 0 && !matchers.some((g) => g.match(e))) return false;
+      if (activeKey) {
+        const matchCardio = cardioActive && e.category === "cardio";
+        const matchRegion =
+          regionKey !== null &&
+          regionsFromCatalogMuscles(e.primary).includes(regionKey);
+        if (!matchCardio && !matchRegion) return false;
+      }
       return true;
     });
     const limit = hasFilters ? FILTERED_LIMIT : BROWSE_LIMIT;
     return { items: matched.slice(0, limit), total: matched.length };
-  }, [catalog, query, activeMuscles, hasFilters]);
+  }, [catalog, query, activeKey, favoritesOnly, favorites, hasFilters]);
 
-  function toggleMuscle(label: string) {
-    setActiveMuscles((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
+  // Single-select: tapping the active key clears it, otherwise it replaces the
+  // previous selection. Shared by the body-map callouts and the pills.
+  function toggleKey(key: string) {
+    setActiveKey((prev) => (prev === key ? null : key));
+  }
+
+  function clearFilters() {
+    setActiveKey(null);
+  }
+
+  const renderPill = (p: { key: string; label: string }) => {
+    const on = activeKey === p.key;
+    return (
+      <button
+        key={p.key}
+        type="button"
+        onClick={() => toggleKey(p.key)}
+        aria-pressed={on}
+        className={cn(
+          "h-8 px-3 rounded-full text-xs border transition-colors",
+          RING,
+          on
+            ? "bg-accent text-accent-foreground border-accent"
+            : "border-border bg-surface text-foreground-muted"
+        )}
+      >
+        {p.label}
+      </button>
+    );
+  };
+
+  function onToggleFav(entry: CatalogEntry) {
+    const slug = entry.id;
+    const wasFav = favorites.has(slug);
+    const apply = (add: boolean) =>
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (add) next.add(slug);
+        else next.delete(slug);
+        return next;
+      });
+    apply(!wasFav); // optimistic
+    startTransition(async () => {
+      try {
+        const { favorited } = await toggleFavorite({ slug });
+        apply(favorited); // reconcile with server truth
+      } catch {
+        apply(wasFav); // revert
+        toast("Couldn't update favorite — try again.");
+      }
     });
   }
 
   return (
     <div className="space-y-4">
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <InteractiveBodyFigure
+          activeView={view}
+          onViewChange={setView}
+          activeKey={activeKey}
+          onSelect={toggleKey}
+        />
+        <p className="mt-1 text-center text-[11px] text-foreground-muted">
+          Tap a muscle to filter — or pick from the list below.
+        </p>
+      </div>
+
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
         <input
@@ -92,12 +209,12 @@ export function ExerciseLibrary() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[11px] uppercase tracking-wide text-foreground-muted">
-            Muscle group
+            Filter
           </span>
-          {activeMuscles.size > 0 ? (
+          {activeKey !== null ? (
             <button
               type="button"
-              onClick={() => setActiveMuscles(new Set())}
+              onClick={clearFilters}
               className={cn(
                 "text-[11px] text-foreground-muted inline-flex items-center gap-1 rounded",
                 RING
@@ -108,66 +225,117 @@ export function ExerciseLibrary() {
           ) : null}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {MUSCLE_GROUPS.map((g) => {
-            const on = activeMuscles.has(g.label);
-            return (
-              <button
-                key={g.label}
-                type="button"
-                onClick={() => toggleMuscle(g.label)}
-                aria-pressed={on}
-                className={cn(
-                  "h-8 px-3 rounded-full text-xs border transition-colors",
-                  RING,
-                  on
-                    ? "bg-accent text-accent-foreground border-accent"
-                    : "border-border bg-surface text-foreground-muted"
-                )}
-              >
-                {g.label}
-              </button>
-            );
-          })}
+          <button
+            type="button"
+            onClick={() => setFavoritesOnly((v) => !v)}
+            aria-pressed={favoritesOnly}
+            className={cn(
+              "h-8 px-3 rounded-full text-xs border transition-colors inline-flex items-center gap-1",
+              RING,
+              favoritesOnly
+                ? "bg-accent text-accent-foreground border-accent"
+                : "border-border bg-surface text-foreground-muted"
+            )}
+          >
+            <Star className={cn("w-3.5 h-3.5", favoritesOnly && "fill-current")} />
+            Favorites
+          </button>
+          {PRIMARY_PILLS.map(renderPill)}
+          {(showAllFilters
+            ? MORE_PILLS
+            : MORE_PILLS.filter((p) => p.key === activeKey)
+          ).map(renderPill)}
+          <button
+            type="button"
+            onClick={() => setShowAllFilters((v) => !v)}
+            aria-expanded={showAllFilters}
+            className={cn(
+              "h-8 px-3 rounded-full text-xs border border-dashed border-border bg-surface text-foreground-muted",
+              RING
+            )}
+          >
+            {showAllFilters ? "Show less" : `Show more (${MORE_PILLS.length})`}
+          </button>
         </div>
       </div>
 
       {catalog === null ? (
         <p className="text-sm text-foreground-muted">Loading catalog…</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-foreground-muted">
-          No exercises match. Try a different search or muscle group.
-        </p>
+        favoritesOnly && favorites.size === 0 ? (
+          <p className="text-sm text-foreground-muted">
+            No favorites yet — tap the star on any exercise to save it.
+          </p>
+        ) : (
+          <p className="text-sm text-foreground-muted">
+            No exercises match. Try a different search or filter.
+          </p>
+        )
       ) : (
         <>
-          <ul className="space-y-2">
-            {items.map((entry) => (
-              <li key={entry.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelected(entry)}
-                  className={cn(
-                    "w-full flex items-center gap-3 rounded-2xl border border-border bg-surface p-2.5 text-left",
-                    RING
-                  )}
-                >
-                  <ExerciseAnimation
-                    url={imageForCatalogEntry(entry)}
-                    alt={entry.name}
-                    size={48}
-                    shape="circle"
-                  />
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-medium truncate">
-                      {entry.name}
+          <ul className="grid grid-cols-2 gap-3">
+            {items.map((entry) => {
+              const fav = favorites.has(entry.id);
+              const regions = regionsFromCatalogMuscles(entry.primary);
+              return (
+                <li key={entry.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(entry)}
+                    className={cn(
+                      "w-full overflow-hidden rounded-2xl border border-border bg-surface text-left",
+                      RING
+                    )}
+                  >
+                    <span className="relative block aspect-square w-full">
+                      <ExerciseAnimation
+                        url={imageForCatalogEntry(entry)}
+                        alt={entry.name}
+                        fill
+                        className="!rounded-none !border-0"
+                      />
+                      {regions.length > 0 ? (
+                        <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/45 backdrop-blur-sm p-1">
+                          <MuscleBadge regions={regions} size={22} />
+                        </span>
+                      ) : null}
                     </span>
-                    <span className="block text-[11px] text-foreground-muted truncate">
-                      {entry.primary.map(titleCase).join(", ") ||
-                        titleCase(entry.category)}
+                    <span className="block p-2.5">
+                      <span className="block text-sm font-medium truncate">
+                        {entry.name}
+                      </span>
+                      <span className="block text-[11px] text-foreground-muted truncate">
+                        {entry.primary.map(titleCase).join(", ") ||
+                          titleCase(entry.category)}
+                      </span>
                     </span>
-                  </span>
-                </button>
-              </li>
-            ))}
+                  </button>
+                  {!entry.custom ? (
+                    <button
+                      type="button"
+                      onClick={() => onToggleFav(entry)}
+                      aria-pressed={fav}
+                      aria-label={
+                        fav
+                          ? `Remove ${entry.name} from favorites`
+                          : `Add ${entry.name} to favorites`
+                      }
+                      className={cn(
+                        "absolute top-2 right-2 h-9 w-9 inline-flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm",
+                        RING
+                      )}
+                    >
+                      <Star
+                        className={cn(
+                          "w-4 h-4",
+                          fav ? "fill-current text-accent" : "text-white"
+                        )}
+                      />
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
           {total > items.length ? (
             <p className="text-center text-[11px] text-foreground-muted">

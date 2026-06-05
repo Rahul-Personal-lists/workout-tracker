@@ -4,10 +4,16 @@ import {
   getAllPrograms,
   getCompletedSlots,
   getCurrentProgram,
+  getGoalWeight,
   getNextWorkout,
+  getTodayWeightLb,
   getUndoableSkip,
 } from "@/lib/queries";
 import { getPlannedReps, getPlannedWeight } from "@/lib/progression";
+import { estimatePlanStats } from "@/lib/estimates";
+import { getMuscleRegionsForExercise } from "@/lib/muscle-groups";
+import { MuscleBadge } from "@/components/muscle-badge";
+import { PlanStats } from "@/components/plan-stats";
 import { ExerciseThumb } from "./exercise-thumb";
 import { formatWeight } from "@/lib/format";
 import { getUnitsServer } from "@/lib/units-server";
@@ -40,11 +46,17 @@ export default async function ProgramPage({
   const userId = auth?.claims.sub;
   if (userId) await reapStaleSession(supabase, userId);
 
-  const [program, allPrograms, units] = await Promise.all([
-    getCurrentProgram(),
-    getAllPrograms(),
-    getUnitsServer(),
-  ]);
+  const [program, allPrograms, units, todayWeight, goalWeight] =
+    await Promise.all([
+      getCurrentProgram(),
+      getAllPrograms(),
+      getUnitsServer(),
+      getTodayWeightLb(),
+      getGoalWeight(),
+    ]);
+
+  // Bodyweight for calorie estimates: today's logged weight → goal → a default.
+  const weightLb = todayWeight ?? goalWeight ?? 170;
 
   if (!program) {
     return (
@@ -55,7 +67,7 @@ export default async function ProgramPage({
             Pick a template or build your own.
           </p>
         </header>
-        <PresetList />
+        <PresetList weightLb={weightLb} />
         <Link
           href="/program/new"
           data-tour="open-new-program"
@@ -96,6 +108,11 @@ export default async function ProgramPage({
 
   const dayIsEmpty = !!selectedDay && selectedDay.exercises.length === 0;
   const inProgress = next?.kind === "in-progress" ? next : null;
+
+  const dayStats =
+    selectedDay && selectedDay.exercises.length > 0
+      ? estimatePlanStats(selectedDay.exercises, { weightLb })
+      : null;
 
   const templateIndex = selectedDay
     ? program.days.findIndex((d) => d.id === selectedDay.id)
@@ -185,6 +202,14 @@ export default async function ProgramPage({
         />
       ) : null}
 
+      {dayStats ? (
+        <PlanStats
+          exerciseCount={dayStats.count}
+          durationSec={dayStats.durationSec}
+          calories={dayStats.calories}
+        />
+      ) : null}
+
       {selectedDay && selectedDay.exercises.length > 0 ? (
         <ul className="space-y-2">
           {selectedDay.exercises.map((ex) => {
@@ -208,6 +233,11 @@ export default async function ProgramPage({
                 className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
               >
                 <ExerciseThumb url={ex.image_url} alt={ex.name} />
+                <MuscleBadge
+                  regions={getMuscleRegionsForExercise(ex.name, ex.image_url)}
+                  size={30}
+                  className="shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm leading-snug truncate">
                     {ex.name}
@@ -231,11 +261,13 @@ export default async function ProgramPage({
       ) : null}
 
       {selectedDay && selectedDay.exercises.length > 0 && !inProgress ? (
-        <StartWorkoutButton
-          programDayId={selectedDay.id}
-          weekNumber={selectedWeek}
-          variant={slotState === "completed" ? "redo" : "start"}
-        />
+        <div className="sticky bottom-20 z-30 -mx-4 px-4 py-2 bg-background/90 backdrop-blur-sm">
+          <StartWorkoutButton
+            programDayId={selectedDay.id}
+            weekNumber={selectedWeek}
+            variant={slotState === "completed" ? "redo" : "start"}
+          />
+        </div>
       ) : null}
     </div>
   );

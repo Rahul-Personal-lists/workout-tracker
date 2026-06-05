@@ -1,8 +1,22 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { getFavoriteSlugs } from "@/lib/queries";
+import { isMuscleRegion } from "@/lib/muscle-regions";
 import { ExerciseLibrary } from "./exercise-library";
 
-export default function ExerciseLibraryPage() {
+// Favorites are read per-request (RLS-scoped), so this route can't be static.
+export const dynamic = "force-dynamic";
+
+export default async function ExerciseLibraryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ region?: string }>;
+}) {
+  const [{ region }, favorites] = await Promise.all([
+    searchParams,
+    getFavoriteSlugs(),
+  ]);
+  const initialRegion = isMuscleRegion(region) ? region : undefined;
   return (
     <div className="space-y-5">
       <header className="flex items-center gap-3">
@@ -20,7 +34,10 @@ export default function ExerciseLibraryPage() {
           </p>
         </div>
       </header>
-      <ExerciseLibrary />
+      <ExerciseLibrary
+        initialFavorites={[...favorites]}
+        initialRegion={initialRegion}
+      />
     </div>
   );
 }

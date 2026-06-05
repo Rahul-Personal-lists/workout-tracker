@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { getGoalWeight, getTodayWeightLb } from "@/lib/queries";
 import { PresetList } from "../preset-list";
 
 export const dynamic = "force-dynamic";
 
-export default function NewProgramPage() {
+export default async function NewProgramPage() {
+  const [todayWeight, goalWeight] = await Promise.all([
+    getTodayWeightLb(),
+    getGoalWeight(),
+  ]);
+  const weightLb = todayWeight ?? goalWeight ?? 170;
   return (
     <div className="space-y-5">
       <header className="space-y-2">
@@ -24,7 +30,7 @@ export default function NewProgramPage() {
         <h2 className="text-base font-semibold text-foreground">
           Start From a Template
         </h2>
-        <PresetList />
+        <PresetList weightLb={weightLb} />
       </section>
 
       <section className="space-y-2">

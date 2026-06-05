@@ -2,7 +2,7 @@ import { PRESET_PROGRAMS } from "@/lib/starter-program";
 import { seedPresetProgram } from "@/app/actions/program";
 import { PresetPreview } from "./preset-preview";
 
-export function PresetList() {
+export function PresetList({ weightLb }: { weightLb: number }) {
   return (
     <ul className="space-y-2">
       {PRESET_PROGRAMS.map((p, i) => (
@@ -21,7 +21,7 @@ export function PresetList() {
             </p>
             <p className="text-xs text-neutral-400 mt-1">{p.description}</p>
           </div>
-          <PresetPreview preset={p} />
+          <PresetPreview preset={p} weightLb={weightLb} />
           <form
             action={async () => {
               "use server";

@@ -9,22 +9,29 @@ export function ExerciseAnimation({
   alt,
   size = 80,
   shape = "square",
+  fill = false,
   className,
 }: {
   url: string | null;
   alt: string;
   size?: number;
   shape?: "square" | "circle";
+  // Fill the parent (w/h 100%) instead of a fixed `size` — for the catalog grid
+  // cards, which size the image via an aspect-square wrapper.
+  fill?: boolean;
   className?: string;
 }) {
   const radius = shape === "circle" ? "rounded-full" : "rounded";
+  const sizeStyle = fill ? undefined : { width: size, height: size };
+  const fillBox = fill ? "w-full h-full" : "shrink-0";
 
   if (!url) {
     return (
       <div
-        style={{ width: size, height: size }}
+        style={sizeStyle}
         className={cn(
-          "shrink-0 bg-neutral-800 border border-neutral-800",
+          "bg-neutral-800 border border-neutral-800",
+          fillBox,
           radius,
           className
         )}
@@ -35,9 +42,10 @@ export function ExerciseAnimation({
 
   return (
     <div
-      style={{ width: size, height: size }}
+      style={sizeStyle}
       className={cn(
-        "relative shrink-0 bg-neutral-100 overflow-hidden border border-neutral-800",
+        "relative bg-neutral-100 overflow-hidden border border-neutral-800",
+        fillBox,
         radius,
         className
       )}

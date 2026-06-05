@@ -211,3 +211,19 @@ body {
   }
   &:disabled { opacity: 0.5; }
 }
+
+/* Body-map callout (dot + dashed leader line + label) in the exercise browser.
+ * It's an SVG <g>, where a CSS outline is unreliable, so the keyboard-focus cue
+ * is an accent ring on the dot plus an underlined label — both core SVG props. */
+.region-callout {
+  outline: none;
+  cursor: pointer;
+}
+.region-callout:focus-visible text {
+  text-decoration: underline;
+  fill: var(--color-accent);
+}
+.region-callout:focus-visible circle {
+  stroke: var(--color-accent);
+  stroke-width: 5;
+}
