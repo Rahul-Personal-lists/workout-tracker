@@ -62,8 +62,8 @@ Migrations to date:
 - `20260516000000_cardio_exercises.sql` — `kind`/`target_seconds` + `planned_seconds`/`actual_seconds` (+ cardio backfill)
 - `20260519000000_peak_taper.sql` — `peak_taper` boolean
 - `20260528000000_body_goals_and_photos.sql` — `goal_weight_lb`, `body_fat_pct`, `body_log_photos`
-- `20260529000000_body_measurements.sql` — `body_measurements` table ⚠️ shares its timestamp with the next file
-- `20260529000000_settings_extras.sql` — profile gender/age/height/avatar/units/sound prefs ⚠️ duplicate timestamp; give fresh-env migrations distinct timestamps going forward
+- `20260529000000_body_measurements.sql` — `body_measurements` table
+- `20260529000001_settings_extras.sql` — profile gender/age/height/avatar/units/sound prefs (was `20260529000000`, a duplicate timestamp; renamed to `…000001` and reconciled on remote via `migration repair` so the histories match — give fresh-env migrations distinct timestamps going forward)
 - `20260530000000_rest_skip_flag.sql` — `is_rest_skip` on `workout_sessions` (explicit rest-day-skip flag; replaces the `duration_seconds = 0` sentinel so Undo can't delete a real zero-duration workout)
 - `20260530120000_body_log_weight_optional.sql` — `weight_lb` on `body_logs` made **nullable** so body fat / calories can be logged for a date without a weight; replaces the implicit "weight required" rule with a `num_nonnulls(weight_lb, body_fat_pct, calories) > 0` CHECK (`body_logs_at_least_one_metric`) so the shared daily row still can't be empty
 - `20260604000000_exercise_favorites.sql` — `exercise_favorites` table (catalog-level favorites keyed by free-exercise-db slug; RLS owner-scoped, PK `(user_id, exercise_slug)`). Read via `getFavoriteSlugs()` (degrades to empty on error), toggled by `toggleFavorite`. **Must be `npx supabase db push`-ed for favorites to persist.**
