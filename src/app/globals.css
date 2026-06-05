@@ -212,16 +212,18 @@ body {
   &:disabled { opacity: 0.5; }
 }
 
-/* Keyboard focus for the interactive body-map hotspots. A CSS `outline` on an
- * SVG <g> only boxes its bounding rect (and is inconsistent across browsers), so
- * instead we stroke the focused region's own polygons in the accent color — a
- * reliable, shape-hugging focus indicator. `stroke`/`paint-order` are core SVG
- * and override the polygons' inline stroke via CSS specificity. */
-.region-hit {
+/* Body-map callout (dot + dashed leader line + label) in the exercise browser.
+ * It's an SVG <g>, where a CSS outline is unreliable, so the keyboard-focus cue
+ * is an accent ring on the dot plus an underlined label — both core SVG props. */
+.region-callout {
   outline: none;
+  cursor: pointer;
 }
-.region-hit:focus-visible polygon {
+.region-callout:focus-visible text {
+  text-decoration: underline;
+  fill: var(--color-accent);
+}
+.region-callout:focus-visible circle {
   stroke: var(--color-accent);
-  stroke-width: 1.5;
-  paint-order: stroke;
+  stroke-width: 5;
 }

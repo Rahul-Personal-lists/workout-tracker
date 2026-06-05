@@ -10,16 +10,14 @@ import { useDialog } from "@/lib/use-dialog";
 import { toggleFavorite } from "@/app/actions/favorites";
 import { toast } from "@/components/toast";
 import {
+  MUSCLE_REGIONS,
   REGION_META,
-  REGION_TO_COARSE_LABEL,
-  regionLabel,
   regionsFromCatalogMuscles,
   type BodyView,
   type MuscleRegion,
 } from "@/lib/muscle-regions";
 import {
   type CatalogEntry,
-  MUSCLE_GROUPS,
   imageForCatalogEntry,
   loadCatalog,
   getCachedCatalog,
@@ -37,6 +35,26 @@ function titleCase(s: string): string {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Filter pills: Cardio + every granular muscle. A common subset shows by default;
+// the rest hide behind "Show more" so the row stays short.
+const FILTER_PILLS: { key: string; label: string }[] = [
+  { key: "cardio", label: "Cardio" },
+  ...MUSCLE_REGIONS.map((r) => ({ key: r.key as string, label: r.label })),
+];
+const PRIMARY_PILL_KEYS = new Set([
+  "cardio",
+  "chest",
+  "shoulders",
+  "biceps",
+  "triceps",
+  "abs",
+  "lats",
+  "glutes",
+  "quads",
+]);
+const PRIMARY_PILLS = FILTER_PILLS.filter((p) => PRIMARY_PILL_KEYS.has(p.key));
+const MORE_PILLS = FILTER_PILLS.filter((p) => !PRIMARY_PILL_KEYS.has(p.key));
+
 export function ExerciseLibrary({
   initialFavorites = [],
   initialRegion,
@@ -48,16 +66,16 @@ export function ExerciseLibrary({
     getCachedCatalog()
   );
   const [query, setQuery] = useState("");
-  const [activeMuscles, setActiveMuscles] = useState<Set<string>>(() =>
-    initialRegion ? new Set([REGION_TO_COARSE_LABEL[initialRegion]]) : new Set()
+  // Single active filter key: one MuscleRegion or "cardio" (or null). Shared by
+  // the body-map callouts and the pill row — selecting one clears the previous.
+  const [activeKey, setActiveKey] = useState<string | null>(
+    initialRegion ?? null
   );
+  const [showAllFilters, setShowAllFilters] = useState(false);
   const [view, setView] = useState<BodyView>(() =>
     initialRegion && REGION_META[initialRegion].view === "back"
       ? "back"
       : "front"
-  );
-  const [selectedRegion, setSelectedRegion] = useState<MuscleRegion | null>(
-    initialRegion ?? null
   );
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(
@@ -78,12 +96,14 @@ export function ExerciseLibrary({
   }, [catalog]);
 
   const hasFilters =
-    query.trim() !== "" || activeMuscles.size > 0 || favoritesOnly;
+    query.trim() !== "" || activeKey !== null || favoritesOnly;
 
   const { items, total } = useMemo(() => {
     if (!catalog) return { items: [] as CatalogEntry[], total: 0 };
     const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    const matchers = MUSCLE_GROUPS.filter((g) => activeMuscles.has(g.label));
+    const regionKey =
+      activeKey && activeKey !== "cardio" ? (activeKey as MuscleRegion) : null;
+    const cardioActive = activeKey === "cardio";
     const matched = catalog.filter((e) => {
       if (favoritesOnly && !favorites.has(e.id)) return false;
       if (tokens.length > 0) {
@@ -91,44 +111,49 @@ export function ExerciseLibrary({
           `${e.name} ${e.equipment ?? ""} ${e.primary.join(" ")}`.toLowerCase();
         if (!tokens.every((t) => hay.includes(t))) return false;
       }
-      if (matchers.length > 0 && !matchers.some((g) => g.match(e))) return false;
+      if (activeKey) {
+        const matchCardio = cardioActive && e.category === "cardio";
+        const matchRegion =
+          regionKey !== null &&
+          regionsFromCatalogMuscles(e.primary).includes(regionKey);
+        if (!matchCardio && !matchRegion) return false;
+      }
       return true;
     });
     const limit = hasFilters ? FILTERED_LIMIT : BROWSE_LIMIT;
     return { items: matched.slice(0, limit), total: matched.length };
-  }, [catalog, query, activeMuscles, favoritesOnly, favorites, hasFilters]);
+  }, [catalog, query, activeKey, favoritesOnly, favorites, hasFilters]);
 
-  function toggleMuscle(label: string) {
-    setActiveMuscles((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
-    });
-  }
-
-  // Tapping a muscle on the body map sets a single coarse filter (the catalog
-  // pills are coarse-grained, so e.g. tapping Biceps filters to "Arms"). Tapping
-  // the same region again clears it.
-  function onRegionTap(region: MuscleRegion) {
-    const label = REGION_TO_COARSE_LABEL[region];
-    if (region === selectedRegion) {
-      setSelectedRegion(null);
-      setActiveMuscles((prev) => {
-        const next = new Set(prev);
-        next.delete(label);
-        return next;
-      });
-      return;
-    }
-    setSelectedRegion(region);
-    setActiveMuscles(new Set([label]));
+  // Single-select: tapping the active key clears it, otherwise it replaces the
+  // previous selection. Shared by the body-map callouts and the pills.
+  function toggleKey(key: string) {
+    setActiveKey((prev) => (prev === key ? null : key));
   }
 
   function clearFilters() {
-    setActiveMuscles(new Set());
-    setSelectedRegion(null);
+    setActiveKey(null);
   }
+
+  const renderPill = (p: { key: string; label: string }) => {
+    const on = activeKey === p.key;
+    return (
+      <button
+        key={p.key}
+        type="button"
+        onClick={() => toggleKey(p.key)}
+        aria-pressed={on}
+        className={cn(
+          "h-8 px-3 rounded-full text-xs border transition-colors",
+          RING,
+          on
+            ? "bg-accent text-accent-foreground border-accent"
+            : "border-border bg-surface text-foreground-muted"
+        )}
+      >
+        {p.label}
+      </button>
+    );
+  };
 
   function onToggleFav(entry: CatalogEntry) {
     const slug = entry.id;
@@ -158,13 +183,11 @@ export function ExerciseLibrary({
         <InteractiveBodyFigure
           activeView={view}
           onViewChange={setView}
-          onSelect={onRegionTap}
-          selectedRegion={selectedRegion}
+          activeKey={activeKey}
+          onSelect={toggleKey}
         />
         <p className="mt-1 text-center text-[11px] text-foreground-muted">
-          {selectedRegion
-            ? `Showing ${regionLabel(selectedRegion)} exercises — tap again to clear.`
-            : "Tap a muscle to filter exercises."}
+          Tap a muscle to filter — or pick from the list below.
         </p>
       </div>
 
@@ -188,7 +211,7 @@ export function ExerciseLibrary({
           <span className="text-[11px] uppercase tracking-wide text-foreground-muted">
             Filter
           </span>
-          {activeMuscles.size > 0 ? (
+          {activeKey !== null ? (
             <button
               type="button"
               onClick={clearFilters}
@@ -217,26 +240,22 @@ export function ExerciseLibrary({
             <Star className={cn("w-3.5 h-3.5", favoritesOnly && "fill-current")} />
             Favorites
           </button>
-          {MUSCLE_GROUPS.map((g) => {
-            const on = activeMuscles.has(g.label);
-            return (
-              <button
-                key={g.label}
-                type="button"
-                onClick={() => toggleMuscle(g.label)}
-                aria-pressed={on}
-                className={cn(
-                  "h-8 px-3 rounded-full text-xs border transition-colors",
-                  RING,
-                  on
-                    ? "bg-accent text-accent-foreground border-accent"
-                    : "border-border bg-surface text-foreground-muted"
-                )}
-              >
-                {g.label}
-              </button>
-            );
-          })}
+          {PRIMARY_PILLS.map(renderPill)}
+          {(showAllFilters
+            ? MORE_PILLS
+            : MORE_PILLS.filter((p) => p.key === activeKey)
+          ).map(renderPill)}
+          <button
+            type="button"
+            onClick={() => setShowAllFilters((v) => !v)}
+            aria-expanded={showAllFilters}
+            className={cn(
+              "h-8 px-3 rounded-full text-xs border border-dashed border-border bg-surface text-foreground-muted",
+              RING
+            )}
+          >
+            {showAllFilters ? "Show less" : `Show more (${MORE_PILLS.length})`}
+          </button>
         </div>
       </div>
 
