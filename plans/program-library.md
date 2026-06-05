@@ -10,7 +10,7 @@ Build it in **stages** — each stage is independently reviewable and (mostly) s
 
 ---
 
-## Status — Stages 0–4 shipped; only catalog expansion (Q1) is deferred
+## Status — Stages 0–4 shipped (#96, #97); Stage 5 (catalog expansion) is the next PR
 
 _Updated 2026-06-05. Legend: ✅ done · 🟡 partial · ⬜ not started._
 
@@ -21,6 +21,7 @@ _Updated 2026-06-05. Legend: ✅ done · 🟡 partial · ⬜ not started._
 | 2 — Program → PLANS list | ✅ | `[programId]` landing + PLANS rows + sticky "Start This Program" CTA (seeds; respects max-2). |
 | 3 — Plan detail | ✅ | `[programId]/[dayId]` replaced the stub: back header + Plan N + plan-tabs pill row + `PlanStats` row + exercise rows (`ExerciseThumb` + `MuscleBadge` + sets×reps/from-weight) + sticky Start CTA. Keyed by `day_number`, training days only. |
 | 4 — Integration / max-2 / polish | ✅ | Entry points ✅. Graceful 2-program-cap flow: `StartProgramButton` opens an archive-one sheet (lists the user's programs → `archiveProgram` then `seedPresetProgram`) instead of a dead-end toast; direct-seed failures below the cap still toast. Token/a11y polish + doc updates done. Catalog expansion (Q1) remains the only open item. |
+| 5 — Catalog expansion (Q1) | ⬜ next PR | Decisions locked: I draft ~10 programs from templates (matrix below), photo per program (art gates appearance), fill all empty facets (Get Lean / Push/Pull / Small & Home / 2-5-6-day). Also: curate the `/program/new` `PresetList`, live cap-flow verification. |
 
 ### As-built decisions (deviations from the design below — read before Stage 3/4)
 
@@ -173,18 +174,87 @@ seeds.
 **Acceptance:** end-to-end browse → preview → seed works from a clean state and at the
 2-program cap; typecheck + lint + build green; adversarial review pass.
 
+## Stage 5 — Catalog expansion (Q1) — *next PR*
+
+> **⬜ Next PR.** Decisions locked (2026-06-05): I **draft from templates** for your review;
+> **photo per program** (art gates appearance); fill **all four** empty facets. The 4 existing
+> presets stay as-is.
+
+### How it wires in (no new infra)
+
+The library is still version-controlled code-data — **no DB template table** (key decision #1).
+Each new program is authored in **two places**:
+
+1. A full `StarterProgram` (+ `id`/`description`) appended to `PRESET_PROGRAMS` in
+   [starter-program.ts](src/lib/starter-program.ts) — this is what `getPreset(id)` resolves, so
+   the program is **seedable** by `seedPresetProgram`.
+2. A `LIBRARY_META` entry in [program-library.ts](src/lib/program-library.ts) keyed by that `id`
+   (`goal` / `split` / `daysPerWeek` / `gymLocation` / `experience` / `heroImage`) — this is what
+   makes it **show in the library**. A preset with no `LIBRARY_META` entry is silently excluded
+   (existing behavior), which is exactly the per-program **art gate**: add the metadata entry only
+   once `public/program-art/<id>.jpg` exists.
+
+Follow the existing programming conventions in `starter-program.ts`: plate grid (barbell jumps ≥10 lb,
+cables 10 lb / `progression_weeks: 2`, dumbbells 5 lb), `peak_taper` on the heavy compounds, `kind: "time"`
+for holds/cardio. Beginner programs can use longer `progression_weeks` and smaller jumps.
+
+### Proposed catalog matrix (10 new programs — review the programming)
+
+Existing 4 (unchanged): `starter-12wk`, `ppl-6wk`, `upper-lower-8wk` (build_muscle / commercial / int-adv)
+and `full-body-3x-6wk` (overall_fitness / commercial / beginner).
+
+| id (proposed) | name | goal | split | days | location | experience | weeks (deloads) |
+|---|---|---|---|---|---|---|---|
+| `full-body-2x` | 2-Day Full Body | overall_fitness | full_body | **2** | commercial | beginner | 8 (4,8) |
+| `home-db-full-body` | Home Dumbbell Full Body | overall_fitness | full_body | 3 | **small_home** | beginner | 8 (4,8) |
+| `bodyweight-foundations` | Bodyweight Foundations | overall_fitness | full_body | 3 | **small_home** | beginner | 6 (6) |
+| `home-fat-loss-circuit` | Home Fat-Loss Circuit | **get_lean** | full_body | 3 | **small_home** | beginner | 6 (6) |
+| `lean-recomp-4d` | Lean Recomposition | **get_lean** | upper_lower | 4 | commercial | intermediate_advanced | 8 (4,8) |
+| `push-pull-4d` | Push / Pull (4-Day) | build_muscle | **push_pull** | 4 | commercial | intermediate_advanced | 8 (4,8) |
+| `ppl-5d` | 5-Day PPL + Upper/Lower | build_muscle | ppl | **5** | commercial | intermediate_advanced | 8 (4,8) |
+| `lean-athlete-5d` | 5-Day Lean Athlete | **get_lean** | **push_pull** | **5** | commercial | intermediate_advanced | 8 (4,8) |
+| `ppl-6d` | 6-Day PPL | build_muscle | ppl | **6** | commercial | intermediate_advanced | 8 (4,8) |
+| `push-pull-6d` | 6-Day Push / Pull | build_muscle | **push_pull** | **6** | commercial | intermediate_advanced | 8 (4,8) |
+
+Facet coverage after this: **goals** = build_muscle / get_lean / overall_fitness (all non-empty);
+**splits** = full_body / upper_lower / ppl / push_pull (all non-empty); **locations** = commercial /
+small_home (both non-empty); **day-sections** = 2,3,4,5,6 (all non-empty); **experience** = beginner /
+intermediate_advanced (both non-empty). Each row needs a hero photo at `public/program-art/<id>.jpg`
+before its `LIBRARY_META` entry is added.
+
+### Also in the next PR (besides content)
+
+- **`PresetList` curation.** [preset-list.tsx](src/app/(app)/program/preset-list.tsx) maps **all**
+  `PRESET_PROGRAMS`, so adding 10 presets would dump 14 cards into the `/program/new` + empty-state
+  quick-picker. **Decision needed:** keep that list curated to the original 4 (a "quick start" subset)
+  + the existing "Browse the library" link, or let it grow. Recommend curating to a small subset and
+  leaning on the Library for the full catalog.
+- **Live verification (carried over from #97).** Exercise seed→redirect and the cap→archive sheet
+  in-browser with `claude-test@example.com` once a Supabase env is available — not runnable in the #97
+  checkout (no `.env.local`).
+- **Optional polish:** revisit the `aspect-[3/2]` card ratio vs 16:9 (cheap to switch); confirm new
+  programs' `MuscleBadge`s resolve (every exercise `image_url` slug must exist in the catalog).
+
+**Acceptance:** the 10 programs seed correctly (each is in `PRESET_PROGRAMS`), render in the right
+day-section / under the right filters, each has a hero photo, and a `/program/new` quick-picker
+decision is implemented. Typecheck + lint + build green; you've signed off on the programming.
+
 ---
 
 ## Open questions for Rahul (resolve before/early in the PR)
 
 1. **Program content** — supply the additional programs, or have me draft them from
    standard templates for your review? (Affects Stage 0 the most.)
-   — **🟡 STILL OPEN.** Only the 4 existing presets are tagged. Expansion (and the art for
-   it — Q2) is deferred pending your call. Until then several filter facets/day-sections are empty.
+   — **✅ RESOLVED (2026-06-05).** I draft ~8–12 programs from well-known templates for your
+   review, covering **all** the empty facets you flagged: Get Lean goal, Push/Pull split,
+   Small & Home location, and the 2 / 5 / 6-day sections. See **Stage 5** for the proposed
+   catalog matrix. You review/tune the programming before it ships.
 2. **Hero images** — provide photos (`public/program-art/`), or ship gradient placeholders
    first and add art later?
-   — **✅ RESOLVED (photos).** You generated the 4 hero photos; they're in `public/program-art/`.
-   Any new programs from Q1 will each need art (a photo, or a gradient fallback — not yet built).
+   — **✅ RESOLVED (photos, per program).** You generated the 4 existing hero photos. **Each new
+   Q1 program also gets a Rahul-supplied photo** — no gradient fallback. Consequence: a program's
+   `LIBRARY_META` entry (and thus its appearance in the library) is **gated on its photo landing in
+   `public/program-art/<id>.jpg`**, so programs go live as their art arrives.
 3. **Scope** — full filterable library (Stages 1–4), or a **lighter v1**: just the 4 existing
    presets as nicer hero cards grouped by days-per-week, no gym/experience filters? (The
    lighter version is Stage 1 minus the bottom-sheet filters + Stage 0 metadata only.)
