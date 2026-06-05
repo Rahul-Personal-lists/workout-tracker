@@ -92,6 +92,14 @@ src/app/
 │   │   ├── edit                   reorder / delete a day's exercises
 │   │   ├── exercises              interactive front/back body-map → tap a muscle to
 │   │   │                          filter; 2-col catalog grid w/ ★ favorites. force-dynamic.
+│   │   ├── library                Program Library: browse preset catalog grouped by
+│   │   │   │                      "N Days a Week", Gym Location + Experience filters.
+│   │   │   │                      List is static; drill-ins are force-dynamic.
+│   │   │   └── [programId]        program landing (hero + PLANS list) + Start CTA →
+│   │   │       └── [dayId]        plan detail: stat row + exercise rows (thumb +
+│   │   │                          muscle badge) + plan tabs + sticky Start. Start CTA
+│   │   │                          seeds via seedPresetProgram; at the 2-program cap it
+│   │   │                          opens an archive-one sheet instead of erroring.
 │   │   └── new (+ new/custom)     template chooser + blank-program builder
 │   ├── workout/[sessionId]        active logging UI (RestTimerBar lives here)
 │   ├── progress                   analytics: range tabs, stat cards, workout-count chart,
