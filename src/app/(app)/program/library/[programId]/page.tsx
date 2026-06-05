@@ -4,7 +4,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GOAL_META, SPLIT_LABEL, getLibraryProgram } from "@/lib/program-library";
+import { getAllPrograms } from "@/lib/queries";
 import { StartProgramButton } from "./start-program-button";
+
+export const dynamic = "force-dynamic";
 
 const RING =
   "outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]";
@@ -18,6 +21,7 @@ export default async function LibraryProgramPage({
   const program = getLibraryProgram(programId);
   if (!program) notFound();
 
+  const programs = await getAllPrograms();
   const goal = GOAL_META[program.goal];
   const trainingDays = program.days.filter((d) => d.exercises.length > 0);
 
@@ -99,7 +103,11 @@ export default async function LibraryProgramPage({
       </section>
 
       <div className="sticky bottom-20 z-30 -mx-4 px-4 py-2 bg-background/90 backdrop-blur-sm">
-        <StartProgramButton presetId={program.id} />
+        <StartProgramButton
+          presetId={program.id}
+          presetName={program.name}
+          programs={programs}
+        />
       </div>
     </div>
   );

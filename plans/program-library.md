@@ -10,17 +10,17 @@ Build it in **stages** — each stage is independently reviewable and (mostly) s
 
 ---
 
-## Status — Stages 0–2 shipped; 3–4 are the next PR
+## Status — Stages 0–4 shipped; only catalog expansion (Q1) is deferred
 
 _Updated 2026-06-05. Legend: ✅ done · 🟡 partial · ⬜ not started._
 
 | Stage | Status | Notes |
 |---|---|---|
-| 0 — Data model + catalog | ✅ | Types, `LIBRARY_PROGRAMS`, `getLibraryPrograms`, goal-color tokens, 4 hero photos. **Only the 4 existing presets are tagged** — the "~8–15 more" are NOT authored (Q1 still open). |
+| 0 — Data model + catalog | ✅ | Types, `LIBRARY_PROGRAMS`, `getLibraryPrograms`, goal-color tokens, 4 hero photos. **Only the 4 existing presets are tagged** — the "~8–15 more" are NOT authored (Q1 still open; content, not code). |
 | 1 — Library list + filters | ✅ | `/program/library` + filter sheets + day-grouped cards + both entry points. |
 | 2 — Program → PLANS list | ✅ | `[programId]` landing + PLANS rows + sticky "Start This Program" CTA (seeds; respects max-2). |
-| 3 — Plan detail | ⬜ next PR | `[programId]/[dayId]` is a **minimal stub** today (title + exercise count + "coming next"). Needs `PlanStats` + exercise rows (`ExerciseThumb`/`MuscleBadge`) + optional carousel + sticky Start CTA. |
-| 4 — Integration / max-2 / polish | 🟡 next PR | Entry points ✅. **Outstanding:** graceful 2-program-cap flow (today it's a generic toast, not the archive-one route); per-screen token polish; **doc updates** (CLAUDE.md routes + `.claude/sessions.md`); catalog expansion (Q1). |
+| 3 — Plan detail | ✅ | `[programId]/[dayId]` replaced the stub: back header + Plan N + plan-tabs pill row + `PlanStats` row + exercise rows (`ExerciseThumb` + `MuscleBadge` + sets×reps/from-weight) + sticky Start CTA. Keyed by `day_number`, training days only. |
+| 4 — Integration / max-2 / polish | ✅ | Entry points ✅. Graceful 2-program-cap flow: `StartProgramButton` opens an archive-one sheet (lists the user's programs → `archiveProgram` then `seedPresetProgram`) instead of a dead-end toast; direct-seed failures below the cap still toast. Token/a11y polish + doc updates done. Catalog expansion (Q1) remains the only open item. |
 
 ### As-built decisions (deviations from the design below — read before Stage 3/4)
 
@@ -147,7 +147,7 @@ Add metadata to the preset type and author enough programs to populate the secti
 
 ## Stage 3 — Plan detail
 
-> **⬜ Next PR.** The route exists as a **stub** (`[programId]/[dayId]/page.tsx`, keyed by `day_number`) — back header + exercise count + "coming next". Build out the items below to replace it.
+> **✅ Done.** `[programId]/[dayId]/page.tsx` (keyed by `day_number`, training days only) renders the full plan: back header + "Plan N" + a plan-tabs pill row (server `Link`s, not a swipe carousel) + `PlanStats` + exercise rows (`ExerciseThumb` + `MuscleBadge` + sets×reps/from-weight) + sticky Start CTA. `force-dynamic` (reads user weight + program count).
 
 - New route `…/library/[programId]/[dayId]/page.tsx` (or a query param). **(Route chosen; stub in place.)**
 - Header: day name ("Push"); **stat row** via `PlanStats` (reuse — `6 Exercises / ~66 min
@@ -162,7 +162,7 @@ seeds.
 
 ## Stage 4 — Integration, max-2 flow, polish
 
-> **🟡 Next PR.** Entry points are wired (✅). Still to do: the graceful max-2 flow (today the Start CTA just toasts on failure), token/a11y polish, and the doc updates.
+> **✅ Done.** Entry points wired. The Start CTA now routes the 2-program cap into an archive-one sheet (`StartProgramButton` lists the user's non-archived programs → `archiveProgram` then `seedPresetProgram`, redirecting on success); below the cap it seeds directly and toasts only on an unexpected failure. Focus rings / theme tokens / pinch-zoom intact. Docs updated (this file + CLAUDE.md routes + `.claude/sessions.md`). Catalog expansion (Q1) is the one remaining deferral.
 
 - Wire entry points; ensure `/program/new` keeps "build your own". **(✅ done — links from `/program` empty state + `/program/new`.)**
 - **At 2-program cap:** seeding from the Library routes to the existing archive-one flow
