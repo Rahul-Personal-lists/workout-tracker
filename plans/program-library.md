@@ -10,6 +10,41 @@ Build it in **stages** — each stage is independently reviewable and (mostly) s
 
 ---
 
+## Status — Stages 0–2 shipped; 3–4 are the next PR
+
+_Updated 2026-06-05. Legend: ✅ done · 🟡 partial · ⬜ not started._
+
+| Stage | Status | Notes |
+|---|---|---|
+| 0 — Data model + catalog | ✅ | Types, `LIBRARY_PROGRAMS`, `getLibraryPrograms`, goal-color tokens, 4 hero photos. **Only the 4 existing presets are tagged** — the "~8–15 more" are NOT authored (Q1 still open). |
+| 1 — Library list + filters | ✅ | `/program/library` + filter sheets + day-grouped cards + both entry points. |
+| 2 — Program → PLANS list | ✅ | `[programId]` landing + PLANS rows + sticky "Start This Program" CTA (seeds; respects max-2). |
+| 3 — Plan detail | ⬜ next PR | `[programId]/[dayId]` is a **minimal stub** today (title + exercise count + "coming next"). Needs `PlanStats` + exercise rows (`ExerciseThumb`/`MuscleBadge`) + optional carousel + sticky Start CTA. |
+| 4 — Integration / max-2 / polish | 🟡 next PR | Entry points ✅. **Outstanding:** graceful 2-program-cap flow (today it's a generic toast, not the archive-one route); per-screen token polish; **doc updates** (CLAUDE.md routes + `.claude/sessions.md`); catalog expansion (Q1). |
+
+### As-built decisions (deviations from the design below — read before Stage 3/4)
+
+- **Library list is static (no `force-dynamic`).** It reads no per-user data; the client list imports the catalog directly (no server→client props), unlike its `/program/*` siblings.
+- **Filters are local React state, not URL params.**
+- **Filter sheets are a co-located generic `FilterSheet`** (single-select radio) on `useDialog` + `ConfirmSheet`'s sheet shell — *not* `ConfirmSheet` itself (that's confirm/cancel only).
+- **Hero + card ratio is `aspect-[3/2]`** to match the generated photos with zero crop (prompts reserved the lower third for the overlay). A touch tall in a list — switch to 16:9 if preferred.
+- **`daysPerWeek` is authored in metadata**, not derived from non-rest days.
+- **Plan-detail id = `day_number`** (`[programId]/[dayId]`), so rest days don't skew PLAN numbering.
+- **Preset metadata:** all 4 are `commercial`; goals = `build_muscle` ×3 + `overall_fitness` (Full Body 3x); experience = `beginner` (Full Body 3x) + `intermediate_advanced` ×3. ⇒ `get_lean`, `push_pull`, `small_home`, and the 2/5/6-day sections are **empty** until the catalog is expanded.
+- **Verification gap:** the dev checkout has **no Supabase env**, so live auth/seed/visual checks couldn't run. Verified via typecheck + lint + production build + Tailwind-class generation + a data-layer smoke test. The seed→redirect and the cap toast still want a real in-browser click.
+
+### Files (Stages 0–2)
+
+- `src/lib/program-library.ts` — catalog layer (types, `LIBRARY_PROGRAMS`, `getLibraryProgram`, `getLibraryPrograms`, `GOAL_META`, `SPLIT_LABEL`).
+- `src/app/globals.css` — `--color-goal-{build-muscle,get-lean,overall-fitness}` tokens.
+- `public/program-art/{starter-12wk,ppl-6wk,upper-lower-8wk,full-body-3x-6wk}.jpg` — hero photos.
+- `src/app/(app)/program/library/page.tsx` + `library-list.tsx` — list screen.
+- `src/app/(app)/program/library/[programId]/page.tsx` + `start-program-button.tsx` — PLANS landing + seed CTA.
+- `src/app/(app)/program/library/[programId]/[dayId]/page.tsx` — **stub** (Stage 3 replaces).
+- Edited `src/app/(app)/program/page.tsx` + `program/new/page.tsx` — "Browse the library" entry links.
+
+---
+
 ## Key design decisions (read first)
 
 1. **Presets stay code-data, not a DB table.** This app is personal + single-user with a
@@ -48,6 +83,8 @@ Build it in **stages** — each stage is independently reviewable and (mostly) s
 
 ## Stage 0 — Data model + catalog content
 
+> **✅ Done** — except catalog expansion. Types/helper/tokens/4 hero photos shipped and the 4 presets are tagged; the "~8–15 more" programs are **not** authored (Q1 still open).
+
 Add metadata to the preset type and author enough programs to populate the sections.
 
 - Extend the preset type (in `starter-program.ts` or a new `program-library.ts`):
@@ -82,6 +119,8 @@ Add metadata to the preset type and author enough programs to populate the secti
 
 ## Stage 1 — Library list screen + filters
 
+> **✅ Done.** See the Status table + As-built decisions (filters are local state, not URL params; sheets are a generic `FilterSheet`).
+
 - New route `src/app/(app)/program/library/page.tsx` (RSC) + a client list component.
 - Two filter triggers (pills) → **bottom-sheets** (reuse `ConfirmSheet`/`useDialog`):
   "Gym Location" (Commercial / Small & Home) and "Gym Experience"
@@ -96,6 +135,8 @@ Add metadata to the preset type and author enough programs to populate the secti
 
 ## Stage 2 — Program → PLANS list
 
+> **✅ Done.** Landing renders hero + goal + split + PLANS rows (one per training day, id = `day_number`). Sticky "Start This Program" CTA seeds via `seedPresetProgram` (cap-respecting). Rows link to the Stage 3 stub.
+
 - New route `src/app/(app)/program/library/[programId]/page.tsx`.
 - Header: hero + goal + split + "{split}, {daysPerWeek} Days a Week".
 - **PLANS list:** one row per program day → `PLAN 1`, `PLAN 2`, … (label = day title, e.g.
@@ -106,7 +147,9 @@ Add metadata to the preset type and author enough programs to populate the secti
 
 ## Stage 3 — Plan detail
 
-- New route `…/library/[programId]/[dayId]/page.tsx` (or a query param).
+> **⬜ Next PR.** The route exists as a **stub** (`[programId]/[dayId]/page.tsx`, keyed by `day_number`) — back header + exercise count + "coming next". Build out the items below to replace it.
+
+- New route `…/library/[programId]/[dayId]/page.tsx` (or a query param). **(Route chosen; stub in place.)**
 - Header: day name ("Push"); **stat row** via `PlanStats` (reuse — `6 Exercises / ~66 min
   / ~443 cal`).
 - Exercise rows: thumbnail + name + sets×reps (or duration) + **`MuscleBadge`** (reuse).
@@ -119,7 +162,9 @@ seeds.
 
 ## Stage 4 — Integration, max-2 flow, polish
 
-- Wire entry points; ensure `/program/new` keeps "build your own".
+> **🟡 Next PR.** Entry points are wired (✅). Still to do: the graceful max-2 flow (today the Start CTA just toasts on failure), token/a11y polish, and the doc updates.
+
+- Wire entry points; ensure `/program/new` keeps "build your own". **(✅ done — links from `/program` empty state + `/program/new`.)**
 - **At 2-program cap:** seeding from the Library routes to the existing archive-one flow
   (reuse `program-switcher` / `archiveProgram`) instead of erroring.
 - Empty/loading states, `:focus-visible` rings, pinch-zoom intact, theme-token colors.
@@ -134,13 +179,19 @@ seeds.
 
 1. **Program content** — supply the additional programs, or have me draft them from
    standard templates for your review? (Affects Stage 0 the most.)
+   — **🟡 STILL OPEN.** Only the 4 existing presets are tagged. Expansion (and the art for
+   it — Q2) is deferred pending your call. Until then several filter facets/day-sections are empty.
 2. **Hero images** — provide photos (`public/program-art/`), or ship gradient placeholders
    first and add art later?
+   — **✅ RESOLVED (photos).** You generated the 4 hero photos; they're in `public/program-art/`.
+   Any new programs from Q1 will each need art (a photo, or a gradient fallback — not yet built).
 3. **Scope** — full filterable library (Stages 1–4), or a **lighter v1**: just the 4 existing
    presets as nicer hero cards grouped by days-per-week, no gym/experience filters? (The
    lighter version is Stage 1 minus the bottom-sheet filters + Stage 0 metadata only.)
+   — **✅ RESOLVED.** Going with the full filterable library (filters + sheets shipped in Stage 1).
 4. **"Start This Plan" semantics** — confirm it seeds the whole program (recommended), vs.
    somehow starting a single day in isolation (doesn't fit the program/session model).
+   — **✅ RESOLVED.** Seeds the whole program via `seedPresetProgram` (implemented in Stage 2).
 
 ## Out of scope
 
