@@ -29,38 +29,40 @@ const SLOT_TOP = 13;
 const SLOT_BOTTOM = 87;
 
 type CalloutKey = MuscleRegion | "cardio";
-type Callout = { key: CalloutKey; x: number; y: number }; // x,y as % of the image
+// x,y = dot position as % of the image. lx overrides the side's label column
+// (% of width) for the few labels whose default column would land on the body —
+// e.g. the back triceps, where the arm reaches past the right label column.
+type Callout = { key: CalloutKey; x: number; y: number; lx?: number };
 
+// Each muscle lives on ONE view only (no front/back duplicates): the figure is a
+// picker, and the pill row below already lists every region. Dots are placed on
+// the muscle belly, verified against the photos in public/body/.
 const LAYOUT: Record<BodyView, { left: Callout[]; right: Callout[] }> = {
   front: {
     left: [
-      { key: "shoulders", x: 34, y: 19 },
+      { key: "shoulders", x: 37, y: 23 },
       { key: "chest", x: 44, y: 25 },
-      { key: "forearms", x: 33, y: 39 },
+      { key: "forearms", x: 30, y: 43 },
       { key: "quads", x: 43, y: 64 },
-      { key: "calves", x: 44, y: 85 },
     ],
     right: [
       { key: "cardio", x: 56, y: 24 },
       { key: "biceps", x: 67, y: 30 },
       { key: "abs", x: 50, y: 38 },
-      { key: "adductors", x: 50, y: 55 },
+      { key: "adductors", x: 54, y: 66 },
     ],
   },
   back: {
     left: [
-      { key: "shoulders", x: 34, y: 20 },
       { key: "lats", x: 40, y: 29 },
-      { key: "forearms", x: 33, y: 39 },
       { key: "hamstrings", x: 44, y: 64 },
-      { key: "calves", x: 44, y: 85 },
+      { key: "calves", x: 40, y: 78 },
     ],
     right: [
-      { key: "cardio", x: 57, y: 24 },
       { key: "traps", x: 50, y: 18 },
-      { key: "triceps", x: 68, y: 30 },
+      { key: "triceps", x: 68, y: 30, lx: 78 },
       { key: "lower_back", x: 50, y: 40 },
-      { key: "glutes", x: 50, y: 50 },
+      { key: "glutes", x: 58, y: 52 },
     ],
   },
 };
@@ -106,7 +108,7 @@ export function InteractiveBodyFigure({
     count: number;
     side: "left" | "right";
   }) {
-    const labelX = vx(side === "left" ? LEFT_LABEL_PCT : RIGHT_LABEL_PCT);
+    const labelX = vx(c.lx ?? (side === "left" ? LEFT_LABEL_PCT : RIGHT_LABEL_PCT));
     const labelY = vy(slotYPct(index, count));
     const cx = vx(c.x);
     const cy = vy(c.y);
