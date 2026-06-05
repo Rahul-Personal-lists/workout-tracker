@@ -211,3 +211,17 @@ body {
   }
   &:disabled { opacity: 0.5; }
 }
+
+/* Keyboard focus for the interactive body-map hotspots. A CSS `outline` on an
+ * SVG <g> only boxes its bounding rect (and is inconsistent across browsers), so
+ * instead we stroke the focused region's own polygons in the accent color — a
+ * reliable, shape-hugging focus indicator. `stroke`/`paint-order` are core SVG
+ * and override the polygons' inline stroke via CSS specificity. */
+.region-hit {
+  outline: none;
+}
+.region-hit:focus-visible polygon {
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  paint-order: stroke;
+}

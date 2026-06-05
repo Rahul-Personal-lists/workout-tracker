@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
+import { MuscleBadge } from "@/components/muscle-badge";
+import { regionsFromCatalogMuscles } from "@/lib/muscle-regions";
 import { addExerciseToProgram } from "@/app/actions/program";
 import { parseDuration } from "@/lib/format";
 import {
@@ -175,6 +177,11 @@ export function AddExerciseClient({
                   url={imageForCatalogEntry(entry)}
                   alt={entry.name}
                   size={64}
+                />
+                <MuscleBadge
+                  regions={regionsFromCatalogMuscles(entry.primary)}
+                  size={30}
+                  className="shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{entry.name}</p>

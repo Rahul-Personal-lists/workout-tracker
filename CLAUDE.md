@@ -66,6 +66,7 @@ Migrations to date:
 - `20260529000000_settings_extras.sql` — profile gender/age/height/avatar/units/sound prefs ⚠️ duplicate timestamp; give fresh-env migrations distinct timestamps going forward
 - `20260530000000_rest_skip_flag.sql` — `is_rest_skip` on `workout_sessions` (explicit rest-day-skip flag; replaces the `duration_seconds = 0` sentinel so Undo can't delete a real zero-duration workout)
 - `20260530120000_body_log_weight_optional.sql` — `weight_lb` on `body_logs` made **nullable** so body fat / calories can be logged for a date without a weight; replaces the implicit "weight required" rule with a `num_nonnulls(weight_lb, body_fat_pct, calories) > 0` CHECK (`body_logs_at_least_one_metric`) so the shared daily row still can't be empty
+- `20260604000000_exercise_favorites.sql` — `exercise_favorites` table (catalog-level favorites keyed by free-exercise-db slug; RLS owner-scoped, PK `(user_id, exercise_slug)`). Read via `getFavoriteSlugs()` (degrades to empty on error), toggled by `toggleFavorite`. **Must be `npx supabase db push`-ed for favorites to persist.**
 
 After a migration: `npx supabase db push && npm run db:types`. Don't hand-edit `database.types.ts`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full ER diagram and [docs/CODE_AUDIT.md](docs/CODE_AUDIT.md) for the prioritized findings backlog.
 
@@ -89,6 +90,8 @@ src/app/
 │   │                              Empty state = preset picker. (Absorbed the old /today.)
 │   │   ├── add                    catalog search → config form
 │   │   ├── edit                   reorder / delete a day's exercises
+│   │   ├── exercises              interactive front/back body-map → tap a muscle to
+│   │   │                          filter; 2-col catalog grid w/ ★ favorites. force-dynamic.
 │   │   └── new (+ new/custom)     template chooser + blank-program builder
 │   ├── workout/[sessionId]        active logging UI (RestTimerBar lives here)
 │   ├── progress                   analytics: range tabs, stat cards, workout-count chart,
@@ -113,6 +116,7 @@ Server actions:
 - [src/app/actions/program.ts](src/app/actions/program.ts) — addExerciseToProgram, archive/unarchiveExerciseFromProgram, setExerciseOrder, saveDayEdits, seedPresetProgram, createBlankProgram, setActiveProgram, archiveProgram, addDay, reorderDay
 - [src/app/actions/body.ts](src/app/actions/body.ts) — upsert/deleteBodyLog, upsert/deleteBodyMeasurement, setGoalWeight, recordBodyPhotos, deleteBodyPhoto
 - [src/app/actions/profile.ts](src/app/actions/profile.ts) — setProfileFields, setAvatar, clearAvatar, setUnits, setSoundPrefs, deleteAccount
+- [src/app/actions/favorites.ts](src/app/actions/favorites.ts) — toggleFavorite (catalog-level ★, keyed by exercise slug)
 
 ## Setup / run
 

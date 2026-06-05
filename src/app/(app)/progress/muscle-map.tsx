@@ -3,80 +3,7 @@ import {
   muscleLabel,
   type TopLevelGroup,
 } from "@/lib/muscle-groups";
-import {
-  BACK_MUSCLES,
-  FRONT_MUSCLES,
-  MUSCLE_TO_GROUP,
-  type AnatomyMuscle,
-} from "./anatomy-data";
-
-const BASE_OPACITY = 0.18;
-const MIN_HIT_OPACITY = 0.4;
-const MAX_HIT_OPACITY = 1;
-
-function intensity(count: number, max: number): number {
-  if (max <= 0 || count <= 0) return 0;
-  return MIN_HIT_OPACITY + (MAX_HIT_OPACITY - MIN_HIT_OPACITY) * (count / max);
-}
-
-function Figure({
-  muscles,
-  muscleSets,
-  max,
-  translateX,
-  label,
-}: {
-  muscles: AnatomyMuscle[];
-  muscleSets: Record<TopLevelGroup, number>;
-  max: number;
-  translateX: number;
-  label: string;
-}) {
-  return (
-    <g transform={`translate(${translateX} 0)`}>
-      {/* Base body silhouette — every polygon at low opacity so unmapped parts
-       * (head/neck/knees) and unhit muscles still render the figure. */}
-      {muscles.map(({ muscle, polygons }) =>
-        polygons.map((points, i) => (
-          <polygon
-            key={`base-${muscle}-${i}`}
-            points={points}
-            fill="var(--color-foreground-muted)"
-            opacity={BASE_OPACITY}
-            stroke="var(--color-background)"
-            strokeWidth="0.35"
-            strokeLinejoin="round"
-          />
-        ))
-      )}
-      {/* Accent overlay — only muscles in our taxonomy with logged sets. */}
-      {muscles.map(({ muscle, polygons }) => {
-        const group = MUSCLE_TO_GROUP[muscle];
-        if (!group) return null;
-        const op = intensity(muscleSets[group], max);
-        if (op <= 0) return null;
-        return polygons.map((points, i) => (
-          <polygon
-            key={`hit-${muscle}-${i}`}
-            points={points}
-            fill="var(--color-accent)"
-            opacity={op}
-          />
-        ));
-      })}
-      <text
-        x={50}
-        y={232}
-        textAnchor="middle"
-        fontSize="9"
-        fill="var(--color-foreground-muted)"
-        letterSpacing="1.5"
-      >
-        {label}
-      </text>
-    </g>
-  );
-}
+import { BodyFigure } from "@/components/body-figure";
 
 export function MuscleMap({
   muscleSets,
@@ -98,28 +25,15 @@ export function MuscleMap({
         ) : null}
       </div>
 
-      <svg
-        viewBox="0 0 220 240"
-        xmlns="http://www.w3.org/2000/svg"
+      <BodyFigure
+        mode="heatmap"
+        view="both"
+        muscleSets={muscleSets}
+        max={max}
+        showLabels
         className="w-full h-auto"
-        role="img"
-        aria-label="Anatomical map highlighting most trained muscle groups"
-      >
-        <Figure
-          muscles={FRONT_MUSCLES}
-          muscleSets={muscleSets}
-          max={max}
-          translateX={5}
-          label="FRONT"
-        />
-        <Figure
-          muscles={BACK_MUSCLES}
-          muscleSets={muscleSets}
-          max={max}
-          translateX={115}
-          label="BACK"
-        />
-      </svg>
+        ariaLabel="Anatomical map highlighting most trained muscle groups"
+      />
 
       {top3.length > 0 ? (
         <ul className="grid grid-cols-3 gap-2 pt-1">

@@ -732,6 +732,18 @@ export async function getGoalWeight(): Promise<number | null> {
   return v === null || v === undefined ? null : Number(v);
 }
 
+// Catalog slugs the user has favorited. RLS scopes rows to the user. Degrades
+// to "no favorites" on any read error (same resilience as getCompletedSlots) so
+// the exercise library never 500s — e.g. before the migration is pushed.
+export async function getFavoriteSlugs(): Promise<Set<string>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("exercise_favorites")
+    .select("exercise_slug");
+  if (error || !data) return new Set();
+  return new Set(data.map((r) => r.exercise_slug));
+}
+
 export type BodyPhotoRow = {
   id: string;
   log_date: string;
