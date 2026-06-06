@@ -494,6 +494,27 @@ export async function archiveProgram(
   revalidatePath("/program");
 }
 
+const RenameProgramSchema = z.object({
+  programId: z.string().uuid(),
+  name: z.string().trim().min(1).max(80),
+});
+
+export async function renameProgram(
+  input: z.infer<typeof RenameProgramSchema>
+) {
+  const { programId, name } = RenameProgramSchema.parse(input);
+  const { supabase } = await requireUser();
+
+  // RLS scopes the update to the caller's own programs.
+  const { error } = await supabase
+    .from("programs")
+    .update({ name })
+    .eq("id", programId);
+  if (error) throw error;
+
+  revalidatePath("/program");
+}
+
 // ──────────────────────────────────────────────
 // Day-level editing
 // ──────────────────────────────────────────────
