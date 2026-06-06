@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createBlankProgram } from "@/app/actions/program";
@@ -140,6 +141,9 @@ export function BlankProgramForm() {
         });
         clearDraft();
       } catch (err) {
+        // createBlankProgram redirects via NEXT_REDIRECT on success — re-throw it
+        // so navigation happens instead of showing a false "Failed to create".
+        unstable_rethrow(err);
         setErrorMsg(err instanceof Error ? err.message : "Failed to create.");
       }
     });

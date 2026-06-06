@@ -44,8 +44,8 @@ export default async function PlanDetailPage({
   const program = getLibraryProgram(programId);
   if (!program) notFound();
 
-  // PLAN numbering follows training days only (rest days are skipped), so the
-  // day id (= day_number) maps to a 1-based plan index for the header + tabs.
+  // Day numbering follows training days only (rest days are skipped), so the
+  // day id (= day_number) maps to a 1-based "Day N" index for the header + tabs.
   const trainingDays = program.days.filter((d) => d.exercises.length > 0);
   const index = trainingDays.findIndex((d) => String(d.day_number) === dayId);
   if (index === -1) notFound();
@@ -76,14 +76,14 @@ export default async function PlanDetailPage({
         </Link>
         <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-wide text-foreground-muted">
-            Plan {index + 1}
+            Day {index + 1}
           </p>
           <h1 className="text-xl font-semibold truncate">{day.title}</h1>
         </div>
       </header>
 
       {trainingDays.length > 1 ? (
-        <nav aria-label="Plans" className="-mx-4 overflow-x-auto px-4">
+        <nav aria-label="Days" className="-mx-4 overflow-x-auto px-4">
           <div className="flex items-center gap-2 min-w-max">
             {trainingDays.map((d, i) => {
               const selected = i === index;
@@ -100,7 +100,7 @@ export default async function PlanDetailPage({
                       : "border-border text-foreground-muted",
                   )}
                 >
-                  Plan {i + 1}
+                  Day {i + 1}
                 </Link>
               );
             })}

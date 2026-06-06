@@ -50,3 +50,7 @@ next-env.d.ts
 # supabase cli working state
 supabase/.temp/
 supabase/.branches/
+
+# local-only source art + reference screenshots (converted outputs live in public/program-art/)
+/images/
+/improvments/
