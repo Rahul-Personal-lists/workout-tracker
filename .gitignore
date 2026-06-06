@@ -53,4 +53,5 @@ supabase/.branches/
 
 # local-only source art + reference screenshots (converted outputs live in public/program-art/)
 /images/
+/images-2/
 /improvments/
