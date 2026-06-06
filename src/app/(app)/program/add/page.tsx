@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { getCurrentProgram } from "@/lib/queries";
+import { getCurrentProgram, getCustomExercises } from "@/lib/queries";
+import { customToCatalogEntry } from "@/lib/exercise-catalog";
 import { AddExerciseClient } from "./add-exercise-client";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +15,14 @@ export default async function AddExercisePage({
   const { day: dayId, week, returnTo } = await searchParams;
   if (!dayId) notFound();
 
-  const program = await getCurrentProgram();
+  const [program, customs] = await Promise.all([
+    getCurrentProgram(),
+    getCustomExercises(),
+  ]);
   const day = program?.days.find((d) => d.id === dayId);
   if (!program || !day) notFound();
+
+  const customEntries = customs.map(customToCatalogEntry);
 
   const weekNum = week ? parseInt(week, 10) : 1;
   // Only honor same-origin paths to prevent open-redirect via crafted query.
@@ -45,6 +51,7 @@ export default async function AddExercisePage({
         programDayId={day.id}
         redirectWeek={weekNum}
         returnTo={safeReturnTo}
+        initialCustom={customEntries}
       />
     </div>
   );

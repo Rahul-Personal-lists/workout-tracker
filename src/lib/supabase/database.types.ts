@@ -125,6 +125,63 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_exercises: {
+        Row: {
+          archived_at: string | null
+          aspect_ratio: number | null
+          created_at: string
+          crop_rect: Json | null
+          default_kind: string
+          default_reps: number | null
+          default_seconds: number | null
+          default_sets: number
+          id: string
+          muscles: string[]
+          name: string
+          poster_path: string
+          trim_end_seconds: number | null
+          trim_start_seconds: number | null
+          user_id: string
+          video_path: string
+        }
+        Insert: {
+          archived_at?: string | null
+          aspect_ratio?: number | null
+          created_at?: string
+          crop_rect?: Json | null
+          default_kind?: string
+          default_reps?: number | null
+          default_seconds?: number | null
+          default_sets?: number
+          id?: string
+          muscles?: string[]
+          name: string
+          poster_path: string
+          trim_end_seconds?: number | null
+          trim_start_seconds?: number | null
+          user_id: string
+          video_path: string
+        }
+        Update: {
+          archived_at?: string | null
+          aspect_ratio?: number | null
+          created_at?: string
+          crop_rect?: Json | null
+          default_kind?: string
+          default_reps?: number | null
+          default_seconds?: number | null
+          default_sets?: number
+          id?: string
+          muscles?: string[]
+          name?: string
+          poster_path?: string
+          trim_end_seconds?: number | null
+          trim_start_seconds?: number | null
+          user_id?: string
+          video_path?: string
+        }
+        Relationships: []
+      }
       exercise_favorites: {
         Row: {
           created_at: string
@@ -223,59 +280,90 @@ export type Database = {
       program_exercises: {
         Row: {
           archived_at: string | null
+          aspect_ratio: number | null
           base_reps: number | null
+          crop_rect: Json | null
+          custom_exercise_id: string | null
           id: string
           image_url: string | null
           increment: number
           kind: string
+          muscles: string[]
           name: string
           note: string | null
           order_index: number
           peak_taper: boolean
+          poster_path: string | null
           program_day_id: string
           progression_weeks: number
           sets: number
           start_weight: number | null
           target_seconds: number | null
           tracked: boolean
+          trim_end_seconds: number | null
+          trim_start_seconds: number | null
+          video_path: string | null
         }
         Insert: {
           archived_at?: string | null
+          aspect_ratio?: number | null
           base_reps?: number | null
+          crop_rect?: Json | null
+          custom_exercise_id?: string | null
           id?: string
           image_url?: string | null
           increment?: number
           kind?: string
+          muscles?: string[]
           name: string
           note?: string | null
           order_index: number
           peak_taper?: boolean
+          poster_path?: string | null
           program_day_id: string
           progression_weeks?: number
           sets: number
           start_weight?: number | null
           target_seconds?: number | null
           tracked?: boolean
+          trim_end_seconds?: number | null
+          trim_start_seconds?: number | null
+          video_path?: string | null
         }
         Update: {
           archived_at?: string | null
+          aspect_ratio?: number | null
           base_reps?: number | null
+          crop_rect?: Json | null
+          custom_exercise_id?: string | null
           id?: string
           image_url?: string | null
           increment?: number
           kind?: string
+          muscles?: string[]
           name?: string
           note?: string | null
           order_index?: number
           peak_taper?: boolean
+          poster_path?: string | null
           program_day_id?: string
           progression_weeks?: number
           sets?: number
           start_weight?: number | null
           target_seconds?: number | null
           tracked?: boolean
+          trim_end_seconds?: number | null
+          trim_start_seconds?: number | null
+          video_path?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "program_exercises_custom_exercise_id_fkey"
+            columns: ["custom_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "custom_exercises"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "program_exercises_program_day_id_fkey"
             columns: ["program_day_id"]
