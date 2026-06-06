@@ -1,14 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Search, Star, X } from "lucide-react";
+import { Dumbbell, Search, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
+import { VideoExercisePlayer } from "@/components/video-exercise-player";
 import { InteractiveBodyFigure } from "@/components/interactive-body-figure";
 import { MuscleBadge } from "@/components/muscle-badge";
 import { useDialog } from "@/lib/use-dialog";
 import { toggleFavorite } from "@/app/actions/favorites";
+import {
+  deleteCustomExercise,
+  signCustomVideoUrl,
+} from "@/app/actions/custom-exercise";
 import { toast } from "@/components/toast";
+import type { VideoMedia } from "@/lib/video-upload";
 import {
   MUSCLE_REGIONS,
   REGION_META,
@@ -58,13 +64,18 @@ const MORE_PILLS = FILTER_PILLS.filter((p) => !PRIMARY_PILL_KEYS.has(p.key));
 export function ExerciseLibrary({
   initialFavorites = [],
   initialRegion,
+  initialCustom = [],
 }: {
   initialFavorites?: string[];
   initialRegion?: MuscleRegion;
+  initialCustom?: CatalogEntry[];
 }) {
   const [catalog, setCatalog] = useState<CatalogEntry[] | null>(
     getCachedCatalog()
   );
+  // The user's custom exercises, kept in state so the detail modal can
+  // optimistically drop one after a delete.
+  const [customs, setCustoms] = useState<CatalogEntry[]>(initialCustom);
   const [query, setQuery] = useState("");
   // Single active filter key: one MuscleRegion or "cardio" (or null). Shared by
   // the body-map callouts and the pill row — selecting one clears the previous.
@@ -78,6 +89,7 @@ export function ExerciseLibrary({
       : "front"
   );
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [customOnly, setCustomOnly] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(
     () => new Set(initialFavorites)
   );
@@ -96,16 +108,19 @@ export function ExerciseLibrary({
   }, [catalog]);
 
   const hasFilters =
-    query.trim() !== "" || activeKey !== null || favoritesOnly;
+    query.trim() !== "" || activeKey !== null || favoritesOnly || customOnly;
 
   const { items, total } = useMemo(() => {
-    if (!catalog) return { items: [] as CatalogEntry[], total: 0 };
+    // Customs lead the list so they surface first in browse, and show even
+    // before the remote catalog JSON finishes loading.
+    const source = [...customs, ...(catalog ?? [])];
     const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const regionKey =
       activeKey && activeKey !== "cardio" ? (activeKey as MuscleRegion) : null;
     const cardioActive = activeKey === "cardio";
-    const matched = catalog.filter((e) => {
+    const matched = source.filter((e) => {
       if (favoritesOnly && !favorites.has(e.id)) return false;
+      if (customOnly && !e.custom) return false;
       if (tokens.length > 0) {
         const hay =
           `${e.name} ${e.equipment ?? ""} ${e.primary.join(" ")}`.toLowerCase();
@@ -122,7 +137,16 @@ export function ExerciseLibrary({
     });
     const limit = hasFilters ? FILTERED_LIMIT : BROWSE_LIMIT;
     return { items: matched.slice(0, limit), total: matched.length };
-  }, [catalog, query, activeKey, favoritesOnly, favorites, hasFilters]);
+  }, [
+    catalog,
+    customs,
+    query,
+    activeKey,
+    favoritesOnly,
+    customOnly,
+    favorites,
+    hasFilters,
+  ]);
 
   // Single-select: tapping the active key clears it, otherwise it replaces the
   // previous selection. Shared by the body-map callouts and the pills.
@@ -240,6 +264,21 @@ export function ExerciseLibrary({
             <Star className={cn("w-3.5 h-3.5", favoritesOnly && "fill-current")} />
             Favorites
           </button>
+          <button
+            type="button"
+            onClick={() => setCustomOnly((v) => !v)}
+            aria-pressed={customOnly}
+            className={cn(
+              "h-8 px-3 rounded-full text-xs border transition-colors inline-flex items-center gap-1",
+              RING,
+              customOnly
+                ? "bg-accent text-accent-foreground border-accent"
+                : "border-border bg-surface text-foreground-muted"
+            )}
+          >
+            <Dumbbell className="w-3.5 h-3.5" />
+            Custom
+          </button>
           {PRIMARY_PILLS.map(renderPill)}
           {(showAllFilters
             ? MORE_PILLS
@@ -259,10 +298,14 @@ export function ExerciseLibrary({
         </div>
       </div>
 
-      {catalog === null ? (
+      {catalog === null && !customOnly ? (
         <p className="text-sm text-foreground-muted">Loading catalog…</p>
       ) : items.length === 0 ? (
-        favoritesOnly && favorites.size === 0 ? (
+        customOnly && customs.length === 0 ? (
+          <p className="text-sm text-foreground-muted">
+            No custom exercises yet — tap New to create one from a video.
+          </p>
+        ) : favoritesOnly && favorites.size === 0 ? (
           <p className="text-sm text-foreground-muted">
             No favorites yet — tap the star on any exercise to save it.
           </p>
@@ -347,7 +390,14 @@ export function ExerciseLibrary({
       )}
 
       {selected ? (
-        <ExerciseDetail entry={selected} onClose={() => setSelected(null)} />
+        <ExerciseDetail
+          entry={selected}
+          onClose={() => setSelected(null)}
+          onRemoved={(id) => {
+            setCustoms((prev) => prev.filter((c) => c.id !== id));
+            setSelected(null);
+          }}
+        />
       ) : null}
     </div>
   );
@@ -356,12 +406,16 @@ export function ExerciseLibrary({
 function ExerciseDetail({
   entry,
   onClose,
+  onRemoved,
 }: {
   entry: CatalogEntry;
   onClose: () => void;
+  onRemoved: (id: string) => void;
 }) {
   const ref = useDialog<HTMLDivElement>(true, onClose);
   const [size, setSize] = useState(288);
+  const [confirming, setConfirming] = useState(false);
+  const [, startDelete] = useTransition();
 
   useEffect(() => {
     const update = () => setSize(Math.min(320, window.innerWidth - 64));
@@ -370,6 +424,7 @@ function ExerciseDetail({
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  const video = entry.video;
   const meta: [string, string | null][] = [
     ["Target", entry.primary.map(titleCase).join(", ") || null],
     ["Equipment", entry.equipment ? titleCase(entry.equipment) : null],
@@ -377,6 +432,20 @@ function ExerciseDetail({
     ["Force", entry.force ? titleCase(entry.force) : null],
     ["Category", entry.category ? titleCase(entry.category) : null],
   ];
+
+  function remove() {
+    if (!video) return;
+    const id = video.customExerciseId;
+    startDelete(async () => {
+      try {
+        await deleteCustomExercise({ id });
+        onRemoved(id);
+      } catch {
+        setConfirming(false);
+        toast("Couldn't remove — try again.");
+      }
+    });
+  }
 
   return (
     <div
@@ -397,19 +466,37 @@ function ExerciseDetail({
           onClick={onClose}
           aria-label="Close"
           className={cn(
-            "absolute top-2 right-2 h-9 w-9 rounded-full inline-flex items-center justify-center bg-black/40 text-foreground",
+            "absolute top-2 right-2 z-10 h-9 w-9 rounded-full inline-flex items-center justify-center bg-black/40 text-foreground",
             RING
           )}
         >
           <X className="w-4 h-4" />
         </button>
         <div className="flex flex-col items-center gap-3">
-          <ExerciseAnimation
-            url={imageForCatalogEntry(entry)}
-            alt={entry.name}
-            size={size}
-            shape="square"
-          />
+          {video ? (
+            <VideoExercisePlayer
+              media={
+                {
+                  videoUrl: video.videoUrl,
+                  posterUrl: video.posterUrl || null,
+                  rect: video.rect,
+                  trim: video.trim,
+                  aspect: video.aspect,
+                } satisfies VideoMedia
+              }
+              alt={entry.name}
+              onNeedsRefresh={() =>
+                signCustomVideoUrl({ path: video.videoPath })
+              }
+            />
+          ) : (
+            <ExerciseAnimation
+              url={imageForCatalogEntry(entry)}
+              alt={entry.name}
+              size={size}
+              shape="square"
+            />
+          )}
           <h2 className="text-base font-semibold text-center px-6">
             {entry.name}
           </h2>
@@ -424,6 +511,43 @@ function ExerciseDetail({
               </div>
             ))}
         </dl>
+        {video ? (
+          confirming ? (
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={remove}
+                className={cn(
+                  "h-10 flex-1 rounded-md bg-red-500/15 text-red-400 text-sm font-medium",
+                  RING
+                )}
+              >
+                Remove custom exercise
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className={cn(
+                  "h-10 px-4 rounded-md border border-border text-sm text-foreground-muted",
+                  RING
+                )}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              className={cn(
+                "mt-4 h-10 w-full rounded-md border border-border text-sm text-foreground-muted hover:text-foreground",
+                RING
+              )}
+            >
+              Remove
+            </button>
+          )
+        ) : null}
       </div>
     </div>
   );
