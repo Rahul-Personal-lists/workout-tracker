@@ -3,7 +3,7 @@
 
 # Workout Tracker — project memory
 
-Mobile-first PWA Rahul uses to log strength programs at the gym. Personal app, single user, multi-user-ready (RLS on every table). Ships with a 21-program preset library (`PRESET_PROGRAMS` in [starter-program.ts](src/lib/starter-program.ts) — the original 4: 12-week strength, PPL, Upper/Lower, Full Body 3x, plus 17 Stage-5 catalog programs spanning 2–6 days/week, all goals/splits, home + commercial; every "N Days a Week" section offers all three goals) browsable at `/program/library`, and a blank-program builder; up to 2 programs per user with one active. The `/program/new` quick-picker is curated to the original 4 (`QUICK_PICK_IDS` in `preset-list.tsx`); the full catalog is in the library. The app shell is built; iteration is now driven by what actually hurts at the gym.
+Mobile-first PWA Rahul uses to log strength programs at the gym. Personal app, single user, multi-user-ready (RLS on every table). Ships with a 21-program preset library (`PRESET_PROGRAMS` in [starter-program.ts](src/lib/starter-program.ts) — the original 4: 12-week strength, PPL, Upper/Lower, Full Body 3x, plus 17 Stage-5 catalog programs spanning 2–6 days/week, all goals/splits, home + commercial; every "N Days a Week" section offers all three goals) browsable at `/program/library`, and a blank-program builder; up to 2 programs per user with one active. The `/program` empty state shows a curated 4-program quick-picker (`QUICK_PICK_IDS` in `preset-list.tsx`); `/program/new` itself is just a two-option chooser (Browse the library / Start from scratch), so the full catalog lives only at `/program/library`. The app shell is built; iteration is now driven by what actually hurts at the gym.
 
 ## Stack (actual)
 
@@ -101,7 +101,7 @@ src/app/
 │   │   │                          muscle badge) + Day tabs + sticky Start. Start CTA
 │   │   │                          seeds via seedPresetProgram; at the 2-program cap it
 │   │   │                          opens an archive-one sheet instead of erroring.
-│   │   └── new (+ new/custom)     template chooser + blank-program builder
+│   │   └── new (+ new/custom)     chooser: Browse the library / Start from scratch (/custom = blank builder)
 │   ├── workout/[sessionId]        active logging UI (RestTimerBar lives here)
 │   ├── progress                   analytics: range tabs, stat cards, workout-count chart,
 │   │                              muscle-map, + a month grid (tap a day → /history/[sessionId])
