@@ -17,8 +17,12 @@ import { formatDuration, formatWeight, unitLabel } from "@/lib/format";
 import type { Units } from "@/lib/units";
 import type { StepLead } from "@/lib/step-cue";
 import { ExerciseAnimation } from "@/components/exercise-animation";
+import { ExerciseMedia } from "@/components/exercise-media";
+import { VideoExercisePlayer } from "@/components/video-exercise-player";
 import { SwipeRow } from "@/components/swipe-row";
 import { useDialog } from "@/lib/use-dialog";
+import { signCustomVideoUrl } from "@/app/actions/custom-exercise";
+import type { VideoMedia } from "@/lib/video-upload";
 import type { ExerciseRow, SetRow } from "./types";
 import { SetInputRow } from "./set-input-row";
 import { TimeSetInputRow } from "./time-set-input-row";
@@ -63,6 +67,18 @@ export function ExerciseCard({
   };
   const [zoomed, setZoomed] = useState(false);
   const zoomDialogRef = useDialog<HTMLDivElement>(zoomed, () => setZoomed(false));
+  const videoMedia: VideoMedia | null =
+    exercise.mediaKind === "video" && exercise.videoUrl
+      ? {
+          videoUrl: exercise.videoUrl,
+          posterUrl: exercise.posterUrl,
+          rect: exercise.rect,
+          trim: exercise.trim,
+          aspect: exercise.aspect,
+        }
+      : null;
+  const posterForThumb = videoMedia ? exercise.posterUrl : null;
+  const hasMedia = !!exercise.imageUrl || !!videoMedia;
   const allComplete =
     exercise.sets.length > 0 && exercise.sets.every((s) => s.completed);
   const [expanded, setExpanded] = useState(!allComplete);
@@ -104,8 +120,9 @@ export function ExerciseCard({
               aria-label={`Expand ${exercise.name}`}
               className="flex-1 min-w-0 flex items-center gap-3 p-2.5 text-left"
             >
-              <ExerciseAnimation
-                url={exercise.imageUrl}
+              <ExerciseMedia
+                imageUrl={exercise.imageUrl}
+                poster={posterForThumb}
                 alt={exercise.name}
                 size={40}
               />
@@ -148,14 +165,19 @@ export function ExerciseCard({
           )}
         >
           <div className="flex items-start gap-3">
-            {exercise.imageUrl ? (
+            {hasMedia ? (
               <button
                 type="button"
                 onClick={() => setZoomed(true)}
-                aria-label={`View ${exercise.name} animation`}
+                aria-label={`View ${exercise.name} ${videoMedia ? "video" : "animation"}`}
                 className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
               >
-                <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
+                <ExerciseMedia
+                  imageUrl={exercise.imageUrl}
+                  poster={posterForThumb}
+                  alt={exercise.name}
+                  size={64}
+                />
               </button>
             ) : (
               <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={64} />
@@ -244,7 +266,7 @@ export function ExerciseCard({
         </div>
       </SwipeRow>
     </li>
-    {zoomed && exercise.imageUrl ? (
+    {zoomed && hasMedia ? (
       <div
         onClick={() => setZoomed(false)}
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
@@ -253,7 +275,7 @@ export function ExerciseCard({
           ref={zoomDialogRef}
           role="dialog"
           aria-modal="true"
-          aria-label={`${exercise.name} animation`}
+          aria-label={`${exercise.name} ${videoMedia ? "video" : "animation"}`}
           tabIndex={-1}
           onClick={(e) => e.stopPropagation()}
           className="relative bg-surface border border-border rounded-2xl p-4 max-w-sm w-full flex flex-col items-center gap-3 outline-none"
@@ -262,11 +284,24 @@ export function ExerciseCard({
             type="button"
             onClick={() => setZoomed(false)}
             aria-label="Close"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full bg-black/70 text-white flex items-center justify-center"
+            className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full bg-black/70 text-white flex items-center justify-center"
           >
             <X className="w-4 h-4" />
           </button>
-          <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={288} />
+          {videoMedia ? (
+            <VideoExercisePlayer
+              media={videoMedia}
+              alt={exercise.name}
+              showSpeed
+              onNeedsRefresh={
+                exercise.videoPath
+                  ? () => signCustomVideoUrl({ path: exercise.videoPath as string })
+                  : undefined
+              }
+            />
+          ) : (
+            <ExerciseAnimation url={exercise.imageUrl} alt={exercise.name} size={288} />
+          )}
           <p className="text-sm text-foreground-muted text-center">{exercise.name}</p>
         </div>
       </div>

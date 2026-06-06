@@ -69,8 +69,19 @@ function slugFromImageUrl(imageUrl: string | null | undefined): string | null {
 
 export function getMuscleGroupsForExercise(
   name: string,
-  imageUrl: string | null | undefined
+  imageUrl: string | null | undefined,
+  // Snapshot muscle strings (custom exercises have no catalog slug); when
+  // present they win over the slug/name lookup.
+  muscles?: string[] | null
 ): TopLevelGroup[] {
+  if (muscles && muscles.length > 0) {
+    const groups = new Set<TopLevelGroup>();
+    for (const m of muscles) {
+      const top = CATALOG_TO_TOP_LEVEL[m.toLowerCase()];
+      if (top) groups.add(top);
+    }
+    return [...groups];
+  }
   const slug = slugFromImageUrl(imageUrl);
   const entry =
     (slug && bySlug.get(slug)) || byName.get(name.toLowerCase());
@@ -87,8 +98,12 @@ export function muscleLabel(group: TopLevelGroup): string {
 // muscle-regions.ts instead (no JSON dependency).
 export function getMuscleRegionsForExercise(
   name: string,
-  imageUrl: string | null | undefined
+  imageUrl: string | null | undefined,
+  // Snapshot muscle strings (custom exercises have no catalog slug); when
+  // present they win over the slug/name lookup.
+  muscles?: string[] | null
 ): MuscleRegion[] {
+  if (muscles && muscles.length > 0) return regionsFromCatalogMuscles(muscles);
   const slug = slugFromImageUrl(imageUrl);
   const entry = (slug && bySlug.get(slug)) || byName.get(name.toLowerCase());
   return entry ? regionsFromCatalogMuscles(entry.primary) : [];

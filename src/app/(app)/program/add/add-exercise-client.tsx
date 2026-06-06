@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Search, X } from "lucide-react";
+import Link from "next/link";
+import { Plus, Search, Video, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
+import { ExerciseMedia } from "@/components/exercise-media";
 import { MuscleBadge } from "@/components/muscle-badge";
 import { regionsFromCatalogMuscles } from "@/lib/muscle-regions";
 import { addExerciseToProgram } from "@/app/actions/program";
@@ -21,10 +23,12 @@ export function AddExerciseClient({
   programDayId,
   redirectWeek,
   returnTo,
+  initialCustom = [],
 }: {
   programDayId: string;
   redirectWeek: number;
   returnTo: string | null;
+  initialCustom?: CatalogEntry[];
 }) {
   const [catalog, setCatalog] = useState<CatalogEntry[] | null>(
     getCachedCatalog()
@@ -44,10 +48,19 @@ export function AddExerciseClient({
     };
   }, [catalog]);
 
+  // Return here after creating a custom exercise so the new clip shows in search.
+  const addUrl = `/program/add?day=${programDayId}&week=${redirectWeek}${
+    returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
+  }`;
+  const createHref = `/program/exercises/new?returnTo=${encodeURIComponent(addUrl)}`;
+
   const hasFilters = query.trim() !== "" || activeMuscles.size > 0;
 
   const filtered = useMemo(() => {
     if (!catalog) return [];
+    // The user's custom exercises (incl. video clips) lead the catalog so they
+    // surface in search alongside the built-ins.
+    const all = [...initialCustom, ...catalog];
     const q = query.trim().toLowerCase();
     const tokens = q ? q.split(/\s+/) : [];
 
@@ -56,10 +69,10 @@ export function AddExerciseClient({
     );
 
     if (!hasFilters) {
-      return catalog.slice(0, 30);
+      return all.slice(0, 30 + initialCustom.length);
     }
 
-    return catalog
+    return all
       .filter((e) => {
         if (tokens.length > 0) {
           const hay =
@@ -72,7 +85,7 @@ export function AddExerciseClient({
         return true;
       })
       .slice(0, 100);
-  }, [catalog, query, activeMuscles, hasFilters]);
+  }, [catalog, initialCustom, query, activeMuscles, hasFilters]);
 
   function toggleMuscle(label: string) {
     setActiveMuscles((prev) => {
@@ -146,6 +159,16 @@ export function AddExerciseClient({
         </div>
       </div>
 
+      <Link
+        href={createHref}
+        className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-700 bg-neutral-900 p-3 text-sm text-neutral-300 hover:border-neutral-600"
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
+          <Plus className="w-4 h-4" />
+        </span>
+        Create a custom exercise from a video
+      </Link>
+
       {catalog === null ? (
         <p className="text-sm text-neutral-500">Loading catalog…</p>
       ) : filtered.length === 0 ? (
@@ -173,8 +196,9 @@ export function AddExerciseClient({
                 onClick={() => setSelected(entry)}
                 className="w-full flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-2 text-left hover:border-neutral-700"
               >
-                <ExerciseAnimation
-                  url={imageForCatalogEntry(entry)}
+                <ExerciseMedia
+                  imageUrl={imageForCatalogEntry(entry)}
+                  poster={entry.video ? entry.posterUrl ?? null : null}
                   alt={entry.name}
                   size={64}
                 />
@@ -185,10 +209,17 @@ export function AddExerciseClient({
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{entry.name}</p>
-                  <p className="text-[11px] text-neutral-500 truncate">
-                    {[entry.equipment, entry.primary[0], entry.category]
-                      .filter(Boolean)
-                      .join(" · ")}
+                  <p className="text-[11px] text-neutral-500 truncate flex items-center gap-1">
+                    {entry.video ? (
+                      <span className="inline-flex items-center gap-0.5 text-accent">
+                        <Video className="w-3 h-3" /> Video
+                      </span>
+                    ) : null}
+                    <span className="truncate">
+                      {[entry.equipment, entry.primary[0], entry.category]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
                   </p>
                 </div>
               </button>
@@ -275,12 +306,15 @@ function ConfigForm({
       }
     }
 
+    const video = entry.video;
     startSubmit(async () => {
       try {
         await addExerciseToProgram({
           programDayId,
           name: trimmedName,
-          imageUrl: imgUrl,
+          // For video customs, image_url is just a fallback — playback is driven
+          // by video_path; never store the (expiring) signed poster URL here.
+          imageUrl: video ? CUSTOM_IMG : imgUrl,
           sets: setsN,
           baseReps: repsN,
           startWeight: startN,
@@ -292,6 +326,14 @@ function ConfigForm({
           targetSeconds: targetSecondsN,
           redirectWeek,
           returnTo: returnTo ?? undefined,
+          customExerciseId: video?.customExerciseId ?? null,
+          videoPath: video?.videoPath ?? null,
+          posterPath: video?.posterPath ?? null,
+          cropRect: video?.rect ?? null,
+          trimStartSeconds: video?.trim?.startSec ?? null,
+          trimEndSeconds: video?.trim?.endSec ?? null,
+          aspectRatio: video?.aspect ?? null,
+          muscles: entry.custom ? entry.primary : [],
         });
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Failed to save.");
@@ -302,14 +344,21 @@ function ConfigForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 flex items-center gap-3">
-        <ExerciseAnimation url={imgUrl} alt={entry.name} size={64} />
+        <ExerciseMedia
+          imageUrl={imgUrl}
+          poster={entry.video ? entry.posterUrl ?? null : null}
+          alt={entry.name}
+          size={64}
+        />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium">
-            {entry.custom ? "Custom exercise" : entry.name}
+            {entry.custom ? (entry.video ? entry.name : "Custom exercise") : entry.name}
           </p>
           <p className="text-[11px] text-neutral-500 truncate">
             {entry.custom
-              ? "Using app logo"
+              ? entry.video
+                ? "Custom video"
+                : "Using app logo"
               : [entry.equipment, entry.primary[0]]
                   .filter(Boolean)
                   .join(" · ")}

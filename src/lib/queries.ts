@@ -8,6 +8,10 @@ import {
 } from "@/lib/muscle-groups";
 import type { ProgressBucketDef } from "@/lib/progress-range";
 import { mondayKeyOf, paddedInstantsForWindow } from "@/lib/progress-range";
+import type { ReframeRect, TrimBounds } from "@/lib/video-upload";
+
+const VIDEO_BUCKET = "workout-photos";
+const VIDEO_URL_TTL = 60 * 60 * 6; // 6h — gym sessions can outlive the photo 1h TTL
 
 export type ProgramExercise = {
   id: string;
@@ -25,7 +29,24 @@ export type ProgramExercise = {
   kind: "reps" | "time";
   target_seconds: number | null;
   peak_taper: boolean;
+  // Custom-video snapshot (all null/[] for catalog exercises).
+  video_path: string | null;
+  poster_path: string | null;
+  crop_rect: ReframeRect | null;
+  trim_start_seconds: number | null;
+  trim_end_seconds: number | null;
+  aspect_ratio: number | null;
+  muscles: string[];
+  custom_exercise_id: string | null;
+  // Signed URLs attached after fetch (null until signed / for non-video rows).
+  video_signed_url: string | null;
+  poster_signed_url: string | null;
 };
+
+// Columns selected for every program_exercises sub-select (shared so the
+// active-program, workout and history paths stay in lock-step).
+const EXERCISE_COLUMNS =
+  "id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds, peak_taper, video_path, poster_path, crop_rect, trim_start_seconds, trim_end_seconds, aspect_ratio, muscles, custom_exercise_id";
 
 // DB stores `kind` as a CHECK-constrained text column, so generated types widen
 // it to `string`. Narrow back to the literal union we expose.
@@ -33,6 +54,46 @@ function normalizeExerciseKind<T extends { kind: string }>(
   ex: T
 ): Omit<T, "kind"> & { kind: "reps" | "time" } {
   return { ...ex, kind: ex.kind === "time" ? "time" : "reps" };
+}
+
+// Narrow a raw program_exercises row into ProgramExercise: kind union, crop_rect
+// (jsonb -> ReframeRect), muscles default, and the (yet-unsigned) video URLs.
+function shapeExercise<
+  T extends {
+    kind: string;
+    crop_rect: unknown;
+    muscles: string[] | null;
+  }
+>(ex: T): ProgramExercise {
+  const k = normalizeExerciseKind(ex);
+  return {
+    ...k,
+    crop_rect: (k.crop_rect as ReframeRect | null) ?? null,
+    muscles: k.muscles ?? [],
+    video_signed_url: null,
+    poster_signed_url: null,
+  } as unknown as ProgramExercise;
+}
+
+// Batch-sign the video + poster for every exercise carrying a clip and mutate
+// the signed-URL fields in place. Index-aligned over the filtered list (every
+// video row has both paths), matching the createSignedUrls pattern elsewhere.
+async function attachVideoUrls(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  exercises: ProgramExercise[]
+): Promise<void> {
+  const withVideo = exercises.filter((e) => e.video_path && e.poster_path);
+  if (withVideo.length === 0) return;
+  const videoPaths = withVideo.map((e) => e.video_path as string);
+  const posterPaths = withVideo.map((e) => e.poster_path as string);
+  const [video, poster] = await Promise.all([
+    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(videoPaths, VIDEO_URL_TTL),
+    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(posterPaths, VIDEO_URL_TTL),
+  ]);
+  withVideo.forEach((e, i) => {
+    e.video_signed_url = video.data?.[i]?.signedUrl ?? null;
+    e.poster_signed_url = poster.data?.[i]?.signedUrl ?? null;
+  });
 }
 
 export type ProgramDay = {
@@ -61,7 +122,7 @@ export async function getCurrentProgram(
       days:program_days (
         id, day_number, label, title, archived_at,
         exercises:program_exercises (
-          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds, peak_taper
+          ${EXERCISE_COLUMNS}
         )
       )
     `;
@@ -102,9 +163,11 @@ export async function getCurrentProgram(
         .filter((ex) => opts.includeArchived || ex.archived_at === null)
         .slice()
         .sort((a, b) => a.order_index - b.order_index)
-        .map(normalizeExerciseKind),
+        .map(shapeExercise),
     }))
     .sort((a, b) => a.day_number - b.day_number);
+
+  await attachVideoUrls(supabase, days.flatMap((d) => d.exercises));
 
   return {
     id: data.id,
@@ -535,7 +598,7 @@ export async function getSessionContext(
         id, label, title,
         programs!inner ( id, name, weeks, deload_weeks ),
         exercises:program_exercises (
-          id, order_index, name, sets, base_reps, start_weight, increment, tracked, note, image_url, archived_at, progression_weeks, kind, target_seconds, peak_taper
+          ${EXERCISE_COLUMNS}
         )
       )
     `
@@ -547,6 +610,12 @@ export async function getSessionContext(
 
   const d = data.program_days;
   const p = d.programs;
+  const exercises = (d.exercises ?? [])
+    .slice()
+    .sort((a, b) => a.order_index - b.order_index)
+    .map(shapeExercise);
+  await attachVideoUrls(supabase, exercises);
+
   return {
     session: {
       id: data.id,
@@ -567,10 +636,7 @@ export async function getSessionContext(
       id: d.id,
       label: d.label,
       title: d.title,
-      exercises: (d.exercises ?? [])
-        .slice()
-        .sort((a, b) => a.order_index - b.order_index)
-        .map(normalizeExerciseKind),
+      exercises,
     },
   };
 }
@@ -742,6 +808,58 @@ export async function getFavoriteSlugs(): Promise<Set<string>> {
     .select("exercise_slug");
   if (error || !data) return new Set();
   return new Set(data.map((r) => r.exercise_slug));
+}
+
+export type CustomExercise = {
+  id: string;
+  name: string;
+  muscles: string[];
+  video_path: string;
+  poster_path: string;
+  video_signed_url: string;
+  poster_signed_url: string;
+  crop_rect: ReframeRect | null;
+  trim: TrimBounds | null;
+  aspect_ratio: number | null;
+};
+
+// The user's reusable custom-exercise library (newest first), with signed video
+// + poster URLs. Degrades to [] on error so a missing migration can't 500 the
+// add/library pages.
+export async function getCustomExercises(): Promise<CustomExercise[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("custom_exercises")
+    .select(
+      "id, name, muscles, video_path, poster_path, crop_rect, trim_start_seconds, trim_end_seconds, aspect_ratio"
+    )
+    .is("archived_at", null)
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  if (data.length === 0) return [];
+
+  const videoPaths = data.map((r) => r.video_path);
+  const posterPaths = data.map((r) => r.poster_path);
+  const [video, poster] = await Promise.all([
+    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(videoPaths, VIDEO_URL_TTL),
+    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(posterPaths, VIDEO_URL_TTL),
+  ]);
+
+  return data.map((r, i) => ({
+    id: r.id,
+    name: r.name,
+    muscles: r.muscles ?? [],
+    video_path: r.video_path,
+    poster_path: r.poster_path,
+    video_signed_url: video.data?.[i]?.signedUrl ?? "",
+    poster_signed_url: poster.data?.[i]?.signedUrl ?? "",
+    crop_rect: (r.crop_rect as ReframeRect | null) ?? null,
+    trim:
+      r.trim_start_seconds != null && r.trim_end_seconds != null
+        ? { startSec: r.trim_start_seconds, endSec: r.trim_end_seconds }
+        : null,
+    aspect_ratio: r.aspect_ratio,
+  }));
 }
 
 export type BodyPhotoRow = {
@@ -1015,7 +1133,7 @@ export async function getProgressForRange(
     const { data: logs, error: lErr } = await supabase
       .from("set_logs")
       .select(
-        "session_id, program_exercise_id, actual_weight, actual_reps, program_exercises ( name, image_url )"
+        "session_id, program_exercise_id, actual_weight, actual_reps, program_exercises ( name, image_url, muscles )"
       )
       .in("session_id", sessionIds)
       .eq("completed", true);
@@ -1028,11 +1146,12 @@ export async function getProgressForRange(
         totalVolume += r.actual_weight * r.actual_reps;
       }
       const ex = r.program_exercises as
-        | { name: string; image_url: string | null }
+        | { name: string; image_url: string | null; muscles: string[] | null }
         | null;
       const groups = getMuscleGroupsForExercise(
         ex?.name ?? "",
-        ex?.image_url ?? null
+        ex?.image_url ?? null,
+        ex?.muscles ?? null
       );
       for (const g of groups) muscleSets[g] += 1;
     }

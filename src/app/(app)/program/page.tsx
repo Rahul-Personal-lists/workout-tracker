@@ -233,14 +233,35 @@ export default async function ProgramPage({
               program.deload_weeks,
               ex.peak_taper,
             );
+            const video =
+              ex.video_path && ex.video_signed_url
+                ? {
+                    videoUrl: ex.video_signed_url,
+                    posterUrl: ex.poster_signed_url,
+                    rect: ex.crop_rect,
+                    trim:
+                      ex.trim_start_seconds !== null && ex.trim_end_seconds !== null
+                        ? {
+                            startSec: ex.trim_start_seconds,
+                            endSec: ex.trim_end_seconds,
+                          }
+                        : null,
+                    aspect: ex.aspect_ratio,
+                  }
+                : null;
             return (
               <li
                 key={ex.id}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
               >
-                <ExerciseThumb url={ex.image_url} alt={ex.name} />
+                <ExerciseThumb
+                  url={ex.image_url}
+                  alt={ex.name}
+                  video={video}
+                  videoPath={ex.video_path}
+                />
                 <MuscleBadge
-                  regions={getMuscleRegionsForExercise(ex.name, ex.image_url)}
+                  regions={getMuscleRegionsForExercise(ex.name, ex.image_url, ex.muscles)}
                   size={30}
                   className="shrink-0"
                 />

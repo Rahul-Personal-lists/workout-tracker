@@ -3,13 +3,21 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { ExerciseAnimation } from "@/components/exercise-animation";
+import { ExerciseMedia } from "@/components/exercise-media";
+import { VideoExercisePlayer } from "@/components/video-exercise-player";
+import { signCustomVideoUrl } from "@/app/actions/custom-exercise";
+import type { VideoMedia } from "@/lib/video-upload";
 
 export function ExerciseThumb({
   url,
   alt,
+  video = null,
+  videoPath = null,
 }: {
   url: string | null;
   alt: string;
+  video?: VideoMedia | null;
+  videoPath?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [size, setSize] = useState(288);
@@ -33,7 +41,7 @@ export function ExerciseThumb({
     };
   }, [open]);
 
-  if (!url) {
+  if (!url && !video) {
     return <ExerciseAnimation url={url} alt={alt} size={40} shape="circle" />;
   }
 
@@ -42,10 +50,16 @@ export function ExerciseThumb({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={`Enlarge ${alt} animation`}
+        aria-label={`Enlarge ${alt} ${video ? "video" : "animation"}`}
         className="shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
       >
-        <ExerciseAnimation url={url} alt={alt} size={40} shape="circle" />
+        <ExerciseMedia
+          imageUrl={url}
+          poster={video ? video.posterUrl : null}
+          alt={alt}
+          size={40}
+          shape="circle"
+        />
       </button>
       {open ? (
         <div
@@ -57,14 +71,21 @@ export function ExerciseThumb({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex flex-col items-center gap-3"
+            className="flex w-full max-w-sm flex-col items-center gap-3"
           >
-            <ExerciseAnimation
-              url={url}
-              alt={alt}
-              size={size}
-              shape="square"
-            />
+            {video ? (
+              <VideoExercisePlayer
+                media={video}
+                alt={alt}
+                onNeedsRefresh={
+                  videoPath
+                    ? () => signCustomVideoUrl({ path: videoPath })
+                    : undefined
+                }
+              />
+            ) : (
+              <ExerciseAnimation url={url} alt={alt} size={size} shape="square" />
+            )}
             <p className="text-sm font-medium text-center text-foreground">
               {alt}
             </p>

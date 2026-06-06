@@ -2,6 +2,21 @@
 // (public/data/exercises-catalog.json, sourced from yuhonas/free-exercise-db).
 // Used by both the add-to-program flow and the read-only exercise library.
 
+import type { ReframeRect, TrimBounds } from "@/lib/video-upload";
+
+// A user's custom-exercise clip, carried on the catalog entry so the add flow
+// can preview it and snapshot it onto the program_exercises row.
+export type CatalogVideo = {
+  customExerciseId: string;
+  videoPath: string;
+  posterPath: string;
+  videoUrl: string;
+  posterUrl: string;
+  rect: ReframeRect | null;
+  trim: TrimBounds | null;
+  aspect: number | null;
+};
+
 export type CatalogEntry = {
   id: string;
   name: string;
@@ -11,6 +26,9 @@ export type CatalogEntry = {
   level: string | null;
   primary: string[];
   custom?: boolean;
+  // Signed poster URL used as the thumbnail for custom-video entries.
+  posterUrl?: string;
+  video?: CatalogVideo;
 };
 
 const REMOTE_IMG = (slug: string) =>
@@ -19,7 +37,46 @@ const REMOTE_IMG = (slug: string) =>
 export const CUSTOM_IMG = "/icon-192.png";
 
 export function imageForCatalogEntry(entry: CatalogEntry): string {
+  if (entry.posterUrl) return entry.posterUrl;
   return entry.custom ? CUSTOM_IMG : REMOTE_IMG(entry.id);
+}
+
+// Map a custom_exercises library row (shape from getCustomExercises) into a
+// CatalogEntry so it merges into the add-exercise search. Structural param so
+// this client module doesn't import the server-only queries types.
+export function customToCatalogEntry(c: {
+  id: string;
+  name: string;
+  muscles: string[];
+  video_path: string;
+  poster_path: string;
+  video_signed_url: string;
+  poster_signed_url: string;
+  crop_rect: ReframeRect | null;
+  trim: TrimBounds | null;
+  aspect_ratio: number | null;
+}): CatalogEntry {
+  return {
+    id: c.id,
+    name: c.name,
+    equipment: null,
+    category: "custom",
+    force: null,
+    level: null,
+    primary: c.muscles,
+    custom: true,
+    posterUrl: c.poster_signed_url || undefined,
+    video: {
+      customExerciseId: c.id,
+      videoPath: c.video_path,
+      posterPath: c.poster_path,
+      videoUrl: c.video_signed_url,
+      posterUrl: c.poster_signed_url,
+      rect: c.crop_rect,
+      trim: c.trim,
+      aspect: c.aspect_ratio,
+    },
+  };
 }
 
 export const MUSCLE_GROUPS: {

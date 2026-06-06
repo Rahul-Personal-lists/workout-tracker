@@ -89,6 +89,16 @@ export default async function WorkoutPage({
       name: ex.name,
       note: ex.note,
       imageUrl: ex.image_url,
+      mediaKind: ex.video_path ? "video" : "image",
+      videoUrl: ex.video_signed_url,
+      posterUrl: ex.poster_signed_url,
+      videoPath: ex.video_path,
+      rect: ex.crop_rect,
+      trim:
+        ex.trim_start_seconds !== null && ex.trim_end_seconds !== null
+          ? { startSec: ex.trim_start_seconds, endSec: ex.trim_end_seconds }
+          : null,
+      aspect: ex.aspect_ratio,
       kind: ex.kind,
       plannedWeight,
       plannedReps,

@@ -8,6 +8,15 @@ import { getPreset, type StarterProgram } from "@/lib/starter-program";
 
 const MAX_PROGRAMS = 2;
 
+const CropRectSchema = z
+  .object({
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    w: z.number().gt(0).max(1),
+    h: z.number().gt(0).max(1),
+  })
+  .nullable();
+
 const AddExerciseSchema = z.object({
   programDayId: z.string().uuid(),
   name: z.string().min(1).max(120),
@@ -25,13 +34,32 @@ const AddExerciseSchema = z.object({
   // Same-origin path the caller wants to land on after a successful add.
   // Used by the mid-workout add flow to bounce back to /workout/[sessionId].
   returnTo: z.string().regex(/^\/[^/]/).max(200).optional(),
+  // Custom-video snapshot (copied from a custom_exercises library entry so
+  // history stays accurate if the entry is later edited/soft-deleted). All
+  // null/empty for catalog exercises -> the row behaves exactly as before.
+  customExerciseId: z.string().uuid().nullable().default(null),
+  videoPath: z.string().max(500).nullable().default(null),
+  posterPath: z.string().max(500).nullable().default(null),
+  cropRect: CropRectSchema.default(null),
+  trimStartSeconds: z.number().min(0).max(36000).nullable().default(null),
+  trimEndSeconds: z.number().gt(0).max(36000).nullable().default(null),
+  aspectRatio: z.number().gt(0).max(10).nullable().default(null),
+  muscles: z.array(z.string()).max(17).default([]),
 });
 
 export async function addExerciseToProgram(
-  input: z.infer<typeof AddExerciseSchema>
+  input: z.input<typeof AddExerciseSchema>
 ) {
   const parsed = AddExerciseSchema.parse(input);
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
+
+  // A snapshotted video path must belong to the caller (the user could craft an
+  // input pointing at someone else's storage object).
+  for (const p of [parsed.videoPath, parsed.posterPath]) {
+    if (p && !p.startsWith(`${user.id}/exercise-videos/`)) {
+      throw new Error("Invalid video path");
+    }
+  }
 
   const { data: maxRow, error: maxErr } = await supabase
     .from("program_exercises")
@@ -58,6 +86,14 @@ export async function addExerciseToProgram(
     progression_weeks: parsed.progressionWeeks,
     kind: parsed.kind,
     target_seconds: isTime ? parsed.targetSeconds : null,
+    custom_exercise_id: parsed.customExerciseId,
+    video_path: parsed.videoPath,
+    poster_path: parsed.posterPath,
+    crop_rect: parsed.cropRect,
+    trim_start_seconds: parsed.trimStartSeconds,
+    trim_end_seconds: parsed.trimEndSeconds,
+    aspect_ratio: parsed.aspectRatio,
+    muscles: parsed.muscles,
   });
   if (error) throw error;
 
