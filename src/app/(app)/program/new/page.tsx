@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookOpen, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { getGoalWeight, getTodayWeightLb } from "@/lib/queries";
+import { LIBRARY_PROGRAMS } from "@/lib/program-library";
 import { PresetList } from "../preset-list";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +34,20 @@ export default async function NewProgramPage() {
         <PresetList weightLb={weightLb} />
         <Link
           href="/program/library"
-          className="btn-ghost-add h-12 px-3 text-sm"
+          className="group flex items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 transition-colors hover:bg-surface-hover outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
         >
-          <BookOpen className="w-4 h-4" /> Browse the full library
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
+            <BookOpen className="w-5 h-5" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-medium text-foreground">
+              Browse the full library
+            </span>
+            <span className="block text-[11px] text-foreground-muted">
+              {LIBRARY_PROGRAMS.length} programs · all goals, splits &amp; day counts
+            </span>
+          </span>
+          <ChevronRight className="w-4 h-4 shrink-0 text-foreground-muted transition-transform group-hover:translate-x-0.5" />
         </Link>
       </section>
 

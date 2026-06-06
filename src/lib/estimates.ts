@@ -37,32 +37,30 @@ function holdSeconds(ex: EstimateExercise): number {
   return ex.target_seconds ?? DEFAULT_HOLD;
 }
 
-// Seconds of actual WORK (excludes rest) — the basis for the calorie estimate.
-function workSeconds(ex: EstimateExercise): number {
-  return ex.kind === "time"
-    ? ex.sets * holdSeconds(ex)
-    : ex.sets * effectiveReps(ex) * SECONDS_PER_REP;
+// Seconds of active training per exercise = time-under-tension + inter-set rest.
+// This is the basis for BOTH duration and calories. Calories MUST be charged on
+// the whole active block (not work-only): the compendium MET values for weight
+// training (~5) already assume you rest between sets — that's why they're ~5 and
+// not ~8 — so charging the bare time-under-tension undercounts a lifting session
+// ~3-4x. The flat warm-up buffer is counted in duration but not calories.
+function activeSeconds(ex: EstimateExercise): number {
+  if (ex.kind === "time") return ex.sets * (holdSeconds(ex) + REST_TIME);
+  const rest = ex.tracked ? REST_COMPOUND : REST_ACCESSORY;
+  return ex.sets * (effectiveReps(ex) * SECONDS_PER_REP + rest);
 }
 
-// Total wall-clock estimate in seconds: work + inter-set rest + a warm-up
-// buffer. Rest is included here (it's time at the gym) but NOT in calories.
+// Total wall-clock estimate in seconds: active training time + a warm-up buffer.
 export function estimatePlanDuration(exercises: EstimateExercise[]): number {
   if (exercises.length === 0) return 0;
   let total = WARMUP_BUFFER;
-  for (const ex of exercises) {
-    if (ex.kind === "time") {
-      total += ex.sets * (holdSeconds(ex) + REST_TIME);
-    } else {
-      const rest = ex.tracked ? REST_COMPOUND : REST_ACCESSORY;
-      total += ex.sets * (effectiveReps(ex) * SECONDS_PER_REP + rest);
-    }
-  }
+  for (const ex of exercises) total += activeSeconds(ex);
   return total;
 }
 
-// MET-model calorie estimate: kcal = MET × 3.5 × bodyKg / 200 × activeMinutes.
-// Uses work time only. BMR (profiles.age/gender/height) deliberately unused — MET
-// is the standard activity-kcal model and BMR is a daily resting figure.
+// MET-model calorie estimate: kcal = MET × 3.5 × bodyKg / 200 × activeMinutes,
+// summed per exercise over its active time (work + inter-set rest). BMR
+// (profiles.age/gender/height) deliberately unused — MET is the standard
+// activity-kcal model and BMR is a daily resting figure.
 export function estimateCalories(
   exercises: EstimateExercise[],
   { weightLb = DEFAULT_WEIGHT_LB }: { weightLb?: number } = {}
@@ -71,7 +69,7 @@ export function estimateCalories(
   let kcal = 0;
   for (const ex of exercises) {
     const met = ex.kind === "time" ? MET_CARDIO : MET_STRENGTH;
-    const activeMinutes = workSeconds(ex) / 60;
+    const activeMinutes = activeSeconds(ex) / 60;
     kcal += (met * 3.5 * bodyKg) / 200 * activeMinutes;
   }
   return Math.round(kcal);

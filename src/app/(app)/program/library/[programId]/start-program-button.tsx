@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { Check } from "lucide-react";
 import { archiveProgram, seedPresetProgram } from "@/app/actions/program";
 import { toast } from "@/components/toast";
@@ -37,10 +38,12 @@ export function StartProgramButton({
       try {
         await seedPresetProgram({ presetId });
         // Success redirects to /program server-side; control won't return here.
-      } catch {
-        // We only reach here below the cap (atCap routes to the sheet), so a
-        // throw is an unexpected failure — surface it honestly rather than
-        // opening the archive sheet over a program list we know isn't full.
+      } catch (err) {
+        // seedPresetProgram redirects via NEXT_REDIRECT on success — re-throw that
+        // (and any framework signal) so navigation happens instead of being shown
+        // as a failure. We only reach a real throw below the cap (atCap routes to
+        // the sheet), so surface it honestly.
+        unstable_rethrow(err);
         toast("Couldn't start this program. Try again.");
       }
     });
@@ -55,6 +58,9 @@ export function StartProgramButton({
         await archiveProgram({ programId });
         await seedPresetProgram({ presetId });
       } catch (err) {
+        // seedPresetProgram redirects via NEXT_REDIRECT on success — let it
+        // propagate so the navigation happens instead of surfacing as an error.
+        unstable_rethrow(err);
         setError(
           err instanceof Error
             ? err.message

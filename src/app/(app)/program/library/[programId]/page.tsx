@@ -75,7 +75,7 @@ export default async function LibraryProgramPage({
       ) : null}
 
       <section className="space-y-2">
-        <h2 className="text-base font-semibold text-foreground">Plans</h2>
+        <h2 className="text-base font-semibold text-foreground">Workouts</h2>
         <ul className="space-y-2">
           {trainingDays.map((day, i) => (
             <li key={day.day_number}>
@@ -88,7 +88,7 @@ export default async function LibraryProgramPage({
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] uppercase tracking-wide text-foreground-muted">
-                    Plan {i + 1}
+                    Day {i + 1}
                   </p>
                   <p className="text-sm font-medium truncate">{day.title}</p>
                   <p className="text-xs text-foreground-muted">

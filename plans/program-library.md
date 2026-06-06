@@ -10,18 +10,18 @@ Build it in **stages** — each stage is independently reviewable and (mostly) s
 
 ---
 
-## Status — Stages 0–4 shipped (#96, #97); Stage 5 (catalog expansion) is the next PR
+## Status — Stages 0–5 shipped (#96, #97, + this PR). Library catalog is full (21 programs; every day-section has all 3 goals).
 
-_Updated 2026-06-05. Legend: ✅ done · 🟡 partial · ⬜ not started._
+_Updated 2026-06-06. Legend: ✅ done · 🟡 partial · ⬜ not started._
 
 | Stage | Status | Notes |
 |---|---|---|
-| 0 — Data model + catalog | ✅ | Types, `LIBRARY_PROGRAMS`, `getLibraryPrograms`, goal-color tokens, 4 hero photos. **Only the 4 existing presets are tagged** — the "~8–15 more" are NOT authored (Q1 still open; content, not code). |
+| 0 — Data model + catalog | ✅ | Types, `LIBRARY_PROGRAMS`, `getLibraryPrograms`, goal-color tokens, **21 hero photos**. All 21 presets tagged (catalog expansion done in Stage 5). |
 | 1 — Library list + filters | ✅ | `/program/library` + filter sheets + day-grouped cards + both entry points. |
 | 2 — Program → PLANS list | ✅ | `[programId]` landing + PLANS rows + sticky "Start This Program" CTA (seeds; respects max-2). |
 | 3 — Plan detail | ✅ | `[programId]/[dayId]` replaced the stub: back header + Plan N + plan-tabs pill row + `PlanStats` row + exercise rows (`ExerciseThumb` + `MuscleBadge` + sets×reps/from-weight) + sticky Start CTA. Keyed by `day_number`, training days only. |
-| 4 — Integration / max-2 / polish | ✅ | Entry points ✅. Graceful 2-program-cap flow: `StartProgramButton` opens an archive-one sheet (lists the user's programs → `archiveProgram` then `seedPresetProgram`) instead of a dead-end toast; direct-seed failures below the cap still toast. Token/a11y polish + doc updates done. Catalog expansion (Q1) remains the only open item. |
-| 5 — Catalog expansion (Q1) | ⬜ next PR | Decisions locked: I draft ~10 programs from templates (matrix below), photo per program (art gates appearance), fill all empty facets (Get Lean / Push/Pull / Small & Home / 2-5-6-day). Also: curate the `/program/new` `PresetList`, live cap-flow verification. |
+| 4 — Integration / max-2 / polish | ✅ | Entry points ✅. Graceful 2-program-cap flow: `StartProgramButton` opens an archive-one sheet (lists the user's programs → `archiveProgram` then `seedPresetProgram`) instead of a dead-end toast; direct-seed failures below the cap still toast. Token/a11y polish + doc updates done. |
+| 5 — Catalog expansion (Q1) | ✅ | 10 programs drafted from the matrix below + appended to `PRESET_PROGRAMS`; `LIBRARY_META` entries added; 10 hero photos placed (`scripts/convert-program-art.mjs`); `PresetList` curated to the original 4. Every facet (2–6 days, Get Lean / Push/Pull / Small & Home, all splits/locations) now non-empty. Guarded by `scripts/smoke-library.ts`. **Programming awaits Rahul's sign-off.** |
 
 ### As-built decisions (deviations from the design below — read before Stage 3/4)
 
@@ -30,7 +30,8 @@ _Updated 2026-06-05. Legend: ✅ done · 🟡 partial · ⬜ not started._
 - **Filter sheets are a co-located generic `FilterSheet`** (single-select radio) on `useDialog` + `ConfirmSheet`'s sheet shell — *not* `ConfirmSheet` itself (that's confirm/cancel only).
 - **Hero + card ratio is `aspect-[3/2]`** to match the generated photos with zero crop (prompts reserved the lower third for the overlay). A touch tall in a list — switch to 16:9 if preferred.
 - **`daysPerWeek` is authored in metadata**, not derived from non-rest days.
-- **Plan-detail id = `day_number`** (`[programId]/[dayId]`), so rest days don't skew PLAN numbering.
+- **Day-detail id = `day_number`** (`[programId]/[dayId]`), so rest days don't skew the numbering.
+- **UI label = "Day N" (2026-06-06).** The drill-down was relabeled off the reference app's "PLAN N" to **"Day N"** (training-day index, contiguous 1…N), and the landing section "Plans" → "Workouts" — to match the rest of the app's vocabulary (the `/program` hub + `DayTabs` already label everything "Day N"). Earlier "PLAN" references below are historical.
 - **Preset metadata:** all 4 are `commercial`; goals = `build_muscle` ×3 + `overall_fitness` (Full Body 3x); experience = `beginner` (Full Body 3x) + `intermediate_advanced` ×3. ⇒ `get_lean`, `push_pull`, `small_home`, and the 2/5/6-day sections are **empty** until the catalog is expanded.
 - **Verification gap:** the dev checkout has **no Supabase env**, so live auth/seed/visual checks couldn't run. Verified via typecheck + lint + production build + Tailwind-class generation + a data-layer smoke test. The seed→redirect and the cap toast still want a real in-browser click.
 
@@ -174,11 +175,13 @@ seeds.
 **Acceptance:** end-to-end browse → preview → seed works from a clean state and at the
 2-program cap; typecheck + lint + build green; adversarial review pass.
 
-## Stage 5 — Catalog expansion (Q1) — *next PR*
+## Stage 5 — Catalog expansion (Q1) — ✅ shipped
 
-> **⬜ Next PR.** Decisions locked (2026-06-05): I **draft from templates** for your review;
-> **photo per program** (art gates appearance); fill **all four** empty facets. The 4 existing
-> presets stay as-is.
+> **✅ Done (2026-06-06).** 10 programs drafted from the matrix below, all 4 empty facets
+> filled, a hero photo placed per program. The 4 existing presets are unchanged.
+> **Programming still awaits Rahul's sign-off** — these are template drafts; tune the loads/
+> rep schemes as needed. Photo→program mapping is recorded in `scripts/convert-program-art.mjs`
+> (generic dramatic gym shots; swap the source `images/<n>.png` mapping + re-run to reassign).
 
 ### How it wires in (no new infra)
 
@@ -198,7 +201,7 @@ Follow the existing programming conventions in `starter-program.ts`: plate grid 
 cables 10 lb / `progression_weeks: 2`, dumbbells 5 lb), `peak_taper` on the heavy compounds, `kind: "time"`
 for holds/cardio. Beginner programs can use longer `progression_weeks` and smaller jumps.
 
-### Proposed catalog matrix (10 new programs — review the programming)
+### Catalog matrix (17 new programs — ✅ implemented; review the programming)
 
 Existing 4 (unchanged): `starter-12wk`, `ppl-6wk`, `upper-lower-8wk` (build_muscle / commercial / int-adv)
 and `full-body-3x-6wk` (overall_fitness / commercial / beginner).
@@ -206,6 +209,8 @@ and `full-body-3x-6wk` (overall_fitness / commercial / beginner).
 | id (proposed) | name | goal | split | days | location | experience | weeks (deloads) |
 |---|---|---|---|---|---|---|---|
 | `full-body-2x` | 2-Day Full Body | overall_fitness | full_body | **2** | commercial | beginner | 8 (4,8) |
+| `upper-lower-2x` | 2-Day Upper / Lower | build_muscle | upper_lower | **2** | commercial | beginner | 8 (4,8) |
+| `full-body-strength-2x` | 2-Day Full Body Strength | build_muscle | full_body | **2** | commercial | intermediate_advanced | 8 (4,8) |
 | `home-db-full-body` | Home Dumbbell Full Body | overall_fitness | full_body | 3 | **small_home** | beginner | 8 (4,8) |
 | `bodyweight-foundations` | Bodyweight Foundations | overall_fitness | full_body | 3 | **small_home** | beginner | 6 (6) |
 | `home-fat-loss-circuit` | Home Fat-Loss Circuit | **get_lean** | full_body | 3 | **small_home** | beginner | 6 (6) |
@@ -215,6 +220,14 @@ and `full-body-3x-6wk` (overall_fitness / commercial / beginner).
 | `lean-athlete-5d` | 5-Day Lean Athlete | **get_lean** | **push_pull** | **5** | commercial | intermediate_advanced | 8 (4,8) |
 | `ppl-6d` | 6-Day PPL | build_muscle | ppl | **6** | commercial | intermediate_advanced | 8 (4,8) |
 | `push-pull-6d` | 6-Day Push / Pull | build_muscle | **push_pull** | **6** | commercial | intermediate_advanced | 8 (4,8) |
+| `lean-circuit-2x` | 2-Day Lean Circuit | **get_lean** | full_body | **2** | commercial | beginner | 8 (4,8) |
+| `upper-lower-fitness-4d` | 4-Day Upper / Lower Fitness | overall_fitness | upper_lower | 4 | commercial | beginner | 8 (4,8) |
+| `total-fitness-5d` | 5-Day Total Fitness | overall_fitness | upper_lower | **5** | commercial | intermediate_advanced | 8 (4,8) |
+| `lean-ppl-6d` | 6-Day Lean PPL | **get_lean** | ppl | **6** | commercial | intermediate_advanced | 8 (4,8) |
+| `total-fitness-6d` | 6-Day Total Fitness | overall_fitness | ppl | **6** | commercial | intermediate_advanced | 8 (4,8) |
+
+Goal-coverage fillers (last 5 rows) ensure **every** day-section (2–6) offers all three goals
+(Get Lean / Build Muscle / Overall Fitness) — guarded by `scripts/smoke-library.ts`.
 
 Facet coverage after this: **goals** = build_muscle / get_lean / overall_fitness (all non-empty);
 **splits** = full_body / upper_lower / ppl / push_pull (all non-empty); **locations** = commercial /
@@ -222,22 +235,29 @@ small_home (both non-empty); **day-sections** = 2,3,4,5,6 (all non-empty); **exp
 intermediate_advanced (both non-empty). Each row needs a hero photo at `public/program-art/<id>.jpg`
 before its `LIBRARY_META` entry is added.
 
-### Also in the next PR (besides content)
+### Also done this PR (besides content)
 
-- **`PresetList` curation.** [preset-list.tsx](src/app/(app)/program/preset-list.tsx) maps **all**
-  `PRESET_PROGRAMS`, so adding 10 presets would dump 14 cards into the `/program/new` + empty-state
-  quick-picker. **Decision needed:** keep that list curated to the original 4 (a "quick start" subset)
-  + the existing "Browse the library" link, or let it grow. Recommend curating to a small subset and
-  leaning on the Library for the full catalog.
-- **Live verification (carried over from #97).** Exercise seed→redirect and the cap→archive sheet
-  in-browser with `claude-test@example.com` once a Supabase env is available — not runnable in the #97
-  checkout (no `.env.local`).
-- **Optional polish:** revisit the `aspect-[3/2]` card ratio vs 16:9 (cheap to switch); confirm new
-  programs' `MuscleBadge`s resolve (every exercise `image_url` slug must exist in the catalog).
+- **`PresetList` curation + heroes ✅.** [preset-list.tsx](src/app/(app)/program/preset-list.tsx) now filters to
+  a `QUICK_PICK_IDS` subset (the original 4) instead of mapping all `PRESET_PROGRAMS`, so the
+  `/program/new` + empty-state quick-picker stays a 4-card "quick start"; the full catalog
+  lives behind "Browse the library". Each card renders the program's `heroImage` (16:9 banner, name+goal
+  overlaid, via `getLibraryProgram(id)`) and counts **training days** for "days/week" (was `days.length`,
+  which included the rest day).
+- **`MuscleBadge` slug resolution ✅.** `scripts/smoke-library.ts` asserts every non-time exercise's
+  `image_url` slug resolves to ≥1 muscle region (and facet coverage + plate-grid + daysPerWeek invariants).
+- **Optional polish (skipped):** the `aspect-[3/2]` card ratio is unchanged (still fine with the new heroes).
+
+### Carried over (still open)
+
+- **Live in-browser verification.** Seed→redirect and the cap→archive sheet weren't clicked through —
+  this session had no browser-preview tooling (the earlier #97 gap was a missing `.env.local`; now the
+  env exists but the preview/eval tools don't). The seed + library-render paths reuse the unchanged,
+  already-verified #96/#97 actions. Verify with `claude-test@example.com` when a preview browser is available.
+- **Rahul's programming sign-off.** Loads/rep schemes are template drafts.
 
 **Acceptance:** the 10 programs seed correctly (each is in `PRESET_PROGRAMS`), render in the right
-day-section / under the right filters, each has a hero photo, and a `/program/new` quick-picker
-decision is implemented. Typecheck + lint + build green; you've signed off on the programming.
+day-section / under the right filters, each has a hero photo, and the `/program/new` quick-picker is
+curated. Typecheck + lint + build green ✅. Programming sign-off + live click-through remain.
 
 ---
 

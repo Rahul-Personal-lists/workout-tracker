@@ -3,7 +3,7 @@
 
 # Workout Tracker — project memory
 
-Mobile-first PWA Rahul uses to log strength programs at the gym. Personal app, single user, multi-user-ready (RLS on every table). Ships with 4 preset templates (12-week strength, PPL, Upper/Lower, Full Body 3x) and a blank-program builder; up to 2 programs per user with one active. The app shell is built; iteration is now driven by what actually hurts at the gym.
+Mobile-first PWA Rahul uses to log strength programs at the gym. Personal app, single user, multi-user-ready (RLS on every table). Ships with a 21-program preset library (`PRESET_PROGRAMS` in [starter-program.ts](src/lib/starter-program.ts) — the original 4: 12-week strength, PPL, Upper/Lower, Full Body 3x, plus 17 Stage-5 catalog programs spanning 2–6 days/week, all goals/splits, home + commercial; every "N Days a Week" section offers all three goals) browsable at `/program/library`, and a blank-program builder; up to 2 programs per user with one active. The `/program/new` quick-picker is curated to the original 4 (`QUICK_PICK_IDS` in `preset-list.tsx`); the full catalog is in the library. The app shell is built; iteration is now driven by what actually hurts at the gym.
 
 ## Stack (actual)
 
@@ -95,9 +95,10 @@ src/app/
 │   │   ├── library                Program Library: browse preset catalog grouped by
 │   │   │   │                      "N Days a Week", Gym Location + Experience filters.
 │   │   │   │                      List is static; drill-ins are force-dynamic.
-│   │   │   └── [programId]        program landing (hero + PLANS list) + Start CTA →
-│   │   │       └── [dayId]        plan detail: stat row + exercise rows (thumb +
-│   │   │                          muscle badge) + plan tabs + sticky Start. Start CTA
+│   │   │   └── [programId]        program landing (hero + "Workouts" list: Day 1, Day 2…)
+│   │   │       │                  + Start CTA →
+│   │   │       └── [dayId]        day detail: stat row + exercise rows (thumb +
+│   │   │                          muscle badge) + Day tabs + sticky Start. Start CTA
 │   │   │                          seeds via seedPresetProgram; at the 2-program cap it
 │   │   │                          opens an archive-one sheet instead of erroring.
 │   │   └── new (+ new/custom)     template chooser + blank-program builder

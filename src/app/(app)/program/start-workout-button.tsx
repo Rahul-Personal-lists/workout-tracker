@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { startWorkout } from "@/app/actions/workout";
 
 export function StartWorkoutButton({
@@ -22,6 +23,9 @@ export function StartWorkoutButton({
       try {
         await startWorkout({ programDayId, weekNumber });
       } catch (err) {
+        // startWorkout redirects via NEXT_REDIRECT on success — re-throw it so the
+        // navigation happens and only genuine failures get logged.
+        unstable_rethrow(err);
         console.error("start workout failed", err);
       }
     });
