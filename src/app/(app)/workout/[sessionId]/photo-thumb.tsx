@@ -7,7 +7,7 @@ export function PhotoThumb({ file, onRemove }: { file: File; onRemove: () => voi
   const url = useMemo(() => URL.createObjectURL(file), [file]);
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
   return (
-    <div className="relative aspect-square rounded-md overflow-hidden bg-neutral-900 border border-neutral-800">
+    <div className="relative aspect-square rounded-md overflow-hidden bg-surface border border-border">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="" className="w-full h-full object-cover" />
       <button

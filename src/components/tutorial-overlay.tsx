@@ -209,6 +209,9 @@ export function TutorialOverlay({ tour }: { tour: TourId }) {
         } else if (Date.now() - startedAt > TARGET_RETRY_TIMEOUT_MS) {
           if (interval) clearInterval(interval);
           interval = null;
+          if (process.env.NODE_ENV !== "production") {
+            console.warn(`[tutorial] tour target not found: ${selector}`);
+          }
         }
       }, TARGET_RETRY_INTERVAL_MS);
     }

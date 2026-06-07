@@ -756,7 +756,7 @@ export async function getBodyLogs(): Promise<BodyLogRow[]> {
   const { data, error } = await supabase
     .from("body_logs")
     .select("log_date, weight_lb, calories, body_fat_pct, note")
-    .order("log_date", { ascending: false });
+    .order("log_date", { ascending: true });
   if (error) throw error;
   return (data ?? []).map((r) => ({
     log_date: r.log_date,
@@ -778,7 +778,7 @@ export async function getBodyMeasurements(): Promise<BodyMeasurementRow[]> {
   const { data, error } = await supabase
     .from("body_measurements")
     .select("log_date, metric, value_cm")
-    .order("log_date", { ascending: false });
+    .order("log_date", { ascending: true });
   if (error) throw error;
   return (data ?? []).map((r) => ({
     log_date: r.log_date,
@@ -900,14 +900,13 @@ export async function getExerciseHistory(
 ): Promise<{
   name: string;
   kind: "reps" | "time";
-  target_seconds: number | null;
   points: ExerciseHistoryPoint[];
 } | null> {
   const supabase = await createClient();
 
   const { data: ex, error: exErr } = await supabase
     .from("program_exercises")
-    .select("id, name, kind, target_seconds")
+    .select("id, name, kind")
     .eq("id", programExerciseId)
     .maybeSingle();
   if (exErr) throw exErr;
@@ -926,7 +925,6 @@ export async function getExerciseHistory(
   return {
     name: ex.name,
     kind: (ex.kind ?? "reps") as "reps" | "time",
-    target_seconds: ex.target_seconds,
     points: (rows ?? []).map((r) => ({
       session_id: r.session_id,
       logged_at: r.logged_at,
@@ -1061,8 +1059,6 @@ export type ProgressBucket = {
   key: string;
   label: string;
   workouts: number;
-  minutes: number;
-  sessionId: string | null;
 };
 
 export type ProgressData = {
@@ -1157,28 +1153,15 @@ export async function getProgressForRange(
     }
   }
 
-  const bucketAgg = new Map<
-    string,
-    { workouts: number; seconds: number; latestStartedAt: string; latestSessionId: string }
-  >();
+  const bucketAgg = new Map<string, { workouts: number }>();
   let totalSeconds = 0;
   for (const t of tagged) {
     totalSeconds += t.durationSeconds;
     const cur = bucketAgg.get(t.bucketKey);
     if (!cur) {
-      bucketAgg.set(t.bucketKey, {
-        workouts: 1,
-        seconds: t.durationSeconds,
-        latestStartedAt: t.startedAt,
-        latestSessionId: t.id,
-      });
+      bucketAgg.set(t.bucketKey, { workouts: 1 });
     } else {
       cur.workouts += 1;
-      cur.seconds += t.durationSeconds;
-      if (t.startedAt > cur.latestStartedAt) {
-        cur.latestStartedAt = t.startedAt;
-        cur.latestSessionId = t.id;
-      }
     }
   }
 
@@ -1196,8 +1179,6 @@ export async function getProgressForRange(
         key: b.key,
         label: b.label,
         workouts: entry?.workouts ?? 0,
-        minutes: entry ? Math.round(entry.seconds / 60) : 0,
-        sessionId: entry?.latestSessionId ?? null,
       };
     }),
     muscleSets,

@@ -130,7 +130,7 @@ export function ExerciseCard({
                 <span className="text-sm font-medium truncate">{exercise.name}</span>
                 <span className="flex items-center gap-1 text-[11px] text-foreground-muted tabular-nums whitespace-nowrap">
                   {plannedSummary}
-                  <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
+                  <ChevronDown className="w-3.5 h-3.5 text-foreground-muted" />
                 </span>
               </div>
               <span className="h-6 w-6 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
@@ -170,7 +170,7 @@ export function ExerciseCard({
                 type="button"
                 onClick={() => setZoomed(true)}
                 aria-label={`View ${exercise.name} ${videoMedia ? "video" : "animation"}`}
-                className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                className="shrink-0 rounded outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
               >
                 <ExerciseMedia
                   imageUrl={exercise.imageUrl}
@@ -195,12 +195,12 @@ export function ExerciseCard({
                 <span className="flex items-center gap-1 text-[11px] text-foreground-muted tabular-nums whitespace-nowrap">
                   {plannedSummary}
                   {allComplete ? (
-                    <ChevronUp className="w-3.5 h-3.5 text-neutral-500" />
+                    <ChevronUp className="w-3.5 h-3.5 text-foreground-muted" />
                   ) : null}
                 </span>
               </div>
               {exercise.note ? (
-                <p className="text-[11px] text-neutral-500">{exercise.note}</p>
+                <p className="text-[11px] text-foreground-muted">{exercise.note}</p>
               ) : null}
             </button>
             <DragHandle
@@ -213,7 +213,7 @@ export function ExerciseCard({
           <div className="space-y-1.5">
             <div
               className={cn(
-                "grid gap-2 px-2 text-[10px] uppercase tracking-wide text-neutral-500",
+                "grid gap-2 px-2 text-[10px] uppercase tracking-wide text-foreground-muted",
                 isTime
                   ? "grid-cols-[1fr_56px]"
                   : "grid-cols-[1fr_1fr_56px]"

@@ -1,13 +1,16 @@
 import { Flame, Percent, Ruler, Scale, type LucideIcon } from "lucide-react";
 import type { Units } from "./units";
 import {
+  CM_PER_IN,
   circumferenceUnitLabel,
   formatCircumference,
   formatCircumferenceShort,
+  formatNumberOneDecimal,
   formatSignedCircumference,
   formatSignedWeight,
   formatWeight,
   formatWeightShort,
+  LB_PER_KG,
   parseCircumferenceInput,
   parseWeightInput,
   unitLabel,
@@ -46,8 +49,6 @@ export type MetricConfig = {
   parse: (raw: string, units: Units) => number | null;
 };
 
-const LB_PER_KG = 2.20462;
-
 function lengthMetric(key: MeasurementKey, label: string): MetricConfig {
   return {
     key,
@@ -55,7 +56,7 @@ function lengthMetric(key: MeasurementKey, label: string): MetricConfig {
     kind: "length",
     source: "body_measurements",
     icon: Ruler,
-    toDisplay: (cm, units) => (units === "metric" ? cm : cm / 2.54),
+    toDisplay: (cm, units) => (units === "metric" ? cm : cm / CM_PER_IN),
     formatShort: formatCircumferenceShort,
     format: formatCircumference,
     formatSigned: formatSignedCircumference,
@@ -66,8 +67,7 @@ function lengthMetric(key: MeasurementKey, label: string): MetricConfig {
 
 function formatNum(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
-  const rounded = Math.round(value * 10) / 10;
-  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
+  return formatNumberOneDecimal(value);
 }
 
 export const WEIGHT_METRIC: MetricConfig = {

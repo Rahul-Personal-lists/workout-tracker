@@ -13,6 +13,7 @@ const THEMES = [
 ] as const;
 
 export type ThemeKey = (typeof THEMES)[number]["key"];
+export const THEME_KEYS: ThemeKey[] = THEMES.map((t) => t.key);
 
 // initialTheme comes from the accent-theme cookie, read server-side in the
 // page so SSR and first client render agree (no post-mount setState needed).
@@ -44,7 +45,7 @@ export function ThemePicker({ initialTheme }: { initialTheme: ThemeKey }) {
                   aria-pressed={active}
                   aria-label={t.label}
                   className={cn(
-                    "w-full h-12 rounded-md border flex items-center justify-center transition-colors",
+                    "w-full h-12 rounded-md border flex items-center justify-center transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                     active ? "border-white" : "border-border"
                   )}
                   style={{ background: t.color }}

@@ -8,6 +8,7 @@ import { SwipeRow } from "@/components/swipe-row";
 import { useTimeSetTimer } from "@/lib/stores/time-set-timer";
 import {
   type StepLead,
+  tapVibration,
   unlockStepCueAudio,
   useStepCues,
 } from "@/lib/step-cue";
@@ -84,9 +85,8 @@ export function TimeSetInputRow({
     if (now < endsAt) return;
     // Expiry — including a countdown that ended while this row was unmounted and
     // is restored already past its end: complete the set once, clear the timer.
-    /* eslint-disable react-hooks/set-state-in-effect */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDurationStr(formatDuration(targetSec));
-    /* eslint-enable react-hooks/set-state-in-effect */
     stopTimer();
     onChangeRef.current({ completed: true, actualSeconds: targetSec }, true);
   }, [endsAt, targetSec, now, stopTimer]);
@@ -115,18 +115,14 @@ export function TimeSetInputRow({
     const elapsed = Math.max(1, targetSec - remainingSec);
     stopTimer();
     setDurationStr(formatDuration(elapsed));
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate?.(15);
-    }
+    tapVibration();
     onChange({ completed: true, actualSeconds: elapsed }, true);
   }
 
   function toggleComplete() {
     const next = !set.completed;
     const parsed = parseDuration(durationStrRef.current);
-    if (next && typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate?.(15);
-    }
+    if (next) tapVibration();
     onChange({ completed: next, actualSeconds: parsed }, true);
   }
 
@@ -177,7 +173,7 @@ export function TimeSetInputRow({
               onBlur={commitOnBlur}
               placeholder={placeholder}
               className={cn(
-                "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+                "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                 set.completed
                   ? "text-base text-foreground-muted"
                   : "text-2xl font-semibold"
@@ -185,7 +181,7 @@ export function TimeSetInputRow({
             />
           )}
           {hint ? (
-            <span className="text-[10px] text-neutral-500 px-1 -mt-0.5">{hint}</span>
+            <span className="text-[10px] text-foreground-muted px-1 -mt-0.5">{hint}</span>
           ) : null}
         </label>
         {running ? (
@@ -193,7 +189,7 @@ export function TimeSetInputRow({
             type="button"
             aria-label="Stop timer"
             onClick={stopCountdown}
-            className="h-14 w-14 rounded-xl flex items-center justify-center bg-emerald-500 border border-emerald-500 text-black"
+            className="h-14 w-14 rounded-xl flex items-center justify-center bg-emerald-500 border border-emerald-500 text-black outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <Square className="w-4 h-4" fill="currentColor" strokeWidth={0} />
           </button>
@@ -204,7 +200,7 @@ export function TimeSetInputRow({
               aria-label="Start timer"
               onClick={startCountdown}
               disabled={!canStart}
-              className="h-14 w-14 rounded-xl flex items-center justify-center border border-border-strong text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="h-14 w-14 rounded-xl flex items-center justify-center border border-border-strong text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             >
               <Play className="w-4 h-4" fill="currentColor" strokeWidth={0} />
             </button>
@@ -213,10 +209,10 @@ export function TimeSetInputRow({
               aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
               onClick={toggleComplete}
               className={cn(
-                "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors",
+                "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                 set.completed
                   ? "bg-emerald-500 border-emerald-500 text-black"
-                  : "border-border-strong text-neutral-500"
+                  : "border-border-strong text-foreground-muted"
               )}
             >
               <span

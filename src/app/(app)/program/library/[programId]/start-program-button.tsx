@@ -5,17 +5,14 @@ import { unstable_rethrow } from "next/navigation";
 import { Check } from "lucide-react";
 import { archiveProgram, seedPresetProgram } from "@/app/actions/program";
 import { toast } from "@/components/toast";
-import { useDialog } from "@/lib/use-dialog";
-import { cn } from "@/lib/utils";
+import { BottomSheet } from "@/components/bottom-sheet";
+import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import type { ProgramSummary } from "@/lib/queries";
 
 // Keep in sync with MAX_PROGRAMS in actions/program.ts — the server action is
 // the source of truth; this only decides whether to seed straight away or open
 // the archive-one sheet first.
 const MAX_PROGRAMS = 2;
-
-const RING =
-  "outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]";
 
 export function StartProgramButton({
   presetId,
@@ -123,22 +120,8 @@ function ArchiveSheet({
   onArchive: (programId: string) => void;
   onClose: () => void;
 }) {
-  const ref = useDialog<HTMLDivElement>(true, onClose);
-
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70"
-      onClick={onClose}
-    >
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Make room for this program"
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-surface border-t border-border rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-4 outline-none"
-      >
+    <BottomSheet open ariaLabel="Make room for this program" onClose={onClose}>
         <div className="space-y-1.5">
           <h2 className="text-base font-semibold text-foreground">
             You already have {MAX_PROGRAMS} programs
@@ -197,7 +180,6 @@ function ArchiveSheet({
         >
           {pending ? "Working…" : "Cancel"}
         </button>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Dumbbell, Search, Star, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import { ExerciseAnimation } from "@/components/exercise-animation";
 import { VideoExercisePlayer } from "@/components/video-exercise-player";
 import { InteractiveBodyFigure } from "@/components/interactive-body-figure";
@@ -28,9 +28,6 @@ import {
   loadCatalog,
   getCachedCatalog,
 } from "@/lib/exercise-catalog";
-
-const RING =
-  "outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]";
 
 // No filters: a starter slice (the full catalog is ~800 entries, each with a
 // remote image). With a search/muscle filter, show many more.

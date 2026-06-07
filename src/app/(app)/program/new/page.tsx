@@ -11,12 +11,12 @@ export default function NewProgramPage() {
       <header className="space-y-2">
         <Link
           href="/program"
-          className="inline-flex items-center gap-1 text-xs text-neutral-400"
+          className="inline-flex items-center gap-1 text-xs text-foreground-muted"
         >
           <ChevronLeft className="w-3.5 h-3.5" /> Program
         </Link>
         <h1 className="text-2xl font-semibold">New Program</h1>
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-foreground-muted">
           Pick a ready-made plan or build your own.
         </p>
       </header>

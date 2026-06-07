@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, getTodayWeightLb } from "@/lib/queries";
+import { SettingsDetailHeader } from "../settings-detail-header";
 import { ProfileClient } from "./profile-client";
 
 export default async function ProfilePage() {
@@ -20,16 +19,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center gap-3">
-        <Link
-          href="/settings"
-          aria-label="Back to settings"
-          className="h-9 w-9 rounded-full flex items-center justify-center border border-border bg-surface text-foreground-muted hover:text-foreground"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-        <h1 className="text-xl font-semibold">My profile</h1>
-      </header>
+      <SettingsDetailHeader title="My profile" />
 
       <ProfileClient
         initialName={profile.display_name}

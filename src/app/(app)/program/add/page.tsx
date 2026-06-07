@@ -35,13 +35,13 @@ export default async function AddExercisePage({
     <div className="space-y-5">
       <Link
         href={backHref}
-        className="inline-flex items-center text-sm text-neutral-400"
+        className="inline-flex items-center text-sm text-foreground-muted"
       >
         <ArrowLeft className="w-4 h-4 mr-1" /> {backLabel}
       </Link>
 
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <p className="text-xs uppercase tracking-wide text-foreground-muted">
           {day.label} — adding exercise
         </p>
         <h1 className="text-xl font-semibold leading-tight">{day.title}</h1>

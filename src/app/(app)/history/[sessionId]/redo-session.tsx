@@ -29,7 +29,7 @@ export function RedoSessionButton({
       onClick={onClick}
       disabled={pending}
       className={cn(
-        "w-full h-12 rounded-md border border-neutral-800 bg-neutral-900 text-sm font-medium inline-flex items-center justify-center gap-2 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
+        "w-full h-12 rounded-md border border-border bg-surface text-sm font-medium inline-flex items-center justify-center gap-2 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
         pending && "opacity-50"
       )}
     >

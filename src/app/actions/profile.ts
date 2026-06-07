@@ -138,14 +138,6 @@ export async function setSoundPrefs(input: z.infer<typeof SoundPrefsSchema>) {
   });
   if (error) throw error;
 
-  const cookieStore = await cookies();
-  const value = `${soundLeadSeconds ?? "off"}|${vibrationLeadSeconds ?? "off"}`;
-  cookieStore.set("sound-prefs", value, {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-    sameSite: "lax",
-  });
-
   revalidatePath("/settings");
   revalidatePath("/settings/sounds");
 }

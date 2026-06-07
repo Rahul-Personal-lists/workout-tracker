@@ -34,9 +34,12 @@ const AddExerciseSchema = z.object({
   // Same-origin path the caller wants to land on after a successful add.
   // Used by the mid-workout add flow to bounce back to /workout/[sessionId].
   returnTo: z.string().regex(/^\/[^/]/).max(200).optional(),
-  // Custom-video snapshot (copied from a custom_exercises library entry so
-  // history stays accurate if the entry is later edited/soft-deleted). All
-  // null/empty for catalog exercises -> the row behaves exactly as before.
+  // Custom-video snapshot, captured AT ADD TIME by copying a custom_exercises
+  // library entry onto this program_exercises row. Load-bearing — same contract
+  // as planned_* in set_logs: later editing or soft-deleting the library entry
+  // must NOT rewrite what an existing program row points at, so history +
+  // playback stay accurate. All null/empty for catalog exercises -> the row
+  // behaves exactly as before.
   customExerciseId: z.string().uuid().nullable().default(null),
   videoPath: z.string().max(500).nullable().default(null),
   posterPath: z.string().max(500).nullable().default(null),
@@ -53,10 +56,21 @@ export async function addExerciseToProgram(
   const parsed = AddExerciseSchema.parse(input);
   const { supabase, user } = await requireUser();
 
-  // A snapshotted video path must belong to the caller (the user could craft an
-  // input pointing at someone else's storage object).
-  for (const p of [parsed.videoPath, parsed.posterPath]) {
-    if (p && !p.startsWith(`${user.id}/exercise-videos/`)) {
+  // A snapshotted video must arrive as a complete, self-consistent set scoped to
+  // its source library entry (defense-in-depth on top of storage RLS): either
+  // all-null (catalog exercise) or a matched video+poster under the caller's own
+  // <user>/exercise-videos/<customExerciseId>/ folder. Mirrors the tight check
+  // in createCustomExercise and rejects crafted inputs that pair a video with
+  // the wrong id or point at another user.
+  if (parsed.videoPath !== null || parsed.posterPath !== null) {
+    const prefix = `${user.id}/exercise-videos/${parsed.customExerciseId}/`;
+    if (
+      parsed.customExerciseId === null ||
+      parsed.videoPath === null ||
+      parsed.posterPath === null ||
+      !parsed.videoPath.startsWith(prefix) ||
+      !parsed.posterPath.startsWith(prefix)
+    ) {
       throw new Error("Invalid video path");
     }
   }

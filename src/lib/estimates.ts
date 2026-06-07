@@ -4,6 +4,8 @@
 // label it with "~" / "est.". The heuristics below are deliberately simple and
 // exported as named constants so they're easy to tune later.
 
+import type { StarterExercise } from "./starter-program";
+
 export type EstimateExercise = {
   sets: number;
   base_reps: number | null;
@@ -84,4 +86,22 @@ export function estimatePlanStats(
     durationSec: estimatePlanDuration(exercises),
     calories: estimateCalories(exercises, opts),
   };
+}
+
+// Adapters from a preset/library StarterExercise to the estimate + display
+// shapes — shared by the preset preview and the library plan-detail page.
+export function starterToEstimate(e: StarterExercise): EstimateExercise {
+  return {
+    sets: e.sets,
+    base_reps: e.base_reps,
+    kind: e.kind ?? "reps",
+    target_seconds: e.target_seconds ?? null,
+    tracked: e.tracked,
+  };
+}
+
+export function formatStarterSets(e: StarterExercise): string {
+  if (e.kind === "time" && e.target_seconds) return `${e.sets} × ${e.target_seconds}s`;
+  if (e.base_reps) return `${e.sets} × ${e.base_reps}`;
+  return `${e.sets} sets`;
 }

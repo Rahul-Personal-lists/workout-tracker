@@ -1,39 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import { getLibraryProgram } from "@/lib/program-library";
 import { getAllPrograms, getGoalWeight, getTodayWeightLb } from "@/lib/queries";
 import { getUnitsServer } from "@/lib/units-server";
-import { estimatePlanStats, type EstimateExercise } from "@/lib/estimates";
+import {
+  estimatePlanStats,
+  formatStarterSets,
+  starterToEstimate,
+} from "@/lib/estimates";
 import { getMuscleRegionsForExercise } from "@/lib/muscle-groups";
 import { formatWeight } from "@/lib/format";
 import { MuscleBadge } from "@/components/muscle-badge";
 import { PlanStats } from "@/components/plan-stats";
 import { ExerciseThumb } from "../../../exercise-thumb";
 import { StartProgramButton } from "../start-program-button";
-import type { StarterExercise } from "@/lib/starter-program";
 
 export const dynamic = "force-dynamic";
-
-const RING =
-  "outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]";
-
-function toEstimate(e: StarterExercise): EstimateExercise {
-  return {
-    sets: e.sets,
-    base_reps: e.base_reps,
-    kind: e.kind ?? "reps",
-    target_seconds: e.target_seconds ?? null,
-    tracked: e.tracked,
-  };
-}
-
-function setsLabel(e: StarterExercise): string {
-  if (e.kind === "time" && e.target_seconds) return `${e.sets} × ${e.target_seconds}s`;
-  if (e.base_reps) return `${e.sets} × ${e.base_reps}`;
-  return `${e.sets} sets`;
-}
 
 export default async function PlanDetailPage({
   params,
@@ -59,7 +43,7 @@ export default async function PlanDetailPage({
   ]);
   const weightLb = todayWeight ?? goalWeight ?? 170;
 
-  const stats = estimatePlanStats(day.exercises.map(toEstimate), { weightLb });
+  const stats = estimatePlanStats(day.exercises.map(starterToEstimate), { weightLb });
 
   return (
     <div className="space-y-5 pb-4">
@@ -136,7 +120,7 @@ export default async function PlanDetailPage({
                 ) : null}
               </p>
               <p className="text-xs text-foreground-muted tabular-nums">
-                {setsLabel(ex)}
+                {formatStarterSets(ex)}
                 {ex.start_weight !== null
                   ? ` · from ${formatWeight(ex.start_weight, units)}`
                   : ""}

@@ -10,6 +10,7 @@ import {
 } from "@/lib/format";
 import type { Units } from "@/lib/units";
 import { SwipeRow } from "@/components/swipe-row";
+import { tapVibration } from "@/lib/step-cue";
 import type { SetRow } from "./types";
 
 export function SetInputRow({
@@ -66,9 +67,7 @@ export function SetInputRow({
     const validW = parseW(weightStrRef.current);
     const parsedR = repsStrRef.current.trim() === "" ? null : parseInt(repsStrRef.current, 10);
     const validR = Number.isFinite(parsedR as number) ? (parsedR as number) : null;
-    if (next && typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate?.(15);
-    }
+    if (next) tapVibration();
     onChange(
       { completed: next, actualWeight: validW, actualReps: validR },
       true
@@ -112,7 +111,7 @@ export function SetInputRow({
             )}
           />
           {hint ? (
-            <span className="text-[10px] text-neutral-500 px-1 -mt-0.5">{hint}</span>
+            <span className="text-[10px] text-foreground-muted px-1 -mt-0.5">{hint}</span>
           ) : null}
         </label>
         <input
@@ -139,7 +138,7 @@ export function SetInputRow({
             "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
             set.completed
               ? "bg-emerald-500 border-emerald-500 text-black"
-              : "border-border-strong text-neutral-500"
+              : "border-border-strong text-foreground-muted"
           )}
         >
           <span

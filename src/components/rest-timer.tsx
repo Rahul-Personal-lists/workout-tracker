@@ -31,13 +31,25 @@ export function RestTimerBar({
   soundLead: StepLead;
   vibrationLead: StepLead;
 }) {
-  const endsAt = useRestTimer((s) => s.endsAt);
-  const pausedAt = useRestTimer((s) => s.pausedAt);
+  const rawEndsAt = useRestTimer((s) => s.endsAt);
+  const rawPausedAt = useRestTimer((s) => s.pausedAt);
   const defaultDuration = useRestTimer((s) => s.defaultDuration);
   const setDefaultDuration = useRestTimer((s) => s.setDefaultDuration);
   const adjust = useRestTimer((s) => s.adjust);
   const stop = useRestTimer((s) => s.stop);
   const start = useRestTimer((s) => s.start);
+
+  // Gate the persisted timer state on hydration so SSR and the first client
+  // render agree (the store rehydrates endsAt/pausedAt from localStorage),
+  // avoiding an idle->active flash. Mirrors TimeSetInputRow.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated(useRestTimer.persist.hasHydrated());
+    return useRestTimer.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
+  const endsAt = hydrated ? rawEndsAt : null;
+  const pausedAt = hydrated ? rawPausedAt : null;
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {

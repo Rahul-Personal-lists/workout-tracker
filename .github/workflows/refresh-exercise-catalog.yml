@@ -32,7 +32,8 @@ jobs:
         env:
           REF: ${{ github.event.inputs.ref || 'main' }}
         run: |
-          npm run refresh-catalog -- --ref "$REF" --no-db --force | tee /tmp/refresh-report.txt
+          set -o pipefail
+          npm run refresh-catalog -- --ref "$REF" --no-db | tee /tmp/refresh-report.txt
 
       - name: Build PR body
         run: |

@@ -63,19 +63,19 @@ export default async function ExerciseHistoryPage({
     <div className="space-y-6">
       <Link
         href="/progress"
-        className="inline-flex items-center text-sm text-neutral-400 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+        className="inline-flex items-center text-sm text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
       >
         <ArrowLeft className="w-4 h-4 mr-1" /> Progress
       </Link>
 
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <p className="text-xs uppercase tracking-wide text-foreground-muted">
           Exercise progress
         </p>
         <h1 className="text-xl font-semibold leading-tight">{history.name}</h1>
         {points.length > 0 ? (
           <div className="flex gap-4 pt-1 text-sm tabular-nums">
-            <span className="text-neutral-300">
+            <span className="text-foreground-muted">
               Latest:{" "}
               <span className="font-medium">
                 {isTime
