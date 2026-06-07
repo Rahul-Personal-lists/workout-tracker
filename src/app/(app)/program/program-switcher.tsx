@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { archiveProgram, setActiveProgram } from "@/app/actions/program";
+import { archiveProgram, renameProgram, setActiveProgram } from "@/app/actions/program";
 import type { ProgramSummary } from "@/lib/queries";
 import { ConfirmSheet } from "@/components/confirm-sheet";
+import { RenameProgramSheet } from "./rename-program-sheet";
 import { toast } from "@/components/toast";
 
 export function ProgramSwitcher({
@@ -20,6 +21,9 @@ export function ProgramSwitcher({
   const [open, setOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<ProgramSummary | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [renameTarget, setRenameTarget] = useState<ProgramSummary | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,6 +76,36 @@ export function ProgramSwitcher({
     });
   }
 
+  function requestRename(p: ProgramSummary) {
+    setRenameError(null);
+    setOpen(false);
+    setRenameValue(p.name);
+    setRenameTarget(p);
+  }
+
+  function confirmRename() {
+    const p = renameTarget;
+    if (!p) return;
+    const name = renameValue.trim();
+    if (!name) {
+      setRenameError("Name required.");
+      return;
+    }
+    if (name === p.name) {
+      setRenameTarget(null);
+      return;
+    }
+    setRenameError(null);
+    startTransition(async () => {
+      try {
+        await renameProgram({ programId: p.id, name });
+        setRenameTarget(null);
+      } catch (err) {
+        setRenameError(err instanceof Error ? err.message : "Could not rename.");
+      }
+    });
+  }
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -113,6 +147,15 @@ export function ProgramSwitcher({
                 </span>
                 <span className="truncate">{p.name}</span>
               </button>
+              <button
+                type="button"
+                onClick={() => requestRename(p)}
+                disabled={pending}
+                aria-label={`Rename ${p.name}`}
+                className="h-9 w-9 shrink-0 rounded-lg inline-flex items-center justify-center text-foreground-muted hover:bg-surface-hover hover:text-foreground disabled:opacity-40 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
               {canDelete ? (
                 <button
                   type="button"
@@ -151,6 +194,15 @@ export function ProgramSwitcher({
         error={deleteError}
         onConfirm={confirmRemove}
         onCancel={() => setConfirmTarget(null)}
+      />
+      <RenameProgramSheet
+        open={renameTarget !== null}
+        value={renameValue}
+        onChange={setRenameValue}
+        onSave={confirmRename}
+        onCancel={() => setRenameTarget(null)}
+        pending={pending}
+        error={renameError}
       />
     </div>
   );
