@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Check, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDialog } from "@/lib/use-dialog";
+import { BottomSheet } from "@/components/bottom-sheet";
 import {
   GOAL_META,
   SPLIT_LABEL,
@@ -208,23 +208,8 @@ function FilterSheet<T extends string>({
   onSelect: (v: T | null) => void;
   onClose: () => void;
 }) {
-  const ref = useDialog<HTMLDivElement>(open, onClose);
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70"
-      onClick={onClose}
-    >
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        tabIndex={-1}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-surface border-t border-border rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-3 outline-none"
-      >
+    <BottomSheet open={open} ariaLabel={title} onClose={onClose} className="space-y-3">
         <h2 className="text-base font-semibold text-foreground">{title}</h2>
         <ul role="radiogroup" aria-label={title} className="space-y-1.5">
           {options.map((o) => {
@@ -254,7 +239,6 @@ function FilterSheet<T extends string>({
             );
           })}
         </ul>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }
