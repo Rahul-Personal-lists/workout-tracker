@@ -34,13 +34,8 @@ import { useRestTimer } from "@/lib/stores/rest-timer";
 import { normalizeStepLead, unlockStepCueAudio } from "@/lib/step-cue";
 import { createClient } from "@/lib/supabase/client";
 import type { PreviousDayNote } from "@/lib/queries";
-import {
-  MAX_PHOTO_BYTES,
-  PHOTO_BUCKET,
-  isLikelyImage,
-  photoContentType,
-  photoExt,
-} from "@/lib/photo-upload";
+import { PHOTO_BUCKET } from "@/lib/photo-upload";
+import { uploadImageFiles } from "@/lib/upload-photos";
 import type { Units } from "@/lib/units";
 import type { ExerciseRow, SetRow } from "./types";
 import { ExerciseCard } from "./exercise-card";
@@ -291,36 +286,11 @@ export function WorkoutClient({
           return;
         }
 
-        const uploadedPaths: string[] = [];
-        let failed = 0;
-        let firstError: string | null = null;
-
-        for (const file of photos) {
-          try {
-            if (file.size > MAX_PHOTO_BYTES) {
-              const mb = (file.size / 1024 / 1024).toFixed(1);
-              throw new Error(`Photo too large (${mb} MB). Max is 25 MB.`);
-            }
-            if (!isLikelyImage(file)) {
-              throw new Error(
-                `Unsupported file: ${file.name || "(unnamed)"} (${file.type || "unknown type"}).`
-              );
-            }
-            const ext = photoExt(file);
-            const path = `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`;
-            const contentType = photoContentType(file, ext);
-            const { error: upErr } = await supabase.storage
-              .from(PHOTO_BUCKET)
-              .upload(path, file, { contentType, upsert: false });
-            if (upErr) throw upErr;
-            uploadedPaths.push(path);
-          } catch (err) {
-            failed += 1;
-            if (firstError === null) {
-              firstError = err instanceof Error ? err.message : "Photo upload failed";
-            }
-          }
-        }
+        const { uploadedPaths, failed, firstError } = await uploadImageFiles(
+          supabase,
+          photos,
+          (ext) => `${user.id}/${sessionId}/${crypto.randomUUID()}.${ext}`,
+        );
 
         if (uploadedPaths.length > 0) {
           try {

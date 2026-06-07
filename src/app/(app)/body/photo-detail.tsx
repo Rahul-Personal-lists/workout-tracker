@@ -7,13 +7,8 @@ import { recordBodyPhotos } from "@/app/actions/body";
 import { createClient } from "@/lib/supabase/client";
 import type { BodyPhotoRow } from "@/lib/queries";
 import { cn } from "@/lib/utils";
-import {
-  MAX_PHOTO_BYTES,
-  PHOTO_BUCKET,
-  isLikelyImage,
-  photoContentType,
-  photoExt,
-} from "@/lib/photo-upload";
+import { PHOTO_BUCKET } from "@/lib/photo-upload";
+import { uploadImageFiles } from "@/lib/upload-photos";
 import { todayLocalISODate } from "@/lib/local-date";
 import { PhotoCapture } from "./photo-capture";
 import { BodyPhotos } from "./body-photos";
@@ -69,33 +64,12 @@ export function PhotoDetail({
     } = await supabase.auth.getUser();
     if (!user) return "Not signed in for photo upload.";
 
-    const uploadedPaths: string[] = [];
-    let firstUploadError: string | null = null;
-    for (const file of pickedPhotos) {
-      try {
-        if (file.size > MAX_PHOTO_BYTES) {
-          throw new Error(
-            `Photo too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 25 MB.`
-          );
-        }
-        if (!isLikelyImage(file)) {
-          throw new Error(`Unsupported file: ${file.name || "(unnamed)"}`);
-        }
-        const ext = photoExt(file);
-        const path = `${user.id}/body/${forDate}/${crypto.randomUUID()}.${ext}`;
-        const contentType = photoContentType(file, ext);
-        const { error: upErr } = await supabase.storage
-          .from(PHOTO_BUCKET)
-          .upload(path, file, { contentType, upsert: false });
-        if (upErr) throw upErr;
-        uploadedPaths.push(path);
-      } catch (err) {
-        if (firstUploadError === null) {
-          firstUploadError =
-            err instanceof Error ? err.message : "Photo upload failed";
-        }
-      }
-    }
+    const { uploadedPaths, firstError } = await uploadImageFiles(
+      supabase,
+      pickedPhotos,
+      (ext) => `${user.id}/body/${forDate}/${crypto.randomUUID()}.${ext}`,
+    );
+
     if (uploadedPaths.length > 0) {
       try {
         await recordBodyPhotos({ logDate: forDate, paths: uploadedPaths });
@@ -104,7 +78,7 @@ export function PhotoDetail({
         return err instanceof Error ? err.message : "Couldn't save photos";
       }
     }
-    return firstUploadError;
+    return firstError;
   }
 
   function onSave() {
