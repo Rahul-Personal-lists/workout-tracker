@@ -123,7 +123,7 @@ export function EditableSetRow({
     return (
       <div className="space-y-1">
       <div className="grid grid-cols-[24px_1fr_auto] items-center gap-2 text-sm">
-        <span className="text-neutral-500 tabular-nums">{setNumber}</span>
+        <span className="text-foreground-muted tabular-nums">{setNumber}</span>
         <div className="flex items-center gap-1.5">
           {isTime ? (
             <input
@@ -132,7 +132,7 @@ export function EditableSetRow({
               onChange={(e) => setDuration(e.target.value)}
               inputMode="numeric"
               placeholder="mm:ss"
-              className="h-8 w-20 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
+              className="h-8 w-20 rounded bg-background border border-border-strong px-2 text-xs tabular-nums"
             />
           ) : (
             <>
@@ -142,20 +142,20 @@ export function EditableSetRow({
                 onChange={(e) => setWeight(e.target.value.replace(/[^\d.]/g, "").slice(0, 6))}
                 inputMode="decimal"
                 placeholder={unitLabel(units)}
-                className="h-8 w-16 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
+                className="h-8 w-16 rounded bg-background border border-border-strong px-2 text-xs tabular-nums"
               />
-              <span className="text-neutral-500 text-xs">×</span>
+              <span className="text-foreground-muted text-xs">×</span>
               <input
                 aria-label="Reps"
                 value={reps}
                 onChange={(e) => setReps(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
                 inputMode="numeric"
                 placeholder="reps"
-                className="h-8 w-14 rounded bg-neutral-950 border border-neutral-700 px-2 text-xs tabular-nums"
+                className="h-8 w-14 rounded bg-background border border-border-strong px-2 text-xs tabular-nums"
               />
             </>
           )}
-          <label className="ml-1 inline-flex items-center gap-1 text-[11px] text-neutral-400">
+          <label className="ml-1 inline-flex items-center gap-1 text-[11px] text-foreground-muted">
             <input
               type="checkbox"
               checked={done}
@@ -179,7 +179,7 @@ export function EditableSetRow({
             type="button"
             onClick={cancel}
             aria-label="Cancel"
-            className="h-8 w-8 flex items-center justify-center text-neutral-500 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+            className="h-8 w-8 flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <X className="w-4 h-4" />
           </button>
@@ -204,19 +204,19 @@ export function EditableSetRow({
         type="button"
         onClick={() => setEditing(true)}
         className={cn(
-          "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-neutral-800/40 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
-          dimmed && "text-neutral-500"
+          "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-surface-hover outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
+          dimmed && "text-foreground-muted"
         )}
       >
-        <span className="text-neutral-600 tabular-nums">{setNumber}</span>
+        <span className="text-foreground-muted tabular-nums">{setNumber}</span>
         <span className={cn("tabular-nums", !dimmed && "font-medium")}>
           {hasActual ? formatDuration(actualSeconds!) : "—"}
         </span>
-        <span className="text-[11px] text-neutral-500 tabular-nums">
+        <span className="text-[11px] text-foreground-muted tabular-nums">
           {showPlanned ? (
             <>
               {hasActual ? (
-                <span className={exceeds ? "text-accent" : "text-neutral-500"}>
+                <span className={exceeds ? "text-accent" : "text-foreground-muted"}>
                   {exceeds ? "↑" : "↓"}{" "}
                 </span>
               ) : null}
@@ -247,20 +247,20 @@ export function EditableSetRow({
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-neutral-800/40",
-        dimmed && "text-neutral-500"
+        "w-full grid grid-cols-[24px_1fr_auto] items-center gap-3 text-sm text-left rounded -mx-1 px-1 py-0.5 hover:bg-surface-hover",
+        dimmed && "text-foreground-muted"
       )}
     >
-      <span className="text-neutral-600 tabular-nums">{setNumber}</span>
+      <span className="text-foreground-muted tabular-nums">{setNumber}</span>
       <span className={cn("tabular-nums", !dimmed && "font-medium")}>
         {actualWeight !== null ? formatWeight(actualWeight, units) : "—"}
         {actualReps !== null ? ` × ${actualReps}` : ""}
       </span>
-      <span className="text-[11px] text-neutral-500 tabular-nums">
+      <span className="text-[11px] text-foreground-muted tabular-nums">
         {showPlanned ? (
           <>
             {hasActual ? (
-              <span className={exceeds ? "text-accent" : "text-neutral-500"}>
+              <span className={exceeds ? "text-accent" : "text-foreground-muted"}>
                 {exceeds ? "↑" : "↓"}{" "}
               </span>
             ) : null}

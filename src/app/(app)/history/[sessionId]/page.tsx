@@ -55,20 +55,20 @@ export default async function SessionDetailPage({
     <div className="space-y-6">
       <Link
         href="/progress"
-        className="inline-flex items-center text-sm text-neutral-400 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+        className="inline-flex items-center text-sm text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
       >
         <ArrowLeft className="w-4 h-4 mr-1" /> Progress
       </Link>
 
       <header className="space-y-2">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <p className="text-xs uppercase tracking-wide text-foreground-muted">
           Week {session.week_number} · {day.label} · {formatDateInTz(new Date(session.started_at), tz)}
         </p>
         <h1 className="text-xl font-semibold leading-tight">
           {titleRest ? `${titleRest} ` : ""}
           <em className="font-display italic font-medium">{titleLast}</em>
         </h1>
-        <div className="grid grid-cols-3 gap-4 pt-3 border-t border-neutral-900">
+        <div className="grid grid-cols-3 gap-4 pt-3 border-t border-border">
           <div>
             <div className="text-base tabular-nums leading-tight">
               <DurationEditor
@@ -76,13 +76,13 @@ export default async function SessionDetailPage({
                 durationSeconds={session.duration_seconds}
               />
             </div>
-            <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+            <div className="text-[10px] uppercase tracking-wide text-foreground-muted mt-0.5">
               Time
             </div>
           </div>
           <div>
             <div className="text-base tabular-nums leading-tight">{completedCount}</div>
-            <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+            <div className="text-[10px] uppercase tracking-wide text-foreground-muted mt-0.5">
               Sets
             </div>
           </div>
@@ -90,7 +90,7 @@ export default async function SessionDetailPage({
             <div className="text-base tabular-nums leading-tight">
               {totalVolume > 0 ? formatVolume(totalVolume, units) : "—"}
             </div>
-            <div className="text-[10px] uppercase tracking-wide text-neutral-500 mt-0.5">
+            <div className="text-[10px] uppercase tracking-wide text-foreground-muted mt-0.5">
               {units === "metric" ? "Kg" : "Lb"} · Reps
             </div>
           </div>
@@ -99,8 +99,8 @@ export default async function SessionDetailPage({
 
       {session.notes ? (
         <section className="space-y-2">
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Notes</p>
-          <p className="rounded-md border border-neutral-800 bg-neutral-900 p-3 text-sm text-neutral-300">
+          <p className="text-xs uppercase tracking-wide text-foreground-muted">Notes</p>
+          <p className="rounded-md border border-border bg-surface p-3 text-sm text-foreground-muted">
             {session.notes}
           </p>
         </section>
@@ -180,18 +180,18 @@ export default async function SessionDetailPage({
           return (
             <li
               key={ex.id}
-              className="rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden"
+              className="rounded-lg border border-border bg-surface overflow-hidden"
             >
               <Link
                 href={`/history/exercise/${ex.id}`}
-                className="flex items-center gap-2 px-3 py-2 border-b border-neutral-900 hover:bg-neutral-800/40 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+                className="flex items-center gap-2 px-3 py-2 border-b border-border hover:bg-surface-hover outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               >
                 <span className="text-sm font-medium flex-1 min-w-0 truncate">{ex.name}</span>
                 {(() => {
                   if (isTime) {
                     if (topTime === null) return null;
                     return (
-                      <span className="text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                      <span className="text-[11px] text-foreground-muted tabular-nums whitespace-nowrap">
                         Top today · {formatDuration(topTime)}
                       </span>
                     );
@@ -205,7 +205,7 @@ export default async function SessionDetailPage({
                     (allTime.weight > todayW ||
                       (allTime.weight === todayW && allTime.reps > todayR));
                   return (
-                    <span className="text-[11px] text-neutral-400 tabular-nums whitespace-nowrap">
+                    <span className="text-[11px] text-foreground-muted tabular-nums whitespace-nowrap">
                       Top today · {formatWeight(todayW, units)} × {todayR}
                       {allTimeIsBetter
                         ? ` · all-time ${formatWeight(allTime.weight, units)} × ${allTime.reps}`
@@ -213,11 +213,11 @@ export default async function SessionDetailPage({
                     </span>
                   );
                 })()}
-                <ChevronRight className="w-4 h-4 text-neutral-500 flex-none" />
+                <ChevronRight className="w-4 h-4 text-foreground-muted flex-none" />
               </Link>
               <div className="px-3 py-3 space-y-1">
                 {exLogs.length === 0 ? (
-                  <p className="px-1 text-sm text-neutral-500 opacity-50">Skipped</p>
+                  <p className="px-1 text-sm text-foreground-muted opacity-50">Skipped</p>
                 ) : (
                   expected.map((s) => (
                     <EditableSetRow

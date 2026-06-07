@@ -111,7 +111,7 @@ export function SetInputRow({
             )}
           />
           {hint ? (
-            <span className="text-[10px] text-neutral-500 px-1 -mt-0.5">{hint}</span>
+            <span className="text-[10px] text-foreground-muted px-1 -mt-0.5">{hint}</span>
           ) : null}
         </label>
         <input
@@ -138,7 +138,7 @@ export function SetInputRow({
             "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
             set.completed
               ? "bg-emerald-500 border-emerald-500 text-black"
-              : "border-border-strong text-neutral-500"
+              : "border-border-strong text-foreground-muted"
           )}
         >
           <span

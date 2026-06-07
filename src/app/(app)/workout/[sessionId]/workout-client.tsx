@@ -74,7 +74,7 @@ function ElapsedClock({ startedAt }: { startedAt: string }) {
     return () => clearInterval(id);
   }, [startedAt]);
   return (
-    <span className="text-sm tabular-nums text-neutral-300">
+    <span className="text-sm tabular-nums text-foreground-muted">
       {formatDuration(elapsed)}
     </span>
   );
@@ -355,7 +355,7 @@ export function WorkoutClient({
   return (
     <div className="space-y-5 pb-28">
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">
+        <p className="text-xs uppercase tracking-wide text-foreground-muted">
           Week {weekNumber} · {dayLabel}
         </p>
         <div className="flex items-center justify-between gap-3">
@@ -371,7 +371,7 @@ export function WorkoutClient({
           </h1>
           <ElapsedClock startedAt={startedAt} />
         </div>
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-foreground-muted">
           {completedCount}/{totalSetsCount} sets done
         </p>
       </header>

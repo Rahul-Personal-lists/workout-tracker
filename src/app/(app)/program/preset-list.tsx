@@ -28,7 +28,7 @@ export function PresetList({ weightLb }: { weightLb: number }) {
           <li
             key={p.id}
             data-tour={i === 0 ? "preset-templates" : undefined}
-            className="rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden"
+            className="rounded-lg border border-border bg-surface overflow-hidden"
           >
             {lib ? (
               <div className="relative aspect-[5/2] w-full">
@@ -60,13 +60,13 @@ export function PresetList({ weightLb }: { weightLb: number }) {
             <div className="p-3 space-y-2">
               <div>
                 {lib ? null : <h2 className="text-sm font-medium">{p.name}</h2>}
-                <p className="text-[11px] text-neutral-500">
+                <p className="text-[11px] text-foreground-muted">
                   {p.weeks} weeks · {trainingDays} days/week
                   {p.deload_weeks.length
                     ? ` · deloads ${p.deload_weeks.join(", ")}`
                     : ""}
                 </p>
-                <p className="text-xs text-neutral-400 mt-1">{p.description}</p>
+                <p className="text-xs text-foreground-muted mt-1">{p.description}</p>
               </div>
               <PresetPreview preset={p} weightLb={weightLb} />
               <form

@@ -49,7 +49,7 @@ export function FinishSheet({
         aria-modal="true"
         aria-label="Finish workout"
         tabIndex={-1}
-        className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-4 outline-none"
+        className="w-full max-w-md bg-background border-t border-border rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-4 outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -58,14 +58,14 @@ export function FinishSheet({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="h-9 w-9 -mr-2 flex items-center justify-center text-neutral-400 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+            className="h-9 w-9 -mr-2 flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs uppercase tracking-wide text-neutral-500">
+          <label className="text-xs uppercase tracking-wide text-foreground-muted">
             Photos (optional)
           </label>
           {photos.length > 0 ? (
@@ -80,7 +80,7 @@ export function FinishSheet({
               <button
                 type="button"
                 onClick={() => setPickerOpen(true)}
-                className="w-full flex items-center justify-center gap-2 h-12 rounded-md border border-dashed border-neutral-700 text-sm text-neutral-300 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+                className="w-full flex items-center justify-center gap-2 h-12 rounded-md border border-dashed border-border-strong text-sm text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               >
                 <Camera className="w-4 h-4" />
                 <span>{photos.length === 0 ? "Add photo" : "Add more"}</span>
@@ -114,7 +114,7 @@ export function FinishSheet({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs uppercase tracking-wide text-neutral-500">
+          <label className="text-xs uppercase tracking-wide text-foreground-muted">
             Notes (optional)
           </label>
           <textarea
@@ -122,7 +122,7 @@ export function FinishSheet({
             onChange={(e) => onChangeNotes(e.target.value)}
             rows={2}
             aria-label="Notes"
-            className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:border-neutral-600 focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+            className="w-full rounded-md bg-surface border border-border px-3 py-2 text-sm outline-none focus:border-neutral-600 focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             placeholder="Felt strong, bumped weight on…"
           />
         </div>
@@ -145,7 +145,7 @@ export function FinishSheet({
               onClick={onSkip}
               disabled={finishing}
               className={cn(
-                "h-12 rounded-md font-medium bg-neutral-800 text-neutral-100 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
+                "h-12 rounded-md font-medium bg-surface-hover text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                 finishing && "opacity-50"
               )}
             >
@@ -190,7 +190,7 @@ export function FinishSheet({
           aria-modal="true"
           aria-label="Add photo"
           tabIndex={-1}
-          className="w-full max-w-md bg-neutral-950 border-t border-neutral-800 rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-3 outline-none"
+          className="w-full max-w-md bg-background border-t border-border rounded-t-xl px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] space-y-3 outline-none"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
@@ -199,7 +199,7 @@ export function FinishSheet({
               type="button"
               onClick={() => setPickerOpen(false)}
               aria-label="Close"
-              className="h-9 w-9 -mr-2 flex items-center justify-center text-neutral-400 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+              className="h-9 w-9 -mr-2 flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             >
               <X className="w-5 h-5" />
             </button>
@@ -211,7 +211,7 @@ export function FinishSheet({
               setPickerOpen(false);
               cameraInputRef.current?.click();
             }}
-            className="w-full flex items-center gap-3 h-12 px-3 rounded-md bg-neutral-900 border border-neutral-800 text-sm text-neutral-100 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+            className="w-full flex items-center gap-3 h-12 px-3 rounded-md bg-surface border border-border text-sm text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <Camera className="w-4 h-4" />
             <span>Take photo</span>
@@ -223,7 +223,7 @@ export function FinishSheet({
               setPickerOpen(false);
               galleryInputRef.current?.click();
             }}
-            className="w-full flex items-center gap-3 h-12 px-3 rounded-md bg-neutral-900 border border-neutral-800 text-sm text-neutral-100 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+            className="w-full flex items-center gap-3 h-12 px-3 rounded-md bg-surface border border-border text-sm text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <ImageIcon className="w-4 h-4" />
             <span>Choose from library</span>

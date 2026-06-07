@@ -26,7 +26,7 @@ export function PresetPreview({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-neutral-200"
+        className="inline-flex items-center gap-1 text-[11px] text-foreground-muted hover:text-foreground"
       >
         <ChevronDown
           className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")}
@@ -39,9 +39,9 @@ export function PresetPreview({
           {preset.days.map((d) => (
             <li
               key={d.day_number}
-              className="rounded-md border border-neutral-800 bg-neutral-950/40 p-2.5"
+              className="rounded-md border border-border bg-background/40 p-2.5"
             >
-              <p className="text-[11px] font-medium text-neutral-300">
+              <p className="text-[11px] font-medium text-foreground-muted">
                 {d.label} · {d.title}
               </p>
               {d.exercises.length > 0
@@ -64,7 +64,7 @@ export function PresetPreview({
                 {d.exercises.map((e, i) => (
                   <li
                     key={i}
-                    className="flex items-baseline justify-between gap-2 text-[11px] text-neutral-500"
+                    className="flex items-baseline justify-between gap-2 text-[11px] text-foreground-muted"
                   >
                     <span className="truncate">{e.name}</span>
                     <span className="shrink-0 tabular-nums">{formatStarterSets(e)}</span>

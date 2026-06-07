@@ -36,7 +36,7 @@ export function ExerciseChart({
   }));
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
+    <div className="rounded-lg border border-border bg-surface p-3">
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 12, right: 8, bottom: 4, left: -16 }}>

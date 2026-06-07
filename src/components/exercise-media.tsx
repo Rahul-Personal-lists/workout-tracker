@@ -44,7 +44,7 @@ export function ExerciseMedia({
     <div
       style={sizeStyle}
       className={cn(
-        "relative bg-neutral-100 overflow-hidden border border-neutral-800",
+        "relative bg-neutral-100 overflow-hidden border border-border",
         fillBox,
         radius,
         className

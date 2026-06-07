@@ -111,27 +111,27 @@ export function AddExerciseClient({
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search exercises…"
           autoFocus
-          className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 pl-9 pr-3 text-base outline-none focus:border-neutral-600"
+          className="w-full h-12 rounded-md bg-surface border border-border pl-9 pr-3 text-base outline-none focus:border-neutral-600"
         />
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] uppercase tracking-wide text-neutral-500">
+          <span className="text-[11px] uppercase tracking-wide text-foreground-muted">
             Muscle group
           </span>
           {activeMuscles.size > 0 ? (
             <button
               type="button"
               onClick={() => setActiveMuscles(new Set())}
-              className="text-[11px] text-neutral-400 inline-flex items-center gap-1"
+              className="text-[11px] text-foreground-muted inline-flex items-center gap-1"
             >
               <X className="w-3 h-3" /> Clear
             </button>
@@ -149,7 +149,7 @@ export function AddExerciseClient({
                   "h-8 px-3 rounded-full text-xs border transition-colors",
                   on
                     ? "bg-accent text-accent-foreground border-accent"
-                    : "border-neutral-800 bg-neutral-900 text-neutral-300"
+                    : "border-border bg-surface text-foreground-muted"
                 )}
               >
                 {g.label}
@@ -161,7 +161,7 @@ export function AddExerciseClient({
 
       <Link
         href={createHref}
-        className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-700 bg-neutral-900 p-3 text-sm text-neutral-300 hover:border-neutral-600"
+        className="flex items-center gap-2 rounded-lg border border-dashed border-border-strong bg-surface p-3 text-sm text-foreground-muted hover:border-neutral-600"
       >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
           <Plus className="w-4 h-4" />
@@ -170,7 +170,7 @@ export function AddExerciseClient({
       </Link>
 
       {catalog === null ? (
-        <p className="text-sm text-neutral-500">Loading catalog…</p>
+        <p className="text-sm text-foreground-muted">Loading catalog…</p>
       ) : filtered.length === 0 ? (
         <CustomFallback
           query={query}
@@ -194,7 +194,7 @@ export function AddExerciseClient({
               <button
                 type="button"
                 onClick={() => setSelected(entry)}
-                className="w-full flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-2 text-left hover:border-neutral-700"
+                className="w-full flex items-center gap-3 rounded-lg border border-border bg-surface p-2 text-left hover:border-border-strong"
               >
                 <ExerciseMedia
                   imageUrl={imageForCatalogEntry(entry)}
@@ -209,7 +209,7 @@ export function AddExerciseClient({
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{entry.name}</p>
-                  <p className="text-[11px] text-neutral-500 truncate flex items-center gap-1">
+                  <p className="text-[11px] text-foreground-muted truncate flex items-center gap-1">
                     {entry.video ? (
                       <span className="inline-flex items-center gap-0.5 text-accent">
                         <Video className="w-3 h-3" /> Video
@@ -343,7 +343,7 @@ function ConfigForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 flex items-center gap-3">
+      <div className="rounded-lg border border-border bg-surface p-3 flex items-center gap-3">
         <ExerciseMedia
           imageUrl={imgUrl}
           poster={entry.video ? entry.posterUrl ?? null : null}
@@ -354,7 +354,7 @@ function ConfigForm({
           <p className="text-sm font-medium">
             {entry.custom ? (entry.video ? entry.name : "Custom exercise") : entry.name}
           </p>
-          <p className="text-[11px] text-neutral-500 truncate">
+          <p className="text-[11px] text-foreground-muted truncate">
             {entry.custom
               ? entry.video
                 ? "Custom video"
@@ -367,7 +367,7 @@ function ConfigForm({
         <button
           type="button"
           onClick={onCancel}
-          className="text-xs text-neutral-400 underline"
+          className="text-xs text-foreground-muted underline"
         >
           Change
         </button>
@@ -388,10 +388,10 @@ function ConfigForm({
       ) : null}
 
       <div className="space-y-1">
-        <span className="block text-[11px] uppercase tracking-wide text-neutral-500">
+        <span className="block text-[11px] uppercase tracking-wide text-foreground-muted">
           Track as
         </span>
-        <div className="grid grid-cols-2 gap-1 rounded-md bg-neutral-900 border border-neutral-800 p-1">
+        <div className="grid grid-cols-2 gap-1 rounded-md bg-surface border border-border p-1">
           {(["reps", "time"] as const).map((k) => (
             <button
               key={k}
@@ -401,7 +401,7 @@ function ConfigForm({
                 "h-9 rounded text-sm font-medium transition-colors",
                 kind === k
                   ? "bg-accent text-accent-foreground"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  : "text-foreground-muted hover:text-foreground"
               )}
             >
               {k === "reps" ? "Reps + weight" : "Time"}
@@ -494,7 +494,7 @@ function ConfigForm({
         />
       </Field>
 
-      <label className="flex items-center gap-2 text-sm text-neutral-300">
+      <label className="flex items-center gap-2 text-sm text-foreground-muted">
         <input
           type="checkbox"
           checked={tracked}
@@ -510,7 +510,7 @@ function ConfigForm({
         <button
           type="button"
           onClick={onCancel}
-          className="h-12 px-4 rounded-md border border-neutral-800 text-sm flex-1"
+          className="h-12 px-4 rounded-md border border-border text-sm flex-1"
         >
           Back
         </button>
@@ -530,7 +530,7 @@ function ConfigForm({
 }
 
 const fieldClass =
-  "w-full h-11 rounded-md bg-neutral-900 border border-neutral-800 px-3 text-base outline-none focus:border-neutral-600";
+  "w-full h-11 rounded-md bg-surface border border-border px-3 text-base outline-none focus:border-neutral-600";
 
 function Field({
   label,
@@ -543,7 +543,7 @@ function Field({
 }) {
   return (
     <label htmlFor={htmlFor} className="block space-y-1">
-      <span className="block text-[11px] uppercase tracking-wide text-neutral-500">
+      <span className="block text-[11px] uppercase tracking-wide text-foreground-muted">
         {label}
       </span>
       {children}
@@ -560,22 +560,22 @@ function CustomFallback({
 }) {
   const trimmed = query.trim();
   if (!trimmed) {
-    return <p className="text-sm text-neutral-500">No matches.</p>;
+    return <p className="text-sm text-foreground-muted">No matches.</p>;
   }
   return (
     <div className="space-y-2">
-      <p className="text-sm text-neutral-500">No matches in catalog.</p>
+      <p className="text-sm text-foreground-muted">No matches in catalog.</p>
       <button
         type="button"
         onClick={() => onPick(trimmed)}
-        className="w-full flex items-center gap-3 rounded-lg border border-dashed border-neutral-700 bg-neutral-900 p-3 text-left hover:border-neutral-600"
+        className="w-full flex items-center gap-3 rounded-lg border border-dashed border-border-strong bg-surface p-3 text-left hover:border-neutral-600"
       >
         <ExerciseAnimation url={CUSTOM_IMG} alt="" size={48} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">
             Use &ldquo;{trimmed}&rdquo; as custom exercise
           </p>
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-[11px] text-foreground-muted">
             App logo will be used as the picture
           </p>
         </div>

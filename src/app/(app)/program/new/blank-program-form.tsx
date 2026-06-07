@@ -176,7 +176,7 @@ export function BlankProgramForm() {
       </Field>
 
       <div className="space-y-2">
-        <span className="block text-[11px] uppercase tracking-wide text-neutral-500">
+        <span className="block text-[11px] uppercase tracking-wide text-foreground-muted">
           Deload weeks
         </span>
         {weeksN > 0 ? (
@@ -193,7 +193,7 @@ export function BlankProgramForm() {
                     "h-9 min-w-[44px] px-2 rounded-md text-[11px] tabular-nums border",
                     active
                       ? "bg-accent text-accent-foreground border-accent"
-                      : "border-neutral-800 text-neutral-400 hover:text-neutral-200"
+                      : "border-border text-foreground-muted hover:text-foreground"
                   )}
                 >
                   W{w}
@@ -202,7 +202,7 @@ export function BlankProgramForm() {
             })}
           </div>
         ) : (
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-[11px] text-foreground-muted">
             Set a number of weeks to pick deloads.
           </p>
         )}
@@ -210,14 +210,14 @@ export function BlankProgramForm() {
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] uppercase tracking-wide text-neutral-500">
+          <span className="text-[11px] uppercase tracking-wide text-foreground-muted">
             Days
           </span>
           <button
             type="button"
             onClick={addDay}
             disabled={days.length >= 7}
-            className="text-xs text-neutral-400 inline-flex items-center gap-1 disabled:opacity-40"
+            className="text-xs text-foreground-muted inline-flex items-center gap-1 disabled:opacity-40"
           >
             <Plus className="w-3.5 h-3.5" /> Add day
           </button>
@@ -226,11 +226,11 @@ export function BlankProgramForm() {
           {days.map((d, i) => (
             <li
               key={i}
-              className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 flex gap-2 items-start"
+              className="rounded-lg border border-border bg-surface p-3 flex gap-2 items-start"
             >
               <div className="flex-1 flex gap-2">
                 <label className="block space-y-1 w-24 shrink-0">
-                  <span className="block text-[10px] uppercase tracking-wide text-neutral-500">
+                  <span className="block text-[10px] uppercase tracking-wide text-foreground-muted">
                     Label
                   </span>
                   <input
@@ -242,7 +242,7 @@ export function BlankProgramForm() {
                   />
                 </label>
                 <label className="block space-y-1 flex-1 min-w-0">
-                  <span className="block text-[10px] uppercase tracking-wide text-neutral-500">
+                  <span className="block text-[10px] uppercase tracking-wide text-foreground-muted">
                     Title
                   </span>
                   <input
@@ -259,7 +259,7 @@ export function BlankProgramForm() {
                 onClick={() => removeDay(i)}
                 disabled={days.length <= 1}
                 aria-label="Remove day"
-                className="h-11 w-11 shrink-0 flex items-center justify-center text-neutral-500 disabled:opacity-30"
+                className="h-11 w-11 shrink-0 flex items-center justify-center text-foreground-muted disabled:opacity-30"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -285,7 +285,7 @@ export function BlankProgramForm() {
 }
 
 const fieldClass =
-  "w-full h-11 rounded-md bg-neutral-900 border border-neutral-800 px-3 text-base outline-none focus:border-neutral-600";
+  "w-full h-11 rounded-md bg-surface border border-border px-3 text-base outline-none focus:border-neutral-600";
 
 function Field({
   label,
@@ -298,7 +298,7 @@ function Field({
 }) {
   return (
     <label htmlFor={htmlFor} className="block space-y-1">
-      <span className="block text-[11px] uppercase tracking-wide text-neutral-500">
+      <span className="block text-[11px] uppercase tracking-wide text-foreground-muted">
         {label}
       </span>
       {children}

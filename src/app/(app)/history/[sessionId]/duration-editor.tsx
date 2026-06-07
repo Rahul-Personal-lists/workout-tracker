@@ -53,7 +53,7 @@ export function DurationEditor({
           value={mins}
           onChange={(e) => setMins(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
           inputMode="numeric"
-          className="h-6 w-10 rounded bg-neutral-950 border border-neutral-700 px-1 text-[11px] text-center"
+          className="h-6 w-10 rounded bg-background border border-border-strong px-1 text-[11px] text-center"
         />
         <span>:</span>
         <input
@@ -61,7 +61,7 @@ export function DurationEditor({
           value={secs}
           onChange={(e) => setSecs(e.target.value.replace(/[^\d]/g, "").slice(0, 2))}
           inputMode="numeric"
-          className="h-6 w-10 rounded bg-neutral-950 border border-neutral-700 px-1 text-[11px] text-center"
+          className="h-6 w-10 rounded bg-background border border-border-strong px-1 text-[11px] text-center"
         />
         <button
           type="button"
@@ -76,7 +76,7 @@ export function DurationEditor({
           type="button"
           onClick={cancel}
           aria-label="Cancel"
-          className="h-6 w-6 flex items-center justify-center text-neutral-500 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+          className="h-6 w-6 flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -91,10 +91,10 @@ export function DurationEditor({
       type="button"
       onClick={() => setEditing(true)}
       aria-label="Edit duration"
-      className="inline-flex items-center gap-1 hover:text-neutral-200 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+      className="inline-flex items-center gap-1 hover:text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
     >
       <span>{formatDuration(durationSeconds)}</span>
-      <Pencil className="w-3 h-3 text-neutral-500" />
+      <Pencil className="w-3 h-3 text-foreground-muted" />
     </button>
   );
 }

@@ -81,7 +81,7 @@ export default function LoginPage() {
             "radial-gradient(ellipse 60% 80% at 50% 0%, rgb(16 185 129 / 0.35), transparent 70%)",
         }}
       />
-      <div className="relative w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950/80 p-10 space-y-8 shadow-2xl backdrop-blur">
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-background/80 p-10 space-y-8 shadow-2xl backdrop-blur">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-logo-enter">
             <LogoKettlePop size={72} />
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
         {status === "sent" || status === "verifying" ? (
           <form onSubmit={onVerifyOtp} className="space-y-4">
-            <p className="text-sm text-neutral-300">
+            <p className="text-sm text-foreground-muted">
               We sent a 6-digit code to <span className="font-medium">{email}</span>. Enter it below.
             </p>
             <input
@@ -107,7 +107,7 @@ export default function LoginPage() {
               aria-label="6-digit verification code"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 px-4 text-lg tracking-[0.4em] text-center outline-none focus:border-neutral-600 focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+              className="w-full h-12 rounded-md bg-surface border border-border px-4 text-lg tracking-[0.4em] text-center outline-none focus:border-neutral-600 focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               autoFocus
             />
             <button
@@ -124,7 +124,7 @@ export default function LoginPage() {
               type="button"
               onClick={resend}
               disabled={resending}
-              className="w-full text-sm text-neutral-400 hover:text-neutral-200 disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+              className="w-full text-sm text-foreground-muted hover:text-foreground disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             >
               {resending ? "Sending…" : "Send a new code"}
             </button>
@@ -140,7 +140,7 @@ export default function LoginPage() {
               aria-label="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800 px-4 text-base outline-none focus:border-neutral-600 focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+              className="w-full h-12 rounded-md bg-surface border border-border px-4 text-base outline-none focus:border-neutral-600 focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             />
             <button
               type="submit"
@@ -155,7 +155,7 @@ export default function LoginPage() {
           </form>
         ) : (
           <div className="space-y-4">
-            <div className="w-full h-12 rounded-md bg-neutral-900 border border-neutral-800" />
+            <div className="w-full h-12 rounded-md bg-surface border border-border" />
             <div className="w-full h-12 rounded-md bg-white/90" />
           </div>
         )}

@@ -38,7 +38,7 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
             key={p.id}
             type="button"
             onClick={() => setActive(p)}
-            className="relative aspect-square rounded-md overflow-hidden bg-neutral-900 border border-neutral-800 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+            className="relative aspect-square rounded-md overflow-hidden bg-surface border border-border outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -87,7 +87,7 @@ export function SessionPhotos({ photos }: { photos: SessionPhoto[] }) {
                 type="button"
                 onClick={() => setActive(null)}
                 aria-label="Close"
-                className="h-10 w-10 rounded-md flex items-center justify-center text-neutral-300 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+                className="h-10 w-10 rounded-md flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
               >
                 <X className="w-5 h-5" />
               </button>

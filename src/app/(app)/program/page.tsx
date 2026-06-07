@@ -63,7 +63,7 @@ export default async function ProgramPage({
       <div className="space-y-5">
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold">New program</h1>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-foreground-muted">
             Pick a template or build your own.
           </p>
         </header>
