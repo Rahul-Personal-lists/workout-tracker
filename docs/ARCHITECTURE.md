@@ -571,7 +571,7 @@ There is **one deployable unit** (the Next.js app) plus managed third parties. N
 
 ## 16. Known gaps & gotchas
 
-Surfaced while documenting; tracked, not all fixed. The prioritized backlog with severities lives in [`CODE_AUDIT.md`](./CODE_AUDIT.md); product-level deferrals are in [`CLAUDE.md`](../CLAUDE.md). The ones most likely to bite a maintainer:
+Surfaced while documenting; tracked, not all fixed. The current prioritized backlog with severities lives in [`REFACTOR_PLAN.md`](./REFACTOR_PLAN.md) (see its Status block for what's shipped); [`CODE_AUDIT.md`](./CODE_AUDIT.md) is the superseded 2026-05-29 historical record; product-level deferrals are in [`CLAUDE.md`](../CLAUDE.md). The ones most likely to bite a maintainer:
 
 - **Migration timestamp hazards (fresh envs only).** `20260501030916` / `20260501031002_swap_day_order.sql` are empty `;` no-ops (real fn is `20260430`); the two `20260529000000` files were reconciled to `…000000` / `…000001` and `migration repair`-ed on remote. Harmless on the applied DB, but **give fresh migrations distinct timestamps** going forward. (See [§5 Migration history](#migration-history).)
 - **`peak_taper` rep cuts are 12-week-hardcoded.** Weight taper is week-relative but the rep cuts fire on absolute weeks 7/9/10/11 ([`progression.ts`](../src/lib/progression.ts)). On a non-12-week program the rep taper misaligns. Don't change the math without Rahul's sign-off — he has explicit weekly expectations.

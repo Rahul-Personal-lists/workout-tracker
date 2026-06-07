@@ -24,8 +24,8 @@ See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for full walk-throughs and 
 
 ## Docs
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system map + diagrams (auth flow, ER schema, workout logging, progression model, PWA, onboarding).
-- [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md) — prioritized findings backlog (what's fixed, what's deferred).
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system map + diagrams (context, container, auth flow, ER schema, workout logging, progression, PWA, onboarding, deployment, known gaps).
+- [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md) — current prioritized findings backlog (see its Status block for what's shipped). Supersedes the historical [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md) (2026-05-29).
 - [`CLAUDE.md`](CLAUDE.md) — conventions, invariants, and the "don't" list.
 
 ## One-time setup
