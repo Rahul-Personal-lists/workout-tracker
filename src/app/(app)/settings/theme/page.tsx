@@ -1,9 +1,7 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { ThemePicker, type ThemeKey } from "../theme-picker";
-
-const THEME_KEYS: ThemeKey[] = ["lime", "sky", "amber", "violet", "rose"];
+import { ThemePicker, THEME_KEYS, type ThemeKey } from "../theme-picker";
 
 export default async function ThemePage() {
   const raw = (await cookies()).get("accent-theme")?.value;

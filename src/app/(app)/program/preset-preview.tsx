@@ -3,28 +3,13 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { estimatePlanStats, type EstimateExercise } from "@/lib/estimates";
+import {
+  estimatePlanStats,
+  formatStarterSets,
+  starterToEstimate,
+} from "@/lib/estimates";
 import { PlanStats } from "@/components/plan-stats";
-import type {
-  PresetProgram,
-  StarterExercise,
-} from "@/lib/starter-program";
-
-function setsLabel(e: StarterExercise) {
-  if (e.kind === "time" && e.target_seconds) return `${e.sets} × ${e.target_seconds}s`;
-  if (e.base_reps) return `${e.sets} × ${e.base_reps}`;
-  return `${e.sets} sets`;
-}
-
-function toEstimate(e: StarterExercise): EstimateExercise {
-  return {
-    sets: e.sets,
-    base_reps: e.base_reps,
-    kind: e.kind ?? "reps",
-    target_seconds: e.target_seconds ?? null,
-    tracked: e.tracked,
-  };
-}
+import type { PresetProgram } from "@/lib/starter-program";
 
 export function PresetPreview({
   preset,
@@ -62,7 +47,7 @@ export function PresetPreview({
               {d.exercises.length > 0
                 ? (() => {
                     const stats = estimatePlanStats(
-                      d.exercises.map(toEstimate),
+                      d.exercises.map(starterToEstimate),
                       { weightLb }
                     );
                     return (
@@ -82,7 +67,7 @@ export function PresetPreview({
                     className="flex items-baseline justify-between gap-2 text-[11px] text-neutral-500"
                   >
                     <span className="truncate">{e.name}</span>
-                    <span className="shrink-0 tabular-nums">{setsLabel(e)}</span>
+                    <span className="shrink-0 tabular-nums">{formatStarterSets(e)}</span>
                   </li>
                 ))}
               </ul>

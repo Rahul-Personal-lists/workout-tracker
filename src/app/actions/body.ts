@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireUser } from "@/lib/supabase/server";
-
-const PHOTO_BUCKET = "workout-photos";
+import { createClient, requireUser } from "@/lib/supabase/server";
+import { PHOTO_BUCKET } from "@/lib/photo-upload";
 
 const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date");
 
@@ -48,7 +47,7 @@ export async function upsertBodyLog(input: z.infer<typeof UpsertSchema>) {
 const DeleteSchema = z.object({ date: DateSchema });
 
 async function deleteBodyLogRow(
-  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   date: string
 ) {

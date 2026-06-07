@@ -90,7 +90,7 @@ export function OnboardingPicker() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      className="fixed inset-0 z-[45] flex items-center justify-center px-4"
       aria-live="polite"
     >
       <div aria-hidden="true" className="absolute inset-0 bg-black/70" />

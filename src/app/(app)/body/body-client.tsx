@@ -46,28 +46,39 @@ export function BodyClient({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function seriesFor(key: MetricKey): MetricSeriesPoint[] {
-    const metric = METRIC_BY_KEY[key];
-    let pts: MetricSeriesPoint[];
-    if (metric.source === "body_measurements") {
-      pts = measurements
-        .filter((m) => m.metric === key)
-        .map((m) => ({ date: m.log_date, value: m.value_cm }));
-    } else if (key === "weight") {
-      pts = logs
-        .filter((l) => l.weight_lb !== null)
-        .map((l) => ({ date: l.log_date, value: l.weight_lb as number }));
-    } else if (key === "bodyfat") {
-      pts = logs
-        .filter((l) => l.body_fat_pct !== null)
-        .map((l) => ({ date: l.log_date, value: l.body_fat_pct as number }));
-    } else {
-      pts = logs
-        .filter((l) => l.calories !== null)
-        .map((l) => ({ date: l.log_date, value: l.calories as number }));
+  // Build every metric's series once per logs/measurements change instead of
+  // re-filtering on each of the ~9 seriesFor() calls per render. body_logs /
+  // body_measurements come back ascending by log_date (queries order them), so
+  // the series need no per-call sort.
+  const seriesByMetric = useMemo<Map<MetricKey, MetricSeriesPoint[]>>(() => {
+    const map = new Map<MetricKey, MetricSeriesPoint[]>();
+    for (const metric of METRICS) {
+      const key = metric.key;
+      let pts: MetricSeriesPoint[];
+      if (metric.source === "body_measurements") {
+        pts = measurements
+          .filter((m) => m.metric === key)
+          .map((m) => ({ date: m.log_date, value: m.value_cm }));
+      } else if (key === "weight") {
+        pts = logs
+          .filter((l) => l.weight_lb !== null)
+          .map((l) => ({ date: l.log_date, value: l.weight_lb as number }));
+      } else if (key === "bodyfat") {
+        pts = logs
+          .filter((l) => l.body_fat_pct !== null)
+          .map((l) => ({ date: l.log_date, value: l.body_fat_pct as number }));
+      } else {
+        pts = logs
+          .filter((l) => l.calories !== null)
+          .map((l) => ({ date: l.log_date, value: l.calories as number }));
+      }
+      map.set(key, pts);
     }
-    return pts.slice().sort((a, b) => a.date.localeCompare(b.date));
-  }
+    return map;
+  }, [logs, measurements]);
+
+  const seriesFor = (key: MetricKey): MetricSeriesPoint[] =>
+    seriesByMetric.get(key) ?? [];
 
   const measureRows = useMemo<MeasureRow[]>(
     () =>

@@ -10,10 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatDuration, unitLabel } from "@/lib/format";
+import { formatDuration, LB_PER_KG, unitLabel } from "@/lib/format";
 import type { Units } from "@/lib/units";
-
-const LB_PER_KG = 2.20462;
 
 export type ChartPoint = {
   date: string;
@@ -42,32 +40,32 @@ export function ExerciseChart({
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 12, right: 8, bottom: 4, left: -16 }}>
-            <CartesianGrid stroke="#262626" strokeDasharray="3 3" />
+            <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" />
             <XAxis
               dataKey="label"
-              stroke="#737373"
+              stroke="var(--color-foreground-muted)"
               tick={{ fontSize: 11 }}
               tickLine={false}
-              axisLine={{ stroke: "#262626" }}
+              axisLine={{ stroke: "var(--color-border)" }}
             />
             <YAxis
-              stroke="#737373"
+              stroke="var(--color-foreground-muted)"
               tick={{ fontSize: 11 }}
               tickLine={false}
-              axisLine={{ stroke: "#262626" }}
+              axisLine={{ stroke: "var(--color-border)" }}
               domain={["auto", "auto"]}
               width={42}
               tickFormatter={(v: number) => (isTime ? formatDuration(v) : String(v))}
             />
             <Tooltip
-              cursor={{ stroke: "#404040", strokeWidth: 1 }}
+              cursor={{ stroke: "var(--color-border-strong)", strokeWidth: 1 }}
               contentStyle={{
-                background: "#0a0a0a",
-                border: "1px solid #262626",
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
                 borderRadius: 6,
                 fontSize: 12,
               }}
-              labelStyle={{ color: "#a3a3a3" }}
+              labelStyle={{ color: "var(--color-foreground-muted)" }}
               formatter={(value: number, _name, payload) => {
                 if (isTime) {
                   return [formatDuration(value), "Top time"];
@@ -80,9 +78,9 @@ export function ExerciseChart({
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#10b981"
+              stroke="var(--color-accent)"
               strokeWidth={2}
-              dot={{ fill: "#10b981", r: 3 }}
+              dot={{ fill: "var(--color-accent)", r: 3 }}
               activeDot={{ r: 5 }}
               isAnimationActive={false}
             />

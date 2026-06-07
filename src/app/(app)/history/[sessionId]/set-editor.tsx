@@ -46,15 +46,13 @@ export function EditableSetRow({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const [weight, setWeight] = useState(
-    actualWeight !== null ? formatWeightShort(actualWeight, units) : ""
-  );
-  const [reps, setReps] = useState(
-    actualReps !== null ? String(actualReps) : ""
-  );
-  const [duration, setDuration] = useState(
-    actualSeconds !== null ? formatDuration(actualSeconds) : ""
-  );
+  const initWeight = actualWeight !== null ? formatWeightShort(actualWeight, units) : "";
+  const initReps = actualReps !== null ? String(actualReps) : "";
+  const initDuration = actualSeconds !== null ? formatDuration(actualSeconds) : "";
+
+  const [weight, setWeight] = useState(initWeight);
+  const [reps, setReps] = useState(initReps);
+  const [duration, setDuration] = useState(initDuration);
   const [done, setDone] = useState(completed);
 
   function save() {
@@ -113,9 +111,9 @@ export function EditableSetRow({
   }
 
   function cancel() {
-    setWeight(actualWeight !== null ? formatWeightShort(actualWeight, units) : "");
-    setReps(actualReps !== null ? String(actualReps) : "");
-    setDuration(actualSeconds !== null ? formatDuration(actualSeconds) : "");
+    setWeight(initWeight);
+    setReps(initReps);
+    setDuration(initDuration);
     setDone(completed);
     setError(null);
     setEditing(false);

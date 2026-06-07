@@ -59,6 +59,14 @@ export function fireStepVibration(): void {
   }
 }
 
+// Short single pulse for a manual set-completion tap (distinct from the
+// step-end cue pattern above).
+export function tapVibration(): void {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate?.(15);
+  }
+}
+
 export function useStepCues({
   endsAt,
   soundLead,

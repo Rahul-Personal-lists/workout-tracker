@@ -34,9 +34,12 @@ const AddExerciseSchema = z.object({
   // Same-origin path the caller wants to land on after a successful add.
   // Used by the mid-workout add flow to bounce back to /workout/[sessionId].
   returnTo: z.string().regex(/^\/[^/]/).max(200).optional(),
-  // Custom-video snapshot (copied from a custom_exercises library entry so
-  // history stays accurate if the entry is later edited/soft-deleted). All
-  // null/empty for catalog exercises -> the row behaves exactly as before.
+  // Custom-video snapshot, captured AT ADD TIME by copying a custom_exercises
+  // library entry onto this program_exercises row. Load-bearing — same contract
+  // as planned_* in set_logs: later editing or soft-deleting the library entry
+  // must NOT rewrite what an existing program row points at, so history +
+  // playback stay accurate. All null/empty for catalog exercises -> the row
+  // behaves exactly as before.
   customExerciseId: z.string().uuid().nullable().default(null),
   videoPath: z.string().max(500).nullable().default(null),
   posterPath: z.string().max(500).nullable().default(null),

@@ -8,6 +8,7 @@ import { SwipeRow } from "@/components/swipe-row";
 import { useTimeSetTimer } from "@/lib/stores/time-set-timer";
 import {
   type StepLead,
+  tapVibration,
   unlockStepCueAudio,
   useStepCues,
 } from "@/lib/step-cue";
@@ -84,9 +85,8 @@ export function TimeSetInputRow({
     if (now < endsAt) return;
     // Expiry — including a countdown that ended while this row was unmounted and
     // is restored already past its end: complete the set once, clear the timer.
-    /* eslint-disable react-hooks/set-state-in-effect */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDurationStr(formatDuration(targetSec));
-    /* eslint-enable react-hooks/set-state-in-effect */
     stopTimer();
     onChangeRef.current({ completed: true, actualSeconds: targetSec }, true);
   }, [endsAt, targetSec, now, stopTimer]);
@@ -115,18 +115,14 @@ export function TimeSetInputRow({
     const elapsed = Math.max(1, targetSec - remainingSec);
     stopTimer();
     setDurationStr(formatDuration(elapsed));
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate?.(15);
-    }
+    tapVibration();
     onChange({ completed: true, actualSeconds: elapsed }, true);
   }
 
   function toggleComplete() {
     const next = !set.completed;
     const parsed = parseDuration(durationStrRef.current);
-    if (next && typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate?.(15);
-    }
+    if (next) tapVibration();
     onChange({ completed: next, actualSeconds: parsed }, true);
   }
 

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, requireUser } from "@/lib/supabase/server";
 import { reapStaleSession } from "@/lib/sessions";
+import { PHOTO_BUCKET } from "@/lib/photo-upload";
 
 const StartSchema = z.object({
   programDayId: z.string().uuid(),
@@ -197,6 +198,9 @@ export async function deleteSetLog(input: z.infer<typeof DeleteSetLogSchema>) {
       set_number: parsed.setNumber,
     });
   if (error) throw error;
+
+  revalidatePath(`/history/${parsed.sessionId}`);
+  revalidatePath("/progress");
 }
 
 const EditDurationSchema = z.object({
@@ -269,8 +273,6 @@ export async function finishWorkout(input: z.infer<typeof FinishSchema>) {
   revalidatePath(`/history/${sessionId}`);
   return { ok: true as const };
 }
-
-const PHOTO_BUCKET = "workout-photos";
 
 const RecordPhotosSchema = z.object({
   sessionId: z.string().uuid(),

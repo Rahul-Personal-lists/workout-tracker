@@ -36,7 +36,9 @@ function ChevronButton({
   const Icon = dir === "prev" ? ChevronLeft : ChevronRight;
   const label = dir === "prev" ? "Previous range" : "Next range";
   const base =
-    "h-9 w-9 inline-flex items-center justify-center rounded-full border border-border outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+    "h-9 w-9 inline-flex items-center justify-center rounded-full border border-border";
+  const focusRing =
+    "outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)] focus-visible:ring-offset-2 focus-visible:ring-offset-background";
   if (!href) {
     return (
       <span
@@ -52,7 +54,7 @@ function ChevronButton({
       href={href}
       scroll={false}
       aria-label={label}
-      className={cn(base, "text-foreground-muted hover:text-foreground")}
+      className={cn(base, focusRing, "text-foreground-muted hover:text-foreground")}
     >
       <Icon className="w-4 h-4" />
     </Link>

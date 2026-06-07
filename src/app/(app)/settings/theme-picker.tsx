@@ -13,6 +13,7 @@ const THEMES = [
 ] as const;
 
 export type ThemeKey = (typeof THEMES)[number]["key"];
+export const THEME_KEYS: ThemeKey[] = THEMES.map((t) => t.key);
 
 // initialTheme comes from the accent-theme cookie, read server-side in the
 // page so SSR and first client render agree (no post-mount setState needed).

@@ -1,7 +1,7 @@
 import type { Units } from "./units";
 
-const LB_PER_KG = 2.20462;
-const CM_PER_IN = 2.54;
+export const LB_PER_KG = 2.20462;
+export const CM_PER_IN = 2.54;
 
 export function formatWeight(
   lb: number | null | undefined,
@@ -150,7 +150,7 @@ export function cmToFtIn(cm: number): { ft: number; in: number } {
   return { ft, in: inches };
 }
 
-function formatNumberOneDecimal(n: number): string {
+export function formatNumberOneDecimal(n: number): string {
   const rounded = Math.round(n * 10) / 10;
   return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
 }

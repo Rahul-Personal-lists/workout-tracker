@@ -10,6 +10,7 @@ import {
 } from "@/lib/format";
 import type { Units } from "@/lib/units";
 import { SwipeRow } from "@/components/swipe-row";
+import { tapVibration } from "@/lib/step-cue";
 import type { SetRow } from "./types";
 
 export function SetInputRow({
@@ -66,9 +67,7 @@ export function SetInputRow({
     const validW = parseW(weightStrRef.current);
     const parsedR = repsStrRef.current.trim() === "" ? null : parseInt(repsStrRef.current, 10);
     const validR = Number.isFinite(parsedR as number) ? (parsedR as number) : null;
-    if (next && typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate?.(15);
-    }
+    if (next) tapVibration();
     onChange(
       { completed: next, actualWeight: validW, actualReps: validR },
       true
