@@ -1,8 +1,16 @@
 # Trainr — Architecture
 
-A mobile-first PWA for logging strength programs at the gym. Single user today, multi-user-ready (RLS on every table). This document is the map of how the pieces fit together; for day-to-day conventions and the "don't" list, see [`CLAUDE.md`](../CLAUDE.md).
+A mobile-first PWA for logging strength programs at the gym. Single user today, multi-user-ready (RLS on every table). This document is the C4 **container**-level map of how the pieces fit together; for the one-level-up **context** view see the diagram below, and for day-to-day conventions and the "don't" list see [`CLAUDE.md`](../CLAUDE.md).
 
 > Diagrams below are [Mermaid](https://mermaid.js.org/) and render on GitHub. If you're reading in a plain editor, the fenced ```mermaid``` blocks are the source.
+
+## 0. System context
+
+Who uses Trainr and what it depends on. (Source: [`diagrams/context.puml`](./diagrams/context.puml) — re-render with `java -jar plantuml.jar -charset UTF-8 -tpng docs/diagrams/context.puml`.)
+
+![System context diagram](./diagrams/context.png)
+
+The whole system is **one deployable web app** (the Next.js PWA on Vercel) plus managed third parties: **Supabase** (Postgres + Auth + Storage), **Resend** (weekly email), **free-exercise-db** (exercise catalog + reference images), and **GitHub Actions** (two scheduled crons). There is no separate backend service — see [§15 Deployment & operations](#15-deployment--operations).
 
 ---
 
@@ -43,11 +51,13 @@ flowchart TB
 
     subgraph Supabase["Supabase"]
         DB[("Postgres<br/>RLS owner-scoped")]
-        ST[("Storage<br/>'workout-photos' bucket")]
+        ST[("Storage<br/>'workout-photos' bucket<br/>photos + videos")]
         AU["Auth (magic-link / OTP)"]
     end
 
     RES["Resend (email)"]
+    GHA["GitHub Actions<br/>(weekly-summary +<br/>catalog-refresh crons)"]
+    FEDB["free-exercise-db<br/>(catalog + reference images)"]
 
     RC -->|navigations| SW -->|network-first HTML| Edge
     RC -->|"call action"| SA
@@ -56,8 +66,10 @@ flowchart TB
     RSC --> Q --> DB
     SA --> DB
     SA -->|signed URLs / upload| ST
-    RC -->|"direct upload (photos)"| ST
+    RC -->|"direct upload (photos / videos)"| ST
+    RC -->|"reference pics (img)"| FEDB
     PX --> AU
+    GHA -.->|"POST /api/cron/weekly-summary (Bearer)"| CR
     CR --> DB
     CR --> RES
     RSC -.->|props| RC
@@ -165,6 +177,9 @@ erDiagram
     auth_users ||--o{ body_logs : owns
     body_logs ||--o{ body_log_photos : "composite FK"
     auth_users ||--o{ body_measurements : owns
+    auth_users ||--o{ exercise_favorites : owns
+    auth_users ||--o{ custom_exercises : owns
+    custom_exercises ||--o{ program_exercises : "snapshot (nullable FK, set null)"
 
     profiles {
         uuid user_id PK
@@ -209,6 +224,14 @@ erDiagram
         text kind "reps|time"
         int target_seconds
         text image_url
+        text video_path "custom-exercise snapshot"
+        text poster_path
+        jsonb crop_rect "reframe window 0..1"
+        numeric trim_start_seconds
+        numeric trim_end_seconds
+        numeric aspect_ratio
+        text_array muscles "catalog muscle tags"
+        uuid custom_exercise_id "nullable provenance FK"
         timestamptz archived_at
     }
     workout_sessions {
@@ -262,6 +285,28 @@ erDiagram
         date log_date
         text storage_path
     }
+    exercise_favorites {
+        uuid user_id PK
+        text exercise_slug PK "free-exercise-db catalog id"
+        timestamptz created_at
+    }
+    custom_exercises {
+        uuid id PK
+        uuid user_id FK
+        text name
+        text video_path "exercise-videos/ prefix"
+        text poster_path
+        jsonb crop_rect "reframe window 0..1"
+        numeric trim_start_seconds
+        numeric trim_end_seconds
+        numeric aspect_ratio
+        text_array muscles "catalog muscle tags"
+        text default_kind "reps|time"
+        int default_sets
+        int default_reps
+        int default_seconds
+        timestamptz archived_at
+    }
 ```
 
 **Load-bearing schema facts:**
@@ -270,15 +315,18 @@ erDiagram
 - **`workout_sessions.program_day_id` FK is non-cascading**, so `/history/[sessionId]` resolves day → parent program through the FK chain (`getSessionContext`) even for archived/inactive programs.
 - **`duration_seconds` is a generated column**, redefined once (`pause_session.sql`) to subtract `total_paused_seconds`: `greatest(epoch(ended_at - started_at) - total_paused_seconds, 0)`.
 - **`programs_one_active_per_user`** is a partial unique index (`user_id WHERE is_active AND archived_at IS NULL`). Every promotion path (`seedPresetProgram`, `createBlankProgram`, `setActiveProgram`, `archiveProgram`) **demotes the current active program first** in the same call, or the index rejects the write.
-- **One private storage bucket** (`workout-photos`) holds three path families, RLS-gated on the first folder segment = `auth.uid()`:
+- **One private storage bucket** (`workout-photos`) holds four path families, RLS-gated on the first folder segment = `auth.uid()` (so videos under `exercise-videos/` are covered by the same policy):
   - `{uid}/{sessionId}/{uuid}.ext` — workout-finish photos
   - `{uid}/body/{date}/{uuid}.ext` — body progress photos
   - `{uid}/profile/{uuid}.ext` — avatar
+  - `{uid}/exercise-videos/{customExerciseId}/...` — custom-exercise clip + poster (`VIDEO_BUCKET` in [`video-upload.ts`](../src/lib/video-upload.ts), same bucket constant). Served via short-lived **signed URLs**; `signCustomVideoUrl` re-signs on a mid-session 403.
+- **Custom-exercise media is snapshotted onto `program_exercises`** at add time (`video_path`/`poster_path`/`crop_rect`/`trim_*`/`aspect_ratio`/`muscles`) — same principle as `image_url` and `planned_*`. `custom_exercise_id` is a *nullable provenance pointer only* (`on delete set null`); playback never depends on the library row still existing, so soft-deleting or editing a custom exercise leaves history intact. Reframe/trim are **non-destructive** metadata applied at playback (no re-encode).
+- **`exercise_favorites` is keyed by catalog slug**, not a `program_exercises` FK — favorites are about *browsing the library*, so they survive program edits and aren't tied to any program instance. Custom (no-catalog) exercises have no stable slug and can't be favorited in v1.
 - **Two RPCs** (atomic, to dodge read-compute-write races): `swap_day_order(p_day_a, p_day_b)` and `resume_session(session_id)`.
 
 ### Migration history
 
-16 migrations, additive. Worth knowing:
+20 migrations, additive. Worth knowing:
 
 | Migration | What it adds |
 |---|---|
@@ -292,9 +340,14 @@ erDiagram
 | `20260516` cardio | `kind`/`target_seconds` + `planned_seconds`/`actual_seconds` + cardio backfill |
 | `20260519` peak_taper | `peak_taper` boolean |
 | `20260528` body_goals_and_photos | `goal_weight_lb`, `body_fat_pct`, `body_log_photos` |
-| `20260529` ×2 | `body_measurements` table **and** profile/settings columns — ⚠️ **share the same timestamp** |
+| `20260529000000` body_measurements | `body_measurements` table — ⚠️ originally shared a timestamp with the next one |
+| `20260529000001` settings_extras | profile gender/age/height/avatar/units/sound prefs (renamed from a duplicate `…000000`; reconciled on remote via `migration repair`) |
+| `20260530000000` rest_skip_flag | `is_rest_skip` on `workout_sessions` (explicit rest-day-skip flag; retires the `duration_seconds = 0` sentinel) |
+| `20260530120000` body_log_weight_optional | `body_logs.weight_lb` nullable + `num_nonnulls(...) > 0` CHECK |
+| `20260604000000` exercise_favorites | `exercise_favorites` table (catalog-slug-keyed ★) |
+| `20260606000000` custom_exercises | `custom_exercises` table + 8 snapshot columns on `program_exercises` (video/crop/trim/muscles + provenance FK) |
 
-> ⚠️ Two migrations carry `20260529000000` and two are empty `;` placeholders. See [`CODE_AUDIT.md`](./CODE_AUDIT.md) §Migrations. They're harmless on the already-applied DB but a hazard for fresh environments.
+> ⚠️ The `20260501030916` / `20260501031002` `swap_day_order` files are empty `;` placeholders (the real fn is in `20260430`); the two `20260529000000` duplicate timestamps were reconciled by renaming the second to `20260529000001` and running `migration repair` on remote. Both are harmless on the already-applied DB but a hazard for fresh environments. See [`CODE_AUDIT.md`](./CODE_AUDIT.md) §Migrations and [§16 Known gaps & gotchas](#16-known-gaps--gotchas).
 
 ---
 
@@ -401,7 +454,42 @@ Canonical units in the DB: **lb** (weight), **cm** (circumference). Conversion h
 
 ---
 
-## 10. PWA & service worker
+## 10. Exercise catalog, favorites & custom-exercise video
+
+Three layers feed the "what exercise is this" experience. None is a separate service — all live inside the app.
+
+```mermaid
+flowchart TB
+    subgraph catalog["Built-in catalog (static)"]
+        JSON["public/data/exercises-catalog.json<br/>(free-exercise-db, public domain)"]
+        IMG["reference pics<br/>/0.jpg start · /1.jpg end<br/>(ExerciseAnimation CSS flip)"]
+    end
+    subgraph fav["Favorites"]
+        FAVT[("exercise_favorites<br/>PK (user_id, slug)")]
+    end
+    subgraph custom["Custom exercises (user video)"]
+        CE[("custom_exercises<br/>library entry")]
+        VID[("Storage: exercise-videos/")]
+        SNAP["snapshot onto<br/>program_exercises"]
+    end
+    Browse["/program/exercises<br/>(body-map filter + ★ grid)"]
+    Browse --> JSON
+    Browse --> FAVT
+    Browse --> CE
+    CE -->|signed URL| VID
+    CE -->|"add to day"| SNAP
+    JSON --> IMG
+```
+
+- **Built-in catalog** — `public/data/exercises-catalog.json` from [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) (public domain), refreshed weekly by a GitHub Action ([§15](#15-deployment--operations)). Reference pics layer `/0.jpg` (start) + `/1.jpg` (end) with a CSS opacity flip (`ExerciseAnimation`) — no JS animation loop.
+- **Favorites** — `exercise_favorites`, keyed by the catalog **slug** (`CatalogEntry.id`), toggled by `toggleFavorite` (idempotent, returns the resulting state for optimistic reconcile). Read via `getFavoriteSlugs()` (degrades to empty on error). Surfaced as a ★ filter in the `/program/exercises` grid.
+- **Custom exercises** — a user uploads a short mp4 (`≤50 MB`, `≤30 s`), reframes (a normalized `crop_rect`) and trims (`trim_*`) it; reframe/trim are **non-destructive metadata** applied at playback via `cropStyle` (no re-encode). `createCustomExercise` validates paths sit under `{uid}/exercise-videos/{id}/` (defense-in-depth over storage RLS) and rolls back the uploaded objects if the row insert fails. Adding a custom exercise to a day **snapshots** its media + muscle tags onto `program_exercises`, so history keeps playing even after the library entry is soft-deleted (`archived_at`). Custom muscle tags feed the same `MUSCLE_REGIONS` map used by the badge + body-map filter.
+
+> **Server actions:** `toggleFavorite` ([`actions/favorites.ts`](../src/app/actions/favorites.ts)); `createCustomExercise` / `deleteCustomExercise` (soft) / `signCustomVideoUrl` ([`actions/custom-exercise.ts`](../src/app/actions/custom-exercise.ts)).
+
+---
+
+## 11. PWA & service worker
 
 ```mermaid
 flowchart TD
@@ -421,7 +509,7 @@ flowchart TD
 
 ---
 
-## 11. Onboarding / tutorial state machine
+## 12. Onboarding / tutorial state machine
 
 ```mermaid
 stateDiagram-v2
@@ -439,7 +527,7 @@ State in `stores/tutorial.ts` (Zustand + persist, `version=3` with a `migrate()`
 
 ---
 
-## 12. Design system
+## 13. Design system
 
 Tokens in [`globals.css`](../src/app/globals.css) under Tailwind v4 `@theme`:
 
@@ -453,7 +541,7 @@ Prefer `bg-surface` / `border-border` / `text-foreground-muted` over raw `neutra
 
 ---
 
-## 13. Key invariants & conventions (quick reference)
+## 14. Key invariants & conventions (quick reference)
 
 1. Reads → `queries.ts` (`server-only`); writes → Zod-validated `actions/*.ts`. No API layer.
 2. RLS is the only tenant boundary; most writes carry no explicit `user_id`.
@@ -466,6 +554,37 @@ Prefer `bg-surface` / `border-border` / `text-foreground-muted` over raw `neutra
 
 ---
 
-## 14. Known limitations
+## 15. Deployment & operations
 
-Tracked in [`CLAUDE.md`](../CLAUDE.md) (offline write queue deferred, no cancel-session UI, mid-workout exercise-add only affects future sessions, max 2 programs, PWA shell-caching only) and the prioritized findings in [`CODE_AUDIT.md`](./CODE_AUDIT.md).
+There is **one deployable unit** (the Next.js app) plus managed third parties. No `vercel.json`, no Dockerfile, no separate backend.
+
+| Unit | Where | Trigger / cadence | Notes |
+|---|---|---|---|
+| **Trainr web app** | Vercel (Next.js 16, Turbopack build) | git push → Vercel deploy | The PWA + Server Components + Server Actions + the two `/api/*` routes. |
+| **Supabase project** | Supabase cloud | always-on | Postgres + Auth + Storage. Migrations applied via `npx supabase db push`; types via `npm run db:types`. |
+| **Weekly-summary cron** | GitHub Actions ([`weekly-summary.yml`](../.github/workflows/weekly-summary.yml)) | `0 2 * * 1` (Mon 02:00 UTC = Sun 7pm Vancouver) | `curl POST $APP_URL/api/cron/weekly-summary` with `Authorization: Bearer $CRON_SECRET`. The route re-checks the Sunday-evening window (skippable with `?force=1` / `workflow_dispatch`). |
+| **Catalog-refresh cron** | GitHub Actions ([`refresh-exercise-catalog.yml`](../.github/workflows/refresh-exercise-catalog.yml)) | `0 3 * * 1` (Mon 03:00 UTC, 1h after the digest) | Runs `npm run refresh-catalog -- --no-db`, then opens a PR with the diff. Reads from upstream `free-exercise-db`; never writes the DB in CI. |
+
+**Required secrets / env** (see [`.env.local.example`](../.env.local.example) for app vars; GitHub repo secrets `APP_URL` + `CRON_SECRET` for the crons): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `NEXT_PUBLIC_APP_URL`, `CRON_SECRET`.
+
+---
+
+## 16. Known gaps & gotchas
+
+Surfaced while documenting; tracked, not all fixed. The current prioritized backlog with severities lives in [`REFACTOR_PLAN.md`](./REFACTOR_PLAN.md) (see its Status block for what's shipped); [`CODE_AUDIT.md`](./CODE_AUDIT.md) is the superseded 2026-05-29 historical record; product-level deferrals are in [`CLAUDE.md`](../CLAUDE.md). The ones most likely to bite a maintainer:
+
+- **Migration timestamp hazards (fresh envs only).** `20260501030916` / `20260501031002_swap_day_order.sql` are empty `;` no-ops (real fn is `20260430`); the two `20260529000000` files were reconciled to `…000000` / `…000001` and `migration repair`-ed on remote. Harmless on the applied DB, but **give fresh migrations distinct timestamps** going forward. (See [§5 Migration history](#migration-history).)
+- **`peak_taper` rep cuts are 12-week-hardcoded.** Weight taper is week-relative but the rep cuts fire on absolute weeks 7/9/10/11 ([`progression.ts`](../src/lib/progression.ts)). On a non-12-week program the rep taper misaligns. Don't change the math without Rahul's sign-off — he has explicit weekly expectations.
+- **Custom-exercise upload GC is deferred.** `deleteCustomExercise` is **soft-only** (the storage object may be shared with snapshotted `program_exercises`). An upload whose row insert fails is rolled back, but a never-referenced orphan from an abandoned flow is not garbage-collected. ([`actions/custom-exercise.ts`](../src/app/actions/custom-exercise.ts).)
+- **Open signup.** `signInWithOtp` defaults `shouldCreateUser: true` — any email can self-provision an account. Acceptable for the single-user app; set `false` (or document open signup) before any real multi-user launch. ([`(auth)/login/page.tsx`](../src/app/(auth)/login/page.tsx), CODE_AUDIT SEC3.)
+- **Client-trusted media types.** `isLikelyImage` / `isLikelyVideo` trust the client-supplied MIME/extension (no magic-byte check). Accepted risk at single-user scope. ([`photo-upload.ts`](../src/lib/photo-upload.ts) / [`video-upload.ts`](../src/lib/video-upload.ts).)
+- **`manifest.ts` references a missing screenshot** (`/screenshot-narrow.png` not in the repo) → a 404 in the PWA manifest. Harmless; add the asset or drop the entry.
+- **Per-screen token migration is partial.** `/workout/*`, `/history/*`, `/body`, `/settings` detail, `/login` still use raw `text-neutral-*` instead of the semantic design tokens ([§13](#13-design-system)). New code should use the tokens.
+
+### Product-level deferrals (intentional)
+
+- **No offline write queue** — decided to ship without it; revisit if the gym connection actually drops.
+- **No "cancel session" UI** — `startWorkout` redirects to any open session instead of duplicating; an unwanted session sits `ended_at = null` until finished or deleted from history.
+- **Mid-workout exercise-add affects future sessions only** — the active session won't pick up a newly added exercise.
+- **Max 2 programs, no unarchive UI** — creating a 3rd is rejected; archive one first.
+- **PWA shell-caching only** — no real offline data, no custom install prompt.

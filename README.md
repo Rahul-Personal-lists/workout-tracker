@@ -1,13 +1,31 @@
 # Trainr
 
-A mobile-first PWA for logging strength programs at the gym. Single user today, multi-user-ready (RLS on every table). Built with **Next.js 16** (App Router), **Supabase** (Postgres + Auth), and **Tailwind v4**.
+A mobile-first PWA for logging strength programs at the gym. Single user today, multi-user-ready (RLS on every table). Built with **Next.js 16** (App Router), **Supabase** (Postgres + Auth + Storage), and **Tailwind v4**.
 
-Ships with 4 preset templates (12-week strength, PPL, Upper/Lower, Full Body 3×) and a blank-program builder; up to 2 programs per user, one active.
+Ships with a **21-program preset library** (browsable at `/program/library`) plus a blank-program builder, custom video exercises, and ★ favorites; up to 2 programs per user, one active.
+
+## Architecture
+
+Trainr is **one deployable web app** — the **Next.js PWA** on **Vercel** — backed by managed services: **Supabase** (Postgres + Auth + Storage), **Resend** (the weekly summary email), the public-domain **free-exercise-db** catalog/images, and two **GitHub Actions** crons (weekly digest + catalog refresh). There is no separate backend service: Server Components read through a server-only query layer and every mutation goes through a Zod-validated Server Action, with **RLS as the only tenant boundary**.
+
+##### Context Diagram
+![Context diagram](./docs/diagrams/context.png)
+
+> 📐 Diagram source: [`docs/diagrams/context.puml`](./docs/diagrams/context.puml). For the container-level view, the data model, process walkthroughs, sequence diagrams, deployment, and the known-gaps section, see **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)**.
+
+### Core processes
+
+See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for full walk-throughs and diagrams:
+
+- [**Authentication**](./docs/ARCHITECTURE.md#3-authentication--request-lifecycle) — email → 6-digit OTP → `sb-*` cookies; one auth gate in `proxy.ts`.
+- [**Workout logging**](./docs/ARCHITECTURE.md#6-workout-logging-flow) — RSC snapshots the plan, a client island owns live edits, finish is a two-phase commit.
+- [**Progressive overload**](./docs/ARCHITECTURE.md#7-progressive-overload-model) — pure functions recompute planned load/reps per week (deloads, peak-taper).
+- [**Progress & timezone**](./docs/ARCHITECTURE.md#8-progress--analytics--timezone-strategy) — store UTC, derive user-TZ date keys, pad ±1 day then re-filter.
 
 ## Docs
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system map + diagrams (auth flow, ER schema, workout logging, progression model, PWA, onboarding).
-- [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md) — prioritized findings backlog (what's fixed, what's deferred).
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system map + diagrams (context, container, auth flow, ER schema, workout logging, progression, PWA, onboarding, deployment, known gaps).
+- [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md) — current prioritized findings backlog (see its Status block for what's shipped). Supersedes the historical [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md) (2026-05-29).
 - [`CLAUDE.md`](CLAUDE.md) — conventions, invariants, and the "don't" list.
 
 ## One-time setup
@@ -69,7 +87,7 @@ src/
 │   ├── supabase/{client,server,middleware}.ts
 │   └── …
 └── components/                        shell + shared client components
-supabase/migrations/                   16 migrations (see CLAUDE.md / ARCHITECTURE.md)
+supabase/migrations/                   20 migrations (see CLAUDE.md / ARCHITECTURE.md)
 scripts/                               seed, OTP, catalog refresh, email preview
 ```
 

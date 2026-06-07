@@ -8,6 +8,18 @@ The 67 surviving findings are overwhelmingly **low-severity polish**. The domina
 
 ---
 
+## Status (updated 2026-06-07)
+
+**[PR #104](https://github.com/Rahul-Personal-lists/workout-tracker/pull/104) shipped Tranche 1 (all), Tranche 2, and a Tranche-3 subset** (the `progression.ts` structural cleanups + the `[A2]` time-set focus rings + two hardcoded-ring de-hardcodings). Verified against current source:
+
+- ✅ **Shipped:** `deleteSetLog` revalidatePath · video-path validation symmetry · `RestTimerBar` hydration guard · `seriesFor` memo + body queries `ascending:true` · all dead-code drops (`target_seconds`, `ProgressBucket.minutes/.sessionId`, `sound-prefs` cookie, `getPhase`/`Phase`) · all Tranche-1 dedup (PHOTO_BUCKET, unit constants, THEME_KEYS, tapVibration, etc.) · `ExerciseChart` hex → CSS vars · `isFinalDeload` extraction + peak-taper TSDoc · `[M3]` CI `--force` → `--no-db` (+ `set -o pipefail`) · `[A2]` time-set focus rings · theme-swatch + exercise-card-zoom focus rings.
+- ⏳ **Still open from Tranche 2** (did *not* ship in #104, re-confirmed against source): `getCustomExercises` still falls back to `?? ""` (queries.ts:854) instead of `null`; rest-timer expiry effect still lists `now` in its dep array (rest-timer.tsx:67) → 250 ms re-runs.
+- ⏳ **Tranche 3 remainder** (deferred, needs sign-off): per-screen token migration of `/workout/*`,`/history/*`,`/login`,`/program/new`,add-exercise; `FOCUS_RING` constant + app-wide focus-ring spelling unification; `BottomSheet`/`usePointerGesture`/`TopBanner`/`SettingsDetailHeader`/`useArmedConfirm`/`uploadPhotos`/`ExerciseRow` extractions; `[SEC3]` OTP `shouldCreateUser` policy call; `[X4]` `scripts/_env.ts`. `[SEC4]`/`[P1]` remain accepted-risk / deferred-for-scale (no change).
+
+The per-finding sections below are the **as-audited (2026-06-06) snapshot**; consult this status block for what's since shipped.
+
+---
+
 ## Correctness
 
 - **Missing `revalidatePath` in `deleteSetLog`** — `src/app/actions/workout.ts:187-200` — Deleting a set leaves stale data in the `/progress` and `/history/{sessionId}` caches because no revalidation fires, unlike every sibling mutation. Add `revalidatePath("/progress")` + `revalidatePath(\`/history/${parsed.sessionId}\`)` matching `editSetLog`. `[sev:M] [effort:S] [behavior-change] [not-load-bearing]`

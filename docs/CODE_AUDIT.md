@@ -1,5 +1,7 @@
 # Trainr — Code Audit & Improvement Plan
 
+> **📓 Historical record (2026-05-29).** This was the first whole-repo audit; its fixes shipped in PR #77 and several then-deferred items (rest-skip flag, modal a11y, `requireUser` sweep, perf tier) have since shipped too. It has been **superseded by [`REFACTOR_PLAN.md`](./REFACTOR_PLAN.md)** (2026-06-06), the current live backlog. Kept for provenance; do not pick work from here — use REFACTOR_PLAN.
+
 Repo-wide scan (2026-05-29) across all 12 subsystems, cross-verified against the source. Findings are grouped by theme and prioritized. Each is tagged:
 
 - ✅ **Fixed** in the accompanying refactor pass
