@@ -816,8 +816,8 @@ export type CustomExercise = {
   muscles: string[];
   video_path: string;
   poster_path: string;
-  video_signed_url: string;
-  poster_signed_url: string;
+  video_signed_url: string | null;
+  poster_signed_url: string | null;
   crop_rect: ReframeRect | null;
   trim: TrimBounds | null;
   aspect_ratio: number | null;
@@ -851,8 +851,8 @@ export async function getCustomExercises(): Promise<CustomExercise[]> {
     muscles: r.muscles ?? [],
     video_path: r.video_path,
     poster_path: r.poster_path,
-    video_signed_url: video.data?.[i]?.signedUrl ?? "",
-    poster_signed_url: poster.data?.[i]?.signedUrl ?? "",
+    video_signed_url: video.data?.[i]?.signedUrl ?? null,
+    poster_signed_url: poster.data?.[i]?.signedUrl ?? null,
     crop_rect: (r.crop_rect as ReframeRect | null) ?? null,
     trim:
       r.trim_start_seconds != null && r.trim_end_seconds != null

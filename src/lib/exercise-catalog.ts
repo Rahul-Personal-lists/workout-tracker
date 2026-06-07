@@ -50,8 +50,8 @@ export function customToCatalogEntry(c: {
   muscles: string[];
   video_path: string;
   poster_path: string;
-  video_signed_url: string;
-  poster_signed_url: string;
+  video_signed_url: string | null;
+  poster_signed_url: string | null;
   crop_rect: ReframeRect | null;
   trim: TrimBounds | null;
   aspect_ratio: number | null;
@@ -66,16 +66,21 @@ export function customToCatalogEntry(c: {
     primary: c.muscles,
     custom: true,
     posterUrl: c.poster_signed_url || undefined,
-    video: {
-      customExerciseId: c.id,
-      videoPath: c.video_path,
-      posterPath: c.poster_path,
-      videoUrl: c.video_signed_url,
-      posterUrl: c.poster_signed_url,
-      rect: c.crop_rect,
-      trim: c.trim,
-      aspect: c.aspect_ratio,
-    },
+    // Only attach a playable clip when signing succeeded. An empty/null URL on a
+    // <video src> resolves to the page itself, so represent "couldn't sign" as no
+    // video — the thumbnail + name still render via posterUrl above.
+    video: c.video_signed_url
+      ? {
+          customExerciseId: c.id,
+          videoPath: c.video_path,
+          posterPath: c.poster_path,
+          videoUrl: c.video_signed_url,
+          posterUrl: c.poster_signed_url ?? "",
+          rect: c.crop_rect,
+          trim: c.trim,
+          aspect: c.aspect_ratio,
+        }
+      : undefined,
   };
 }
 

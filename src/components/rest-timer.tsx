@@ -68,12 +68,18 @@ export function RestTimerBar({
     paused: pausedAt !== null,
   });
 
+  // Auto-stop exactly at expiry via a one-shot timeout, so this effect stays off
+  // the 250ms `now` tick (which only drives the countdown display + cues).
   useEffect(() => {
     if (!floating || endsAt === null || pausedAt !== null) return;
-    if (Date.now() >= endsAt) {
+    const ms = endsAt - Date.now();
+    if (ms <= 0) {
       stop();
+      return;
     }
-  }, [floating, endsAt, pausedAt, now, stop]);
+    const id = setTimeout(stop, ms);
+    return () => clearTimeout(id);
+  }, [floating, endsAt, pausedAt, stop]);
 
   if (endsAt === null) {
     if (floating) return null;
