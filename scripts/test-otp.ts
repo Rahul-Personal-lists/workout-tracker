@@ -18,4 +18,7 @@ async function main() {
   if (error) throw error;
   console.log(data.properties?.email_otp);
 }
-main();
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
