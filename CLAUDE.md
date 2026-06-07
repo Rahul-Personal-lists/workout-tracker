@@ -67,6 +67,7 @@ Migrations to date:
 - `20260530000000_rest_skip_flag.sql` — `is_rest_skip` on `workout_sessions` (explicit rest-day-skip flag; replaces the `duration_seconds = 0` sentinel so Undo can't delete a real zero-duration workout)
 - `20260530120000_body_log_weight_optional.sql` — `weight_lb` on `body_logs` made **nullable** so body fat / calories can be logged for a date without a weight; replaces the implicit "weight required" rule with a `num_nonnulls(weight_lb, body_fat_pct, calories) > 0` CHECK (`body_logs_at_least_one_metric`) so the shared daily row still can't be empty
 - `20260604000000_exercise_favorites.sql` — `exercise_favorites` table (catalog-level favorites keyed by free-exercise-db slug; RLS owner-scoped, PK `(user_id, exercise_slug)`). Read via `getFavoriteSlugs()` (degrades to empty on error), toggled by `toggleFavorite`. **Must be `npx supabase db push`-ed for favorites to persist.**
+- `20260606000000_custom_exercises.sql` — `custom_exercises` table (per-user video exercises, RLS owner-scoped) + 8 snapshot columns on `program_exercises` (`video_path`/`poster_path`/`crop_rect`/`trim_start_seconds`/`trim_end_seconds`/`aspect_ratio`/`muscles` + nullable provenance FK `custom_exercise_id` `on delete set null`). Media lives in the shared `workout-photos` bucket under `{uid}/exercise-videos/{id}/` (`VIDEO_BUCKET`); reframe/trim are non-destructive playback metadata. Soft-delete only (`archived_at`).
 
 After a migration: `npx supabase db push && npm run db:types`. Don't hand-edit `database.types.ts`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full ER diagram and [docs/CODE_AUDIT.md](docs/CODE_AUDIT.md) for the prioritized findings backlog.
 
@@ -126,6 +127,7 @@ Server actions:
 - [src/app/actions/body.ts](src/app/actions/body.ts) — upsert/deleteBodyLog, upsert/deleteBodyMeasurement, setGoalWeight, recordBodyPhotos, deleteBodyPhoto
 - [src/app/actions/profile.ts](src/app/actions/profile.ts) — setProfileFields, setAvatar, clearAvatar, setUnits, setSoundPrefs, deleteAccount
 - [src/app/actions/favorites.ts](src/app/actions/favorites.ts) — toggleFavorite (catalog-level ★, keyed by exercise slug)
+- [src/app/actions/custom-exercise.ts](src/app/actions/custom-exercise.ts) — createCustomExercise, deleteCustomExercise (soft), signCustomVideoUrl (re-sign on mid-session 403)
 
 ## Setup / run
 

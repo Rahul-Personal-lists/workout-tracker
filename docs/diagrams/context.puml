@@ -1,0 +1,30 @@
+@startuml context
+' System Context diagram (C4 level 1) for Trainr.
+' Render: java -jar plantuml.jar -tpng docs/diagrams/context.puml  ->  docs/diagrams/context.png
+' The !include needs network access at render time. Offline? See diagrams.md.
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title System Context — Trainr (workout-tracking PWA)
+
+Person(rahul, "Lifter", "Logs strength workouts at the gym, tracks body weight / measurements / photos. Single user today; RLS makes it multi-user-ready.")
+
+System(trainr, "Trainr", "Mobile-first PWA. Next.js 16 (App Router) on Vercel. Server Components read via a server-only query layer; all mutations go through Zod-validated Server Actions. No separate API layer.")
+
+System_Ext(supabase, "Supabase", "Managed Postgres (RLS owner-scoped) + Auth (magic-link / OTP) + Storage (private 'workout-photos' bucket: workout/body photos + custom-exercise videos).")
+System_Ext(resend, "Resend", "Transactional email — the weekly workout-summary digest.")
+System_Ext(gha, "GitHub Actions", "Two scheduled crons: weekly-summary trigger (Mon 02:00 UTC) and exercise-catalog refresh (Mon 03:00 UTC, opens a PR).")
+System_Ext(fedb, "free-exercise-db", "Public-domain exercise catalog + reference images (yuhonas/free-exercise-db on GitHub).")
+
+Rel(rahul, trainr, "Logs workouts, tracks body", "HTTPS / installed PWA")
+Rel(trainr, supabase, "Reads & writes data, auth, photo/video storage", "@supabase/ssr · signed URLs")
+Rel_U(supabase, rahul, "Emails 6-digit OTP sign-in code", "email")
+Rel(trainr, fedb, "Loads exercise reference images", "HTTPS img")
+
+Rel(gha, trainr, "Triggers weekly digest", "POST /api/cron/weekly-summary (Bearer)")
+Rel(trainr, resend, "Sends weekly summary", "HTTPS API")
+Rel_U(resend, rahul, "Weekly summary email", "email")
+Rel(gha, fedb, "Refreshes catalog → opens PR", "HTTPS / git")
+
+UpdateElementStyle("external", $bgColor="#D0E6FF", $borderColor="#003366")
+SHOW_LEGEND()
+@enduml
