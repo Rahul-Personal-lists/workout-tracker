@@ -45,7 +45,7 @@ export function ThemePicker({ initialTheme }: { initialTheme: ThemeKey }) {
                   aria-pressed={active}
                   aria-label={t.label}
                   className={cn(
-                    "w-full h-12 rounded-md border flex items-center justify-center transition-colors",
+                    "w-full h-12 rounded-md border flex items-center justify-center transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                     active ? "border-white" : "border-border"
                   )}
                   style={{ background: t.color }}

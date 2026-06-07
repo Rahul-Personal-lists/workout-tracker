@@ -170,7 +170,7 @@ export function ExerciseCard({
                 type="button"
                 onClick={() => setZoomed(true)}
                 aria-label={`View ${exercise.name} ${videoMedia ? "video" : "animation"}`}
-                className="shrink-0 rounded focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                className="shrink-0 rounded outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]"
               >
                 <ExerciseMedia
                   imageUrl={exercise.imageUrl}

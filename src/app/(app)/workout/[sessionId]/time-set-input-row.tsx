@@ -173,7 +173,7 @@ export function TimeSetInputRow({
               onBlur={commitOnBlur}
               placeholder={placeholder}
               className={cn(
-                "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong",
+                "w-full min-w-0 h-14 rounded bg-transparent px-2 text-center tabular-nums outline-none border border-transparent focus:border-border-strong focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                 set.completed
                   ? "text-base text-foreground-muted"
                   : "text-2xl font-semibold"
@@ -189,7 +189,7 @@ export function TimeSetInputRow({
             type="button"
             aria-label="Stop timer"
             onClick={stopCountdown}
-            className="h-14 w-14 rounded-xl flex items-center justify-center bg-emerald-500 border border-emerald-500 text-black"
+            className="h-14 w-14 rounded-xl flex items-center justify-center bg-emerald-500 border border-emerald-500 text-black outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
           >
             <Square className="w-4 h-4" fill="currentColor" strokeWidth={0} />
           </button>
@@ -200,7 +200,7 @@ export function TimeSetInputRow({
               aria-label="Start timer"
               onClick={startCountdown}
               disabled={!canStart}
-              className="h-14 w-14 rounded-xl flex items-center justify-center border border-border-strong text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="h-14 w-14 rounded-xl flex items-center justify-center border border-border-strong text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
             >
               <Play className="w-4 h-4" fill="currentColor" strokeWidth={0} />
             </button>
@@ -209,7 +209,7 @@ export function TimeSetInputRow({
               aria-label={set.completed ? "Mark set incomplete" : "Mark set complete"}
               onClick={toggleComplete}
               className={cn(
-                "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors",
+                "h-14 w-14 rounded-xl flex items-center justify-center border transition-colors outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
                 set.completed
                   ? "bg-emerald-500 border-emerald-500 text-black"
                   : "border-border-strong text-neutral-500"
