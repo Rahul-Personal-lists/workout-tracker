@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Check, ChevronDown, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import { BottomSheet } from "@/components/bottom-sheet";
 import {
   GOAL_META,
@@ -14,9 +14,6 @@ import {
   type GymLocation,
   type LibraryProgram,
 } from "@/lib/program-library";
-
-const RING =
-  "outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]";
 
 const GYM_OPTIONS: { value: GymLocation | null; label: string }[] = [
   { value: null, label: "All gyms" },

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import { getLibraryProgram } from "@/lib/program-library";
 import { getAllPrograms, getGoalWeight, getTodayWeightLb } from "@/lib/queries";
 import { getUnitsServer } from "@/lib/units-server";
@@ -18,9 +18,6 @@ import { ExerciseThumb } from "../../../exercise-thumb";
 import { StartProgramButton } from "../start-program-button";
 
 export const dynamic = "force-dynamic";
-
-const RING =
-  "outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]";
 
 export default async function PlanDetailPage({
   params,

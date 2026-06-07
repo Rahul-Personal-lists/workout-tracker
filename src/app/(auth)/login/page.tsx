@@ -26,7 +26,12 @@ export default function LoginPage() {
 
   async function sendCode() {
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      // Single-user app: don't let an unknown email self-provision a new
+      // RLS-isolated workspace. Existing users still receive their OTP.
+      options: { shouldCreateUser: false },
+    });
     return error;
   }
 

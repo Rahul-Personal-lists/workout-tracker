@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Film, Pencil } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { createCustomExercise } from "@/app/actions/custom-exercise";
 import { VideoCropper, type CropperResult } from "@/components/video-cropper";
@@ -20,9 +20,6 @@ import {
   videoContentType,
   videoExt,
 } from "@/lib/video-upload";
-
-const RING =
-  "outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]";
 
 export function CreateCustomExerciseClient({
   returnTo,

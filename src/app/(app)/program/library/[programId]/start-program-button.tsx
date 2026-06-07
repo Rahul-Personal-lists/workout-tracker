@@ -6,16 +6,13 @@ import { Check } from "lucide-react";
 import { archiveProgram, seedPresetProgram } from "@/app/actions/program";
 import { toast } from "@/components/toast";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { cn } from "@/lib/utils";
+import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import type { ProgramSummary } from "@/lib/queries";
 
 // Keep in sync with MAX_PROGRAMS in actions/program.ts — the server action is
 // the source of truth; this only decides whether to seed straight away or open
 // the archive-one sheet first.
 const MAX_PROGRAMS = 2;
-
-const RING =
-  "outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-color)]";
 
 export function StartProgramButton({
   presetId,

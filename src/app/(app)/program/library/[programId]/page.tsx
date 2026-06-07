@@ -2,15 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import { GOAL_META, SPLIT_LABEL, getLibraryProgram } from "@/lib/program-library";
 import { getAllPrograms } from "@/lib/queries";
 import { StartProgramButton } from "./start-program-button";
 
 export const dynamic = "force-dynamic";
-
-const RING =
-  "outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]";
 
 export default async function LibraryProgramPage({
   params,
