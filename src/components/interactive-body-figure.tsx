@@ -114,11 +114,20 @@ export function InteractiveBodyFigure({
     const cy = vy(c.y);
     const active = c.key === activeKey;
 
-    const padX = vx(24);
-    const hitX = side === "left" ? Math.max(0, labelX - padX) : cx;
-    const hitW = side === "left" ? cx - hitX : labelX + padX - cx;
-    const hitY = Math.min(labelY, cy) - vy(5.5);
-    const hitH = Math.abs(labelY - cy) + vy(11);
+    // Two disjoint tap targets per callout — a circle on the dot and a rect on
+    // the label — instead of one box spanning the whole leader line. The old
+    // dot→label box overlapped its neighbours (Abs reached back across the
+    // biceps dot) and, since SVG paints later elements on top, the next callout
+    // stole the tap. Dot radius stays under half the tightest dot gap (front
+    // shoulders↔chest, ~71px); label rects sit in the empty photo margin and
+    // never reach the body.
+    const label = labelFor(c.key);
+    const dotR = vy(2.4);
+    const labelPad = vy(1.5);
+    const labelW = label.length * vy(1.5) + labelPad * 2;
+    const labelRectX =
+      side === "left" ? labelX - labelW + labelPad : labelX - labelPad;
+    const labelRectY = labelY - vy(2.5);
 
     return (
       <g
@@ -126,7 +135,7 @@ export function InteractiveBodyFigure({
         role="button"
         tabIndex={0}
         aria-pressed={active}
-        aria-label={labelFor(c.key)}
+        aria-label={label}
         onClick={() => onSelect(c.key)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -135,7 +144,14 @@ export function InteractiveBodyFigure({
           }
         }}
       >
-        <rect x={hitX} y={hitY} width={hitW} height={hitH} fill="transparent" />
+        <circle cx={cx} cy={cy} r={dotR} fill="transparent" />
+        <rect
+          x={labelRectX}
+          y={labelRectY}
+          width={labelW}
+          height={vy(5)}
+          fill="transparent"
+        />
         <line
           x1={labelX}
           y1={labelY}
@@ -144,6 +160,7 @@ export function InteractiveBodyFigure({
           stroke={active ? "var(--color-accent)" : "var(--color-foreground-muted)"}
           strokeWidth={3}
           strokeDasharray="9 7"
+          pointerEvents="none"
         />
         {c.key === "cardio" ? (
           <text
@@ -178,7 +195,7 @@ export function InteractiveBodyFigure({
           strokeWidth={vy(0.12)}
           paintOrder="stroke"
         >
-          {labelFor(c.key)}
+          {label}
         </text>
       </g>
     );

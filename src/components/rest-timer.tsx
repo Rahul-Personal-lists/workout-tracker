@@ -11,7 +11,7 @@ import {
 import { formatDuration } from "@/lib/format";
 import {
   type StepLead,
-  unlockStepCueAudio,
+  unlockStepCues,
   useStepCues,
 } from "@/lib/step-cue";
 
@@ -107,7 +107,7 @@ export function RestTimerBar({
           <button
             type="button"
             onClick={() => {
-              unlockStepCueAudio();
+              unlockStepCues();
               start();
             }}
             className="ml-auto h-8 px-3 rounded-lg text-xs border border-border text-foreground hover:bg-surface-hover"
