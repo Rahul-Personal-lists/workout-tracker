@@ -294,7 +294,7 @@ export function CreateCustomExerciseClient({
             </div>
           </div>
         ) : (
-          <div className="grid gap-2">
+          <div data-tour="custom-media" className="grid gap-2">
             <button
               type="button"
               onClick={() => photoInputRef.current?.click()}
