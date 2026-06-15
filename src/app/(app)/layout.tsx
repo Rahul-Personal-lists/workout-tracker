@@ -26,6 +26,7 @@ export default async function AppLayout({
       <Toaster />
       <TutorialOverlay tour="today" />
       <TutorialOverlay tour="createProgram" />
+      <TutorialOverlay tour="addExercise" />
       <OnboardingPicker />
       <OnboardingRedirector />
     </div>

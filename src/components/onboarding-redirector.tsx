@@ -9,17 +9,18 @@ export function OnboardingRedirector() {
   const pickerSeen = useTutorial((s) => s.pickerSeen);
   const hasSeenToday = useTutorial((s) => s.hasSeen.today);
   const hasSeenCreate = useTutorial((s) => s.hasSeen.createProgram);
+  const hasSeenAddExercise = useTutorial((s) => s.hasSeen.addExercise);
   const dismissPicker = useTutorial((s) => s.dismissPicker);
   const fired = useRef(false);
 
   useEffect(() => {
     if (fired.current) return;
     if (pickerSeen) return;
-    if (!hasSeenToday || !hasSeenCreate) return;
+    if (!hasSeenToday || !hasSeenCreate || !hasSeenAddExercise) return;
     fired.current = true;
     dismissPicker();
     router.push("/settings");
-  }, [pickerSeen, hasSeenToday, hasSeenCreate, dismissPicker, router]);
+  }, [pickerSeen, hasSeenToday, hasSeenCreate, hasSeenAddExercise, dismissPicker, router]);
 
   return null;
 }

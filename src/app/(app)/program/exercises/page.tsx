@@ -40,6 +40,7 @@ export default async function ExerciseLibraryPage({
         </div>
         <Link
           href="/program/exercises/new"
+          data-tour="add-exercise"
           aria-label="Add custom exercise"
           className={`inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent text-accent-foreground font-medium px-3.5 h-9 text-sm ${FOCUS_RING}`}
         >

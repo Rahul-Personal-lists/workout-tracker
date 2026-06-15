@@ -61,13 +61,13 @@ const TOUR_STEPS: Record<TourId, Step[]> = {
       target: "preset-templates",
       route: "/program",
       title: "Use a template",
-      body: "Fastest start — tap 'Use this program' on any ready-made plan and you'll be training today. No setup needed.",
+      body: "Fastest start — tap 'Use this program' on one of these and you're training today. These are just quick picks; the full library (below) has the whole catalog — grouped by days per week, filterable by gym and experience.",
     },
     {
       target: "open-new-program",
       route: "/program",
       title: "Or build your own",
-      body: "Want full control? Tap here to build from a blank program — we'll walk you through it.",
+      body: "Want full control? Tap 'Create blank program' to start from scratch — we'll walk you through it next.",
     },
     {
       target: "np-name",
@@ -98,6 +98,20 @@ const TOUR_STEPS: Record<TourId, Step[]> = {
       route: "/program/new/custom",
       title: "Create",
       body: "Tap Create to save. You can edit days and exercises after.",
+    },
+  ],
+  addExercise: [
+    {
+      target: "add-exercise",
+      route: "/program/exercises",
+      title: "Add your own exercise",
+      body: "Missing a move from the library? Tap here to add your own — record a clip, upload a video (a screen recording works great), or snap a photo.",
+    },
+    {
+      target: "custom-media",
+      route: "/program/exercises/new",
+      title: "Three ways to capture it",
+      body: "Record up to 80 seconds with your camera, upload a video you already have, or add a single photo. Pick whatever's easiest.",
     },
   ],
 };
