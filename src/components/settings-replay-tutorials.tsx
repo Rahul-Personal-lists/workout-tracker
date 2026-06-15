@@ -16,6 +16,11 @@ const ENTRIES: Entry[] = [
     label: "Replay: Make your first program",
     route: "/program",
   },
+  {
+    tour: "addExercise",
+    label: "Replay: Add your own exercises",
+    route: "/program/exercises",
+  },
 ];
 
 export function SettingsReplayTutorials() {

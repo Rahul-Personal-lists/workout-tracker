@@ -26,6 +26,12 @@ const OPTIONS: Option[] = [
     caption: "7 steps · templates or build your own",
     route: "/program",
   },
+  {
+    tour: "addExercise",
+    title: "Add your own exercises",
+    caption: "2 steps · record, upload, or photo",
+    route: "/program/exercises",
+  },
 ];
 
 export function OnboardingPicker() {
@@ -34,8 +40,10 @@ export function OnboardingPicker() {
   const pickerSeen = useTutorial((s) => s.pickerSeen);
   const hasSeenToday = useTutorial((s) => s.hasSeen.today);
   const hasSeenCreate = useTutorial((s) => s.hasSeen.createProgram);
+  const hasSeenAddExercise = useTutorial((s) => s.hasSeen.addExercise);
   const autoStartToday = useTutorial((s) => s.autoStart.today);
   const autoStartCreate = useTutorial((s) => s.autoStart.createProgram);
+  const autoStartAddExercise = useTutorial((s) => s.autoStart.addExercise);
   const start = useTutorial((s) => s.start);
   const dismissPicker = useTutorial((s) => s.dismissPicker);
 
@@ -52,7 +60,8 @@ export function OnboardingPicker() {
     !pickerSeen &&
     pathname === "/program" &&
     !autoStartToday &&
-    !autoStartCreate;
+    !autoStartCreate &&
+    !autoStartAddExercise;
 
   const cardRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -81,6 +90,7 @@ export function OnboardingPicker() {
   const completed: Record<TourId, boolean> = {
     today: hasSeenToday,
     createProgram: hasSeenCreate,
+    addExercise: hasSeenAddExercise,
   };
 
   const handlePick = (opt: Option) => {

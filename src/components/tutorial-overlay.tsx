@@ -100,6 +100,20 @@ const TOUR_STEPS: Record<TourId, Step[]> = {
       body: "Tap Create to save. You can edit days and exercises after.",
     },
   ],
+  addExercise: [
+    {
+      target: "add-exercise",
+      route: "/program/exercises",
+      title: "Add your own exercise",
+      body: "Missing a move from the library? Tap here to add your own — record a clip, upload a video (a screen recording works great), or snap a photo.",
+    },
+    {
+      target: "custom-media",
+      route: "/program/exercises/new",
+      title: "Three ways to capture it",
+      body: "Record up to 80 seconds with your camera, upload a video you already have, or add a single photo. Pick whatever's easiest.",
+    },
+  ],
 };
 
 const SWIPE_COMMIT = 50;

@@ -3,11 +3,12 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-export type TourId = "today" | "createProgram";
+export type TourId = "today" | "createProgram" | "addExercise";
 
 export const TUTORIAL_STEP_COUNT: Record<TourId, number> = {
   today: 5,
   createProgram: 7,
+  addExercise: 2,
 };
 
 type TutorialState = {
@@ -27,14 +28,17 @@ type TutorialState = {
 const initialHasSeen: Record<TourId, boolean> = {
   today: false,
   createProgram: false,
+  addExercise: false,
 };
 const initialAutoStart: Record<TourId, boolean> = {
   today: false,
   createProgram: false,
+  addExercise: false,
 };
 const initialStep: Record<TourId, number> = {
   today: 0,
   createProgram: 0,
+  addExercise: 0,
 };
 
 export const useTutorial = create<TutorialState>()(
@@ -105,6 +109,7 @@ export const useTutorial = create<TutorialState>()(
           const hasSeen = {
             today: old.hasSeen ?? false,
             createProgram: false,
+            addExercise: false,
           };
           return {
             pickerSeen: hasSeen.today && hasSeen.createProgram,
@@ -117,7 +122,7 @@ export const useTutorial = create<TutorialState>()(
           const old = (persisted ?? {}) as {
             hasSeen?: Record<TourId, boolean>;
           };
-          const hasSeen = old.hasSeen ?? initialHasSeen;
+          const hasSeen = { ...initialHasSeen, ...old.hasSeen };
           return {
             pickerSeen: !!(hasSeen.today && hasSeen.createProgram),
             hasSeen,
