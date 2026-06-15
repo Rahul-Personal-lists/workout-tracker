@@ -92,17 +92,40 @@ export function VideoCropper({
     setCenter(c);
   }
 
-  function onLoadedMetadata() {
-    const v = videoRef.current;
-    if (!v) return;
-    setNatural({ w: v.videoWidth, h: v.videoHeight });
-    const dur = Number.isFinite(v.duration) ? v.duration : 0;
+  function applyDuration(dur: number) {
     setDuration(dur);
     const end = Math.min(dur, MAX_VIDEO_SECONDS);
     setTrim({ startSec: 0, endSec: end });
     trimRef.current = { startSec: 0, endSec: end };
-    v.muted = true;
-    v.play().catch(() => {});
+  }
+
+  function onLoadedMetadata() {
+    const v = videoRef.current;
+    if (!v) return;
+    setNatural({ w: v.videoWidth, h: v.videoHeight });
+    if (Number.isFinite(v.duration) && v.duration > 0) {
+      applyDuration(v.duration);
+      v.muted = true;
+      v.play().catch(() => {});
+      return;
+    }
+    // MediaRecorder clips can report Infinity/NaN until seeked to the end.
+    // Force the browser to resolve the real duration, then reset to the start.
+    const onDurationChange = () => {
+      if (Number.isFinite(v.duration) && v.duration > 0) {
+        v.removeEventListener("durationchange", onDurationChange);
+        applyDuration(v.duration);
+        v.currentTime = 0;
+        v.muted = true;
+        v.play().catch(() => {});
+      }
+    };
+    v.addEventListener("durationchange", onDurationChange);
+    try {
+      v.currentTime = 1e7; // jump past the end to trigger durationchange
+    } catch {
+      /* ignore */
+    }
   }
 
   function onTimeUpdate() {
