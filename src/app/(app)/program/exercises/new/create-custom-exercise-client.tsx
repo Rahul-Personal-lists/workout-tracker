@@ -2,17 +2,20 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Film, Pencil } from "lucide-react";
+import { Camera, Film, Pencil, Video } from "lucide-react";
 import { cn, FOCUS_RING as RING } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { createCustomExercise } from "@/app/actions/custom-exercise";
 import { VideoCropper, type CropperResult } from "@/components/video-cropper";
+import { ImageReframer } from "@/components/image-reframer";
+import { VideoRecorder } from "@/components/video-recorder";
 import { MuscleBadge } from "@/components/muscle-badge";
 import {
   MUSCLE_REGIONS,
   REGION_META,
   type MuscleRegion,
 } from "@/lib/muscle-regions";
+import { isLikelyImage, MAX_PHOTO_BYTES } from "@/lib/photo-upload";
 import {
   MAX_VIDEO_BYTES,
   VIDEO_BUCKET,
@@ -21,24 +24,34 @@ import {
   videoExt,
 } from "@/lib/video-upload";
 
+type PhotoMedia = { kind: "photo"; poster: File };
+type VideoMediaState = { kind: "video"; source: File; crop: CropperResult };
+type Media = PhotoMedia | VideoMediaState;
+
 export function CreateCustomExerciseClient({
   returnTo,
 }: {
   returnTo: string | null;
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
   const [name, setName] = useState("");
-  const [sourceFile, setSourceFile] = useState<File | null>(null);
-  const [crop, setCrop] = useState<CropperResult | null>(null);
-  const [cropOpen, setCropOpen] = useState(false);
+  const [media, setMedia] = useState<Media | null>(null);
   const [muscles, setMuscles] = useState<Set<MuscleRegion>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [submitting, startSubmit] = useTransition();
 
+  // Editor overlays + the file currently being edited.
+  const [photoToReframe, setPhotoToReframe] = useState<File | null>(null);
+  const [videoToCrop, setVideoToCrop] = useState<File | null>(null);
+  const [recording, setRecording] = useState(false);
+
+  const posterFile = media?.kind === "photo" ? media.poster : media?.crop.poster ?? null;
   const posterUrl = useMemo(
-    () => (crop ? URL.createObjectURL(crop.poster) : null),
-    [crop]
+    () => (posterFile ? URL.createObjectURL(posterFile) : null),
+    [posterFile]
   );
   useEffect(() => {
     return () => {
@@ -46,7 +59,25 @@ export function CreateCustomExerciseClient({
     };
   }, [posterUrl]);
 
-  function pickFile(file: File | null) {
+  function pickPhoto(file: File | null) {
+    setError(null);
+    if (!file) return;
+    if (!isLikelyImage(file)) {
+      setError("Pick an image file (jpg, png, webp, or heic).");
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError(
+        `Photo too large (${(file.size / 1024 / 1024).toFixed(0)} MB). Max ${
+          MAX_PHOTO_BYTES / 1024 / 1024
+        } MB.`
+      );
+      return;
+    }
+    setPhotoToReframe(file);
+  }
+
+  function pickVideo(file: File | null) {
     setError(null);
     if (!file) return;
     if (!isLikelyVideo(file)) {
@@ -61,9 +92,7 @@ export function CreateCustomExerciseClient({
       );
       return;
     }
-    setSourceFile(file);
-    setCrop(null);
-    setCropOpen(true);
+    setVideoToCrop(file);
   }
 
   function toggleMuscle(r: MuscleRegion) {
@@ -82,6 +111,11 @@ export function CreateCustomExerciseClient({
     return [...s];
   }, [muscles]);
 
+  function reEdit() {
+    if (media?.kind === "photo") setPhotoToReframe(media.poster);
+    else if (media?.kind === "video") setVideoToCrop(media.source);
+  }
+
   function submit() {
     setError(null);
     const trimmed = name.trim();
@@ -89,8 +123,8 @@ export function CreateCustomExerciseClient({
       setError("Name is required.");
       return;
     }
-    if (!sourceFile || !crop) {
-      setError("Add a video clip first.");
+    if (!media) {
+      setError("Add a photo or video first.");
       return;
     }
 
@@ -105,40 +139,64 @@ export function CreateCustomExerciseClient({
       }
 
       const id = crypto.randomUUID();
-      const ext = videoExt(sourceFile);
-      const videoPath = `${user.id}/exercise-videos/${id}/source.${ext}`;
-      const posterPath = `${user.id}/exercise-videos/${id}/poster.jpg`;
+      const dir = `${user.id}/exercise-videos/${id}`;
+      const posterPath = `${dir}/poster.jpg`;
       const uploaded: string[] = [];
       try {
-        const up1 = await supabase.storage
-          .from(VIDEO_BUCKET)
-          .upload(videoPath, sourceFile, {
-            contentType: videoContentType(sourceFile, ext),
-            upsert: false,
-          });
-        if (up1.error) throw up1.error;
-        uploaded.push(videoPath);
+        if (media.kind === "video") {
+          const ext = videoExt(media.source);
+          const videoPath = `${dir}/source.${ext}`;
+          const up1 = await supabase.storage
+            .from(VIDEO_BUCKET)
+            .upload(videoPath, media.source, {
+              contentType: videoContentType(media.source, ext),
+              upsert: false,
+            });
+          if (up1.error) throw up1.error;
+          uploaded.push(videoPath);
 
-        const up2 = await supabase.storage
-          .from(VIDEO_BUCKET)
-          .upload(posterPath, crop.poster, {
-            contentType: "image/jpeg",
-            upsert: false,
-          });
-        if (up2.error) throw up2.error;
-        uploaded.push(posterPath);
+          const up2 = await supabase.storage
+            .from(VIDEO_BUCKET)
+            .upload(posterPath, media.crop.poster, {
+              contentType: "image/jpeg",
+              upsert: false,
+            });
+          if (up2.error) throw up2.error;
+          uploaded.push(posterPath);
 
-        await createCustomExercise({
-          customExerciseId: id,
-          name: trimmed,
-          videoPath,
-          posterPath,
-          cropRect: crop.rect,
-          trimStartSeconds: crop.trim.startSec,
-          trimEndSeconds: crop.trim.endSec,
-          aspectRatio: crop.aspect,
-          muscles: catalogMuscles,
-        });
+          await createCustomExercise({
+            customExerciseId: id,
+            name: trimmed,
+            videoPath,
+            posterPath,
+            cropRect: media.crop.rect,
+            trimStartSeconds: media.crop.trim.startSec,
+            trimEndSeconds: media.crop.trim.endSec,
+            aspectRatio: media.crop.aspect,
+            muscles: catalogMuscles,
+          });
+        } else {
+          const up = await supabase.storage
+            .from(VIDEO_BUCKET)
+            .upload(posterPath, media.poster, {
+              contentType: "image/jpeg",
+              upsert: false,
+            });
+          if (up.error) throw up.error;
+          uploaded.push(posterPath);
+
+          await createCustomExercise({
+            customExerciseId: id,
+            name: trimmed,
+            videoPath: null,
+            posterPath,
+            cropRect: null,
+            trimStartSeconds: null,
+            trimEndSeconds: null,
+            aspectRatio: 1,
+            muscles: catalogMuscles,
+          });
+        }
       } catch (err) {
         if (uploaded.length) {
           await supabase.storage.from(VIDEO_BUCKET).remove(uploaded);
@@ -172,19 +230,29 @@ export function CreateCustomExerciseClient({
 
       <div className="space-y-2">
         <span className="block text-[11px] uppercase tracking-wide text-foreground-muted">
-          Video
+          Media
         </span>
         <input
-          ref={fileRef}
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            pickPhoto(e.target.files?.[0] ?? null);
+            if (photoInputRef.current) photoInputRef.current.value = "";
+          }}
+        />
+        <input
+          ref={videoInputRef}
           type="file"
           accept="video/*"
           className="hidden"
           onChange={(e) => {
-            pickFile(e.target.files?.[0] ?? null);
-            if (fileRef.current) fileRef.current.value = "";
+            pickVideo(e.target.files?.[0] ?? null);
+            if (videoInputRef.current) videoInputRef.current.value = "";
           }}
         />
-        {crop && posterUrl ? (
+        {media && posterUrl ? (
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3">
             <span className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-black">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -195,30 +263,73 @@ export function CreateCustomExerciseClient({
               />
             </span>
             <div className="flex-1 min-w-0 text-xs text-foreground-muted">
-              Clip ready · {Math.round(crop.trim.endSec - crop.trim.startSec)}s
+              {media.kind === "video"
+                ? `Clip ready · ${Math.round(media.crop.trim.endSec - media.crop.trim.startSec)}s`
+                : "Photo ready"}
             </div>
+            <div className="flex flex-col items-end gap-1.5">
+              <button
+                type="button"
+                onClick={reEdit}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded text-xs text-foreground-muted hover:text-foreground",
+                  RING
+                )}
+              >
+                <Pencil className="w-3.5 h-3.5" /> Re-edit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMedia(null);
+                  setError(null);
+                }}
+                className={cn(
+                  "rounded text-xs text-foreground-muted hover:text-foreground",
+                  RING
+                )}
+              >
+                Replace
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-2">
             <button
               type="button"
-              onClick={() => setCropOpen(true)}
+              onClick={() => photoInputRef.current?.click()}
               className={cn(
-                "inline-flex items-center gap-1 rounded text-xs text-foreground-muted hover:text-foreground",
+                "w-full h-12 rounded-md border border-dashed border-border-strong text-sm text-foreground-muted flex items-center justify-center gap-1.5",
                 RING
               )}
             >
-              <Pencil className="w-3.5 h-3.5" /> Re-edit
+              <Camera className="w-4 h-4" /> Add photo
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setRecording(true);
+              }}
+              className={cn(
+                "w-full h-12 rounded-md border border-dashed border-border-strong text-sm text-foreground-muted flex items-center justify-center gap-1.5",
+                RING
+              )}
+            >
+              <Video className="w-4 h-4" /> Record video
+              <span className="text-[11px] text-foreground-muted">· up to 80s</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              className={cn(
+                "w-full h-12 rounded-md border border-dashed border-border-strong text-sm text-foreground-muted flex items-center justify-center gap-1.5",
+                RING
+              )}
+            >
+              <Film className="w-4 h-4" /> Upload video
             </button>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className={cn(
-              "w-full h-12 rounded-md border border-dashed border-border-strong text-sm text-foreground-muted flex items-center justify-center gap-1.5",
-              RING
-            )}
-          >
-            <Film className="w-4 h-4" /> Add a video clip
-          </button>
         )}
       </div>
 
@@ -274,16 +385,38 @@ export function CreateCustomExerciseClient({
         {submitting ? "Saving…" : "Save exercise"}
       </button>
 
-      {cropOpen && sourceFile ? (
-        <VideoCropper
-          file={sourceFile}
-          onConfirm={(r) => {
-            setCrop(r);
-            setCropOpen(false);
+      {photoToReframe ? (
+        <ImageReframer
+          file={photoToReframe}
+          onConfirm={(poster) => {
+            setMedia({ kind: "photo", poster });
+            setPhotoToReframe(null);
           }}
-          onCancel={() => {
-            setCropOpen(false);
-            if (!crop) setSourceFile(null);
+          onCancel={() => setPhotoToReframe(null)}
+        />
+      ) : null}
+
+      {videoToCrop ? (
+        <VideoCropper
+          file={videoToCrop}
+          onConfirm={(crop) => {
+            setMedia({ kind: "video", source: videoToCrop, crop });
+            setVideoToCrop(null);
+          }}
+          onCancel={() => setVideoToCrop(null)}
+        />
+      ) : null}
+
+      {recording ? (
+        <VideoRecorder
+          onConfirm={(file) => {
+            setRecording(false);
+            pickVideo(file);
+          }}
+          onCancel={() => setRecording(false)}
+          onFallback={() => {
+            setRecording(false);
+            videoInputRef.current?.click();
           }}
         />
       ) : null}
