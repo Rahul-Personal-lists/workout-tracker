@@ -814,7 +814,7 @@ export type CustomExercise = {
   id: string;
   name: string;
   muscles: string[];
-  video_path: string;
+  video_path: string | null;
   poster_path: string;
   video_signed_url: string | null;
   poster_signed_url: string | null;
@@ -838,12 +838,26 @@ export async function getCustomExercises(): Promise<CustomExercise[]> {
   if (error || !data) return [];
   if (data.length === 0) return [];
 
-  const videoPaths = data.map((r) => r.video_path);
   const posterPaths = data.map((r) => r.poster_path);
-  const [video, poster] = await Promise.all([
-    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(videoPaths, VIDEO_URL_TTL),
+  const videoRows = data.filter((r) => r.video_path);
+  const [poster, video] = await Promise.all([
     supabase.storage.from(VIDEO_BUCKET).createSignedUrls(posterPaths, VIDEO_URL_TTL),
+    // null (not a mixed-shape fallback object) so the tuple types cleanly as
+    // `result | null` — Promise.all resolves a non-thenable to itself.
+    videoRows.length
+      ? supabase.storage
+          .from(VIDEO_BUCKET)
+          .createSignedUrls(
+            videoRows.map((r) => r.video_path as string),
+            VIDEO_URL_TTL
+          )
+      : null,
   ]);
+  const videoUrlByPath = new Map<string, string>();
+  videoRows.forEach((r, i) => {
+    const url = video?.data?.[i]?.signedUrl;
+    if (url && r.video_path) videoUrlByPath.set(r.video_path, url);
+  });
 
   return data.map((r, i) => ({
     id: r.id,
@@ -851,7 +865,9 @@ export async function getCustomExercises(): Promise<CustomExercise[]> {
     muscles: r.muscles ?? [],
     video_path: r.video_path,
     poster_path: r.poster_path,
-    video_signed_url: video.data?.[i]?.signedUrl ?? null,
+    video_signed_url: r.video_path
+      ? videoUrlByPath.get(r.video_path) ?? null
+      : null,
     poster_signed_url: poster.data?.[i]?.signedUrl ?? null,
     crop_rect: (r.crop_rect as ReframeRect | null) ?? null,
     trim:

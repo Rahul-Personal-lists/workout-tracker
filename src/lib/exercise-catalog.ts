@@ -26,8 +26,11 @@ export type CatalogEntry = {
   level: string | null;
   primary: string[];
   custom?: boolean;
-  // Signed poster URL used as the thumbnail for custom-video entries.
+  // Signed poster URL used as the thumbnail for custom entries.
   posterUrl?: string;
+  // Durable storage path for the poster (NOT the expiring signed URL) — the
+  // add-to-program flow snapshots this for photo-only customs.
+  posterPath?: string;
   video?: CatalogVideo;
 };
 
@@ -48,7 +51,7 @@ export function customToCatalogEntry(c: {
   id: string;
   name: string;
   muscles: string[];
-  video_path: string;
+  video_path: string | null;
   poster_path: string;
   video_signed_url: string | null;
   poster_signed_url: string | null;
@@ -66,13 +69,11 @@ export function customToCatalogEntry(c: {
     primary: c.muscles,
     custom: true,
     posterUrl: c.poster_signed_url || undefined,
-    // Only attach a playable clip when signing succeeded. An empty/null URL on a
-    // <video src> resolves to the page itself, so represent "couldn't sign" as no
-    // video — the thumbnail + name still render via posterUrl above.
+    posterPath: c.poster_path,
     video: c.video_signed_url
       ? {
           customExerciseId: c.id,
-          videoPath: c.video_path,
+          videoPath: c.video_path as string,
           posterPath: c.poster_path,
           videoUrl: c.video_signed_url,
           posterUrl: c.poster_signed_url ?? "",
