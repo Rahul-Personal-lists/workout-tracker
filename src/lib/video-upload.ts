@@ -5,8 +5,10 @@
 import type { CSSProperties } from "react";
 
 export const VIDEO_BUCKET = "workout-photos"; // shared private bucket, exercise-videos/ prefix
-export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
-export const MAX_VIDEO_SECONDS = 30;
+// 150 MB covers an ~80s phone upload; in-app recordings are bitrate-capped to ~25 MB.
+export const MAX_VIDEO_BYTES = 150 * 1024 * 1024;
+// Trim cap AND the in-app recorder's hard auto-stop.
+export const MAX_VIDEO_SECONDS = 80;
 
 const ALLOWED_VIDEO_EXTS = ["mp4", "mov", "m4v", "webm"];
 
@@ -66,4 +68,26 @@ export function cropStyle(rect: ReframeRect | null): CSSProperties {
     maxWidth: "none",
     objectFit: "cover",
   };
+}
+
+// ── In-app recorder (MediaRecorder) ──
+// ~2.5 Mbps keeps an 80s clip ≈ 25 MB, well under MAX_VIDEO_BYTES.
+export const RECORD_BITS_PER_SECOND = 2_500_000;
+
+// First container MediaRecorder supports here. iOS Safari → mp4; Chrome/Android
+// → webm. undefined lets MediaRecorder pick its own default.
+export function pickRecorderMimeType(): string | undefined {
+  if (typeof MediaRecorder === "undefined") return undefined;
+  const candidates = [
+    "video/mp4",
+    "video/webm;codecs=vp9",
+    "video/webm;codecs=vp8",
+    "video/webm",
+  ];
+  return candidates.find((t) => MediaRecorder.isTypeSupported(t));
+}
+
+// File extension matching the chosen recorder container.
+export function recorderExt(mimeType: string | undefined): string {
+  return mimeType && mimeType.startsWith("video/mp4") ? "mp4" : "webm";
 }
