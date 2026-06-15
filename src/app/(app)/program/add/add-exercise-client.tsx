@@ -307,14 +307,19 @@ function ConfigForm({
     }
 
     const video = entry.video;
+    // Photo-only customs have no video but a durable poster_path. Snapshot the
+    // poster path + custom id so the program row keeps showing the photo (a
+    // signed URL would expire). For video customs, image_url is just a fallback.
+    const isCustom = !!entry.custom;
+    const posterPath = video?.posterPath ?? (isCustom ? entry.posterPath ?? null : null);
+    const customId = video?.customExerciseId ?? (isCustom ? entry.id : null);
+    const hasCustomMedia = !!video || (isCustom && !!posterPath);
     startSubmit(async () => {
       try {
         await addExerciseToProgram({
           programDayId,
           name: trimmedName,
-          // For video customs, image_url is just a fallback — playback is driven
-          // by video_path; never store the (expiring) signed poster URL here.
-          imageUrl: video ? CUSTOM_IMG : imgUrl,
+          imageUrl: hasCustomMedia ? CUSTOM_IMG : imgUrl,
           sets: setsN,
           baseReps: repsN,
           startWeight: startN,
@@ -326,14 +331,14 @@ function ConfigForm({
           targetSeconds: targetSecondsN,
           redirectWeek,
           returnTo: returnTo ?? undefined,
-          customExerciseId: video?.customExerciseId ?? null,
+          customExerciseId: customId,
           videoPath: video?.videoPath ?? null,
-          posterPath: video?.posterPath ?? null,
+          posterPath,
           cropRect: video?.rect ?? null,
           trimStartSeconds: video?.trim?.startSec ?? null,
           trimEndSeconds: video?.trim?.endSec ?? null,
           aspectRatio: video?.aspect ?? null,
-          muscles: entry.custom ? entry.primary : [],
+          muscles: isCustom ? entry.primary : [],
         });
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Failed to save.");
@@ -351,14 +356,12 @@ function ConfigForm({
           size={64}
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">
-            {entry.custom ? (entry.video ? entry.name : "Custom exercise") : entry.name}
-          </p>
+          <p className="text-sm font-medium">{entry.name}</p>
           <p className="text-[11px] text-foreground-muted truncate">
             {entry.custom
               ? entry.video
                 ? "Custom video"
-                : "Using app logo"
+                : "Custom photo"
               : [entry.equipment, entry.primary[0]]
                   .filter(Boolean)
                   .join(" · ")}
