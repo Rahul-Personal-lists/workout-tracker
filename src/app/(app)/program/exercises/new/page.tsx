@@ -25,7 +25,7 @@ export default async function NewCustomExercisePage({
         <div className="min-w-0">
           <h1 className="text-xl font-semibold">New custom exercise</h1>
           <p className="text-xs text-foreground-muted">
-            Upload a clip, reframe &amp; trim it, tag the muscles.
+            Add a photo or video clip, reframe it, tag the muscles.
           </p>
         </div>
       </header>

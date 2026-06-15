@@ -300,7 +300,7 @@ export function ExerciseLibrary({
       ) : items.length === 0 ? (
         customOnly && customs.length === 0 ? (
           <p className="text-sm text-foreground-muted">
-            No custom exercises yet — tap New to create one from a video.
+            No custom exercises yet — tap New to create one from a photo or video.
           </p>
         ) : favoritesOnly && favorites.size === 0 ? (
           <p className="text-sm text-foreground-muted">
