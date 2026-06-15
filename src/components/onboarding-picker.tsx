@@ -122,7 +122,7 @@ export function OnboardingPicker() {
           Welcome — pick a tour
         </h2>
         <p className="mt-1 text-sm text-foreground-muted">
-          Two quick walkthroughs. Take either, both, or neither.
+          Quick walkthroughs — take any, all, or none.
         </p>
 
         <ul className="mt-4 space-y-2">
