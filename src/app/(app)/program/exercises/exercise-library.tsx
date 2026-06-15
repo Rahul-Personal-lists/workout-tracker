@@ -431,8 +431,8 @@ function ExerciseDetail({
   ];
 
   function remove() {
-    if (!video) return;
-    const id = video.customExerciseId;
+    if (!entry.custom) return;
+    const id = entry.id;
     startDelete(async () => {
       try {
         await deleteCustomExercise({ id });
@@ -508,7 +508,7 @@ function ExerciseDetail({
               </div>
             ))}
         </dl>
-        {video ? (
+        {entry.custom ? (
           confirming ? (
             <div className="mt-4 flex items-center gap-2">
               <button
