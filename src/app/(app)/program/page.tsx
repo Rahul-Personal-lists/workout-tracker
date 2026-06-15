@@ -255,7 +255,7 @@ export default async function ProgramPage({
                 className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
               >
                 <ExerciseThumb
-                  url={ex.image_url}
+                  url={ex.poster_signed_url ?? ex.image_url}
                   alt={ex.name}
                   video={video}
                   videoPath={ex.video_path}

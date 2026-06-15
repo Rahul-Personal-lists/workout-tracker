@@ -49,7 +49,7 @@ export default async function ProgramEditPage({
     id: ex.id,
     name: ex.name,
     note: ex.note,
-    imageUrl: ex.image_url,
+    imageUrl: ex.poster_signed_url ?? ex.image_url,
     sets: ex.sets,
     plannedWeight: getPlannedWeight(
       ex.start_weight,

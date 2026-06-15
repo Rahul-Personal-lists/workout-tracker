@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, requireUser } from "@/lib/supabase/server";
 import { getPreset, type StarterProgram } from "@/lib/starter-program";
+import { mediaSnapshotError } from "@/lib/media-snapshot";
 
 const MAX_PROGRAMS = 2;
 
@@ -56,24 +57,14 @@ export async function addExerciseToProgram(
   const parsed = AddExerciseSchema.parse(input);
   const { supabase, user } = await requireUser();
 
-  // A snapshotted video must arrive as a complete, self-consistent set scoped to
-  // its source library entry (defense-in-depth on top of storage RLS): either
-  // all-null (catalog exercise) or a matched video+poster under the caller's own
-  // <user>/exercise-videos/<customExerciseId>/ folder. Mirrors the tight check
-  // in createCustomExercise and rejects crafted inputs that pair a video with
-  // the wrong id or point at another user.
-  if (parsed.videoPath !== null || parsed.posterPath !== null) {
-    const prefix = `${user.id}/exercise-videos/${parsed.customExerciseId}/`;
-    if (
-      parsed.customExerciseId === null ||
-      parsed.videoPath === null ||
-      parsed.posterPath === null ||
-      !parsed.videoPath.startsWith(prefix) ||
-      !parsed.posterPath.startsWith(prefix)
-    ) {
-      throw new Error("Invalid video path");
-    }
-  }
+  // A snapshotted custom must arrive scoped to its source library entry: poster
+  // mandatory when any media is present, video optional (photo-only customs).
+  const snapErr = mediaSnapshotError(user.id, {
+    customExerciseId: parsed.customExerciseId,
+    videoPath: parsed.videoPath,
+    posterPath: parsed.posterPath,
+  });
+  if (snapErr) throw new Error(snapErr);
 
   const { data: maxRow, error: maxErr } = await supabase
     .from("program_exercises")

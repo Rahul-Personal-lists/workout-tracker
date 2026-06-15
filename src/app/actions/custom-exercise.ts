@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { MUSCLE_REGIONS } from "@/lib/muscle-regions";
 import { VIDEO_BUCKET } from "@/lib/video-upload";
+import { mediaSnapshotError } from "@/lib/media-snapshot";
 
 // Catalog muscle strings (e.g. "chest", "quadriceps") accepted for tagging — the
 // same set regionsFromCatalogMuscles understands. Derived so it can't drift.
@@ -23,7 +24,7 @@ const CreateSchema = z
   .object({
     customExerciseId: z.string().uuid(),
     name: z.string().min(1).max(120),
-    videoPath: z.string().min(1).max(500),
+    videoPath: z.string().min(1).max(500).nullable(),
     posterPath: z.string().min(1).max(500),
     cropRect: CropRectSchema,
     trimStartSeconds: z.number().min(0).max(36000).nullable(),
@@ -46,12 +47,14 @@ export async function createCustomExercise(input: z.infer<typeof CreateSchema>) 
   const v = CreateSchema.parse(input);
   const { supabase, user } = await requireUser();
 
-  // Both objects must sit under the caller's own folder (defense-in-depth on top
-  // of storage RLS) — the folder id == the row id so delete/GC is deterministic.
-  const prefix = `${user.id}/exercise-videos/${v.customExerciseId}/`;
-  if (!v.videoPath.startsWith(prefix) || !v.posterPath.startsWith(prefix)) {
-    throw new Error("Invalid video path");
-  }
+  // Paths must sit under the caller's own folder (folder id == row id). Poster is
+  // always present; video is optional for photo-only customs.
+  const snapErr = mediaSnapshotError(user.id, {
+    customExerciseId: v.customExerciseId,
+    videoPath: v.videoPath,
+    posterPath: v.posterPath,
+  });
+  if (snapErr) throw new Error(snapErr);
 
   const { error } = await supabase.from("custom_exercises").insert({
     id: v.customExerciseId,
@@ -67,7 +70,8 @@ export async function createCustomExercise(input: z.infer<typeof CreateSchema>) 
   });
   // Roll back the uploaded objects if the row insert fails (mirror recordBodyPhotos).
   if (error) {
-    await supabase.storage.from(VIDEO_BUCKET).remove([v.videoPath, v.posterPath]);
+    const paths = [v.posterPath, ...(v.videoPath ? [v.videoPath] : [])];
+    await supabase.storage.from(VIDEO_BUCKET).remove(paths);
     throw error;
   }
 

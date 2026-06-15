@@ -75,25 +75,38 @@ function shapeExercise<
   } as unknown as ProgramExercise;
 }
 
-// Batch-sign the video + poster for every exercise carrying a clip and mutate
-// the signed-URL fields in place. Index-aligned over the filtered list (every
-// video row has both paths), matching the createSignedUrls pattern elsewhere.
-async function attachVideoUrls(
+// Sign the poster for EVERY exercise that has one (video and photo-only customs),
+// and the video only for rows that have one. Mutates the signed-URL fields in
+// place. Index-aligned per filtered list.
+async function attachMediaUrls(
   supabase: Awaited<ReturnType<typeof createClient>>,
   exercises: ProgramExercise[]
 ): Promise<void> {
-  const withVideo = exercises.filter((e) => e.video_path && e.poster_path);
-  if (withVideo.length === 0) return;
-  const videoPaths = withVideo.map((e) => e.video_path as string);
-  const posterPaths = withVideo.map((e) => e.poster_path as string);
-  const [video, poster] = await Promise.all([
-    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(videoPaths, VIDEO_URL_TTL),
-    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(posterPaths, VIDEO_URL_TTL),
-  ]);
-  withVideo.forEach((e, i) => {
-    e.video_signed_url = video.data?.[i]?.signedUrl ?? null;
-    e.poster_signed_url = poster.data?.[i]?.signedUrl ?? null;
-  });
+  const withPoster = exercises.filter((e) => e.poster_path);
+  if (withPoster.length > 0) {
+    const posterSigned = await supabase.storage
+      .from(VIDEO_BUCKET)
+      .createSignedUrls(
+        withPoster.map((e) => e.poster_path as string),
+        VIDEO_URL_TTL
+      );
+    withPoster.forEach((e, i) => {
+      e.poster_signed_url = posterSigned.data?.[i]?.signedUrl ?? null;
+    });
+  }
+
+  const withVideo = exercises.filter((e) => e.video_path);
+  if (withVideo.length > 0) {
+    const videoSigned = await supabase.storage
+      .from(VIDEO_BUCKET)
+      .createSignedUrls(
+        withVideo.map((e) => e.video_path as string),
+        VIDEO_URL_TTL
+      );
+    withVideo.forEach((e, i) => {
+      e.video_signed_url = videoSigned.data?.[i]?.signedUrl ?? null;
+    });
+  }
 }
 
 export type ProgramDay = {
@@ -167,7 +180,7 @@ export async function getCurrentProgram(
     }))
     .sort((a, b) => a.day_number - b.day_number);
 
-  await attachVideoUrls(supabase, days.flatMap((d) => d.exercises));
+  await attachMediaUrls(supabase, days.flatMap((d) => d.exercises));
 
   return {
     id: data.id,
@@ -614,7 +627,7 @@ export async function getSessionContext(
     .slice()
     .sort((a, b) => a.order_index - b.order_index)
     .map(shapeExercise);
-  await attachVideoUrls(supabase, exercises);
+  await attachMediaUrls(supabase, exercises);
 
   return {
     session: {
@@ -814,7 +827,7 @@ export type CustomExercise = {
   id: string;
   name: string;
   muscles: string[];
-  video_path: string;
+  video_path: string | null;
   poster_path: string;
   video_signed_url: string | null;
   poster_signed_url: string | null;
@@ -838,12 +851,26 @@ export async function getCustomExercises(): Promise<CustomExercise[]> {
   if (error || !data) return [];
   if (data.length === 0) return [];
 
-  const videoPaths = data.map((r) => r.video_path);
   const posterPaths = data.map((r) => r.poster_path);
-  const [video, poster] = await Promise.all([
-    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(videoPaths, VIDEO_URL_TTL),
+  const videoRows = data.filter((r) => r.video_path);
+  const [poster, video] = await Promise.all([
     supabase.storage.from(VIDEO_BUCKET).createSignedUrls(posterPaths, VIDEO_URL_TTL),
+    // null (not a mixed-shape fallback object) so the tuple types cleanly as
+    // `result | null` — Promise.all resolves a non-thenable to itself.
+    videoRows.length
+      ? supabase.storage
+          .from(VIDEO_BUCKET)
+          .createSignedUrls(
+            videoRows.map((r) => r.video_path as string),
+            VIDEO_URL_TTL
+          )
+      : null,
   ]);
+  const videoUrlByPath = new Map<string, string>();
+  videoRows.forEach((r, i) => {
+    const url = video?.data?.[i]?.signedUrl;
+    if (url && r.video_path) videoUrlByPath.set(r.video_path, url);
+  });
 
   return data.map((r, i) => ({
     id: r.id,
@@ -851,7 +878,9 @@ export async function getCustomExercises(): Promise<CustomExercise[]> {
     muscles: r.muscles ?? [],
     video_path: r.video_path,
     poster_path: r.poster_path,
-    video_signed_url: video.data?.[i]?.signedUrl ?? null,
+    video_signed_url: r.video_path
+      ? videoUrlByPath.get(r.video_path) ?? null
+      : null,
     poster_signed_url: poster.data?.[i]?.signedUrl ?? null,
     crop_rect: (r.crop_rect as ReframeRect | null) ?? null,
     trim:

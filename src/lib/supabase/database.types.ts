@@ -142,7 +142,7 @@ export type Database = {
           trim_end_seconds: number | null
           trim_start_seconds: number | null
           user_id: string
-          video_path: string
+          video_path: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -160,7 +160,7 @@ export type Database = {
           trim_end_seconds?: number | null
           trim_start_seconds?: number | null
           user_id: string
-          video_path: string
+          video_path?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -178,7 +178,7 @@ export type Database = {
           trim_end_seconds?: number | null
           trim_start_seconds?: number | null
           user_id?: string
-          video_path?: string
+          video_path?: string | null
         }
         Relationships: []
       }

@@ -88,7 +88,7 @@ export default async function WorkoutPage({
       id: ex.id,
       name: ex.name,
       note: ex.note,
-      imageUrl: ex.image_url,
+      imageUrl: ex.poster_signed_url ?? ex.image_url,
       mediaKind: ex.video_path ? "video" : "image",
       videoUrl: ex.video_signed_url,
       posterUrl: ex.poster_signed_url,

@@ -1,7 +1,5 @@
-// Extract a still poster frame from a LOCAL video File, cropped to the chosen
-// reframe rect. Drawn from the picked File's same-origin blob URL BEFORE upload,
-// so the canvas is never tainted (we never draw the remote signed video).
-// Mirrors the canvas pattern in body/photo-capture.tsx.
+// Extract a still poster JPEG cropped to a reframe rect, drawn from a LOCAL blob
+// URL BEFORE upload so the canvas is never tainted. Mirrors body/photo-capture.
 import type { ReframeRect } from "./video-upload";
 
 export function seekTo(video: HTMLVideoElement, sec: number): Promise<void> {
@@ -20,20 +18,17 @@ export function seekTo(video: HTMLVideoElement, sec: number): Promise<void> {
   });
 }
 
-export async function extractPoster(
-  video: HTMLVideoElement,
+// Draw `rect` (normalized 0..1 in source coords) of a video/image into a JPEG
+// File, scaled so its longest side is <= maxSide.
+async function drawCropToJpeg(
+  source: CanvasImageSource,
+  sourceW: number,
+  sourceH: number,
   rect: ReframeRect,
-  atSec: number,
-  maxSide = 640
+  maxSide: number
 ): Promise<File> {
-  // Seek slightly past the trim start to dodge a black first frame; MUST await
-  // 'seeked' before drawImage or we capture the wrong/black frame.
-  await seekTo(video, atSec);
-
-  const sw = video.videoWidth;
-  const sh = video.videoHeight;
-  const cropW = rect.w * sw;
-  const cropH = rect.h * sh;
+  const cropW = rect.w * sourceW;
+  const cropH = rect.h * sourceH;
   const scale = Math.min(1, maxSide / Math.max(cropW, cropH));
   const dw = Math.max(1, Math.round(cropW * scale));
   const dh = Math.max(1, Math.round(cropH * scale));
@@ -43,7 +38,7 @@ export async function extractPoster(
   canvas.height = dh;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable");
-  ctx.drawImage(video, rect.x * sw, rect.y * sh, cropW, cropH, 0, 0, dw, dh);
+  ctx.drawImage(source, rect.x * sourceW, rect.y * sourceH, cropW, cropH, 0, 0, dw, dh);
 
   const blob: Blob = await new Promise((resolve, reject) =>
     canvas.toBlob(
@@ -53,4 +48,25 @@ export async function extractPoster(
     )
   );
   return new File([blob], "poster.jpg", { type: "image/jpeg" });
+}
+
+export async function extractPoster(
+  video: HTMLVideoElement,
+  rect: ReframeRect,
+  atSec: number,
+  maxSide = 640
+): Promise<File> {
+  // Seek slightly past the trim start to dodge a black first frame; MUST await
+  // 'seeked' before drawImage or we capture the wrong/black frame.
+  await seekTo(video, atSec);
+  return drawCropToJpeg(video, video.videoWidth, video.videoHeight, rect, maxSide);
+}
+
+// Bake the cropped square thumbnail from a loaded <img> (no seek needed).
+export async function extractImagePoster(
+  img: HTMLImageElement,
+  rect: ReframeRect,
+  maxSide = 640
+): Promise<File> {
+  return drawCropToJpeg(img, img.naturalWidth, img.naturalHeight, rect, maxSide);
 }
