@@ -316,7 +316,7 @@ export function CreateCustomExerciseClient({
                 RING
               )}
             >
-              <Video className="w-4 h-4" /> Record video
+              <Video className="w-4 h-4" /> Record with camera
               <span className="text-[11px] text-foreground-muted">· up to 80s</span>
             </button>
             <button
@@ -327,8 +327,12 @@ export function CreateCustomExerciseClient({
                 RING
               )}
             >
-              <Film className="w-4 h-4" /> Upload video
+              <Film className="w-4 h-4" /> Upload / screen recording
             </button>
+            <p className="text-xs text-foreground-muted leading-snug">
+              Want a clip from another app? Record it with your phone&rsquo;s screen
+              recorder, then upload it above.
+            </p>
           </div>
         )}
       </div>
