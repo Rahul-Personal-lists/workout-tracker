@@ -11,13 +11,9 @@ import {
   type ReframeRect,
   type TrimBounds,
 } from "@/lib/video-upload";
+import { MAX_ZOOM, baseDims, clamp, clampView, rectFor } from "@/lib/reframe";
 
 const MIN_TRIM = 1; // seconds
-const MAX_ZOOM = 4;
-
-function clamp(v: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, v));
-}
 
 function fmt(sec: number) {
   const s = Math.max(0, Math.round(sec));
@@ -82,33 +78,18 @@ export function VideoCropper({
   const sa = ready ? natural.w / natural.h : 1;
   const target = mode === "square" ? 1 : sa; // display aspect W/H of the crop
 
-  function baseDims(t: number) {
-    const ratio = t / sa;
-    return ratio >= 1 ? { baseW: 1, baseH: 1 / ratio } : { baseW: ratio, baseH: 1 };
+  function rectForView(z: number, c: { cx: number; cy: number }): ReframeRect {
+    return rectFor(target, sa, z, c);
   }
 
-  function rectFor(z: number, c: { cx: number; cy: number }): ReframeRect {
-    const { baseW, baseH } = baseDims(target);
-    const cw = baseW / z;
-    const ch = baseH / z;
-    const cx = clamp(c.cx, cw / 2, 1 - cw / 2);
-    const cy = clamp(c.cy, ch / 2, 1 - ch / 2);
-    return { x: cx - cw / 2, y: cy - ch / 2, w: cw, h: ch };
-  }
-
-  const rect = ready ? rectFor(zoom, center) : null;
+  const rect = ready ? rectForView(zoom, center) : null;
 
   function applyView(nextZoom: number, nextCenter: { cx: number; cy: number }) {
-    const z = clamp(nextZoom, 1, MAX_ZOOM);
-    const { baseW, baseH } = baseDims(target);
-    const cw = baseW / z;
-    const ch = baseH / z;
-    const cx = clamp(nextCenter.cx, cw / 2, 1 - cw / 2);
-    const cy = clamp(nextCenter.cy, ch / 2, 1 - ch / 2);
+    const { zoom: z, center: c } = clampView(target, sa, nextZoom, nextCenter);
     zoomRef.current = z;
-    centerRef.current = { cx, cy };
+    centerRef.current = c;
     setZoom(z);
-    setCenter({ cx, cy });
+    setCenter(c);
   }
 
   function onLoadedMetadata() {
@@ -162,7 +143,7 @@ export function VideoCropper({
     const dx = e.clientX - prev.x;
     const dy = e.clientY - prev.y;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const { baseW, baseH } = baseDims(target);
+    const { baseW, baseH } = baseDims(target, sa);
     const cw = baseW / zoomRef.current;
     const ch = baseH / zoomRef.current;
     applyView(zoomRef.current, {
