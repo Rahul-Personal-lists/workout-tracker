@@ -31,7 +31,7 @@ import {
 import { RestTimerBar } from "@/components/rest-timer";
 import { DayNotePopover } from "@/components/day-note-popover";
 import { useRestTimer } from "@/lib/stores/rest-timer";
-import { normalizeStepLead, unlockStepCueAudio } from "@/lib/step-cue";
+import { normalizeStepLead, unlockStepCues } from "@/lib/step-cue";
 import { createClient } from "@/lib/supabase/client";
 import type { PreviousDayNote } from "@/lib/queries";
 import { PHOTO_BUCKET } from "@/lib/photo-upload";
@@ -108,7 +108,7 @@ export function WorkoutClient({
   const startRest = useRestTimer((s) => s.start);
 
   function startRestTimer() {
-    unlockStepCueAudio();
+    unlockStepCues();
     startRest();
   }
 

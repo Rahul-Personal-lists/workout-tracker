@@ -3,6 +3,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { getCustomExercises, getFavoriteSlugs } from "@/lib/queries";
 import { isMuscleRegion } from "@/lib/muscle-regions";
 import { customToCatalogEntry } from "@/lib/exercise-catalog";
+import { FOCUS_RING } from "@/lib/utils";
 import { ExerciseLibrary } from "./exercise-library";
 
 // Favorites + custom exercises are read per-request (RLS-scoped), so this route
@@ -39,9 +40,10 @@ export default async function ExerciseLibraryPage({
         </div>
         <Link
           href="/program/exercises/new"
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3 h-9 text-xs text-foreground-muted hover:text-foreground outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+          aria-label="Add custom exercise"
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent text-accent-foreground font-medium px-3.5 h-9 text-sm ${FOCUS_RING}`}
         >
-          <Plus className="w-3.5 h-3.5" /> New
+          <Plus className="w-4 h-4" /> Add exercise
         </Link>
       </header>
 

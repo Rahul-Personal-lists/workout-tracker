@@ -18,8 +18,15 @@ export function cueFireAt(endsAt: number, lead: StepLead): number | null {
 
 let audioCtx: AudioContext | null = null;
 
-/** Resume a shared AudioContext on a user gesture (required on mobile). */
-export function unlockStepCueAudio(): void {
+/**
+ * On a user gesture: resume the shared AudioContext (required on mobile) and
+ * prime the Vibration API. Chrome on Android only honours navigator.vibrate
+ * once the page has a user activation, so calling it here — a no-op vibrate(0)
+ * inside the gesture — gives the later timer-driven step cue the best chance of
+ * firing. This can't override an OS-level silent/haptics policy: if the device
+ * itself suppresses haptics, no web call will buzz.
+ */
+export function unlockStepCues(): void {
   if (typeof window === "undefined") return;
   const Ctx =
     window.AudioContext ??
@@ -28,10 +35,14 @@ export function unlockStepCueAudio(): void {
         webkitAudioContext?: typeof AudioContext;
       }
     ).webkitAudioContext;
-  if (!Ctx) return;
-  if (!audioCtx) audioCtx = new Ctx();
-  if (audioCtx.state === "suspended") {
-    void audioCtx.resume();
+  if (Ctx) {
+    if (!audioCtx) audioCtx = new Ctx();
+    if (audioCtx.state === "suspended") {
+      void audioCtx.resume();
+    }
+  }
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate?.(0);
   }
 }
 
@@ -55,7 +66,7 @@ export function playStepBeep(): void {
 // navigator.vibrate is Android-only; iOS Safari does not implement it.
 export function fireStepVibration(): void {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    navigator.vibrate?.([200, 80, 200]);
+    navigator.vibrate?.([300, 120, 300]);
   }
 }
 

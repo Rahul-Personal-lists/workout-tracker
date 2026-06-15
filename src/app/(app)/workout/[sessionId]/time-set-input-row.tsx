@@ -9,7 +9,7 @@ import { useTimeSetTimer } from "@/lib/stores/time-set-timer";
 import {
   type StepLead,
   tapVibration,
-  unlockStepCueAudio,
+  unlockStepCues,
   useStepCues,
 } from "@/lib/step-cue";
 import type { SetRow } from "./types";
@@ -104,7 +104,7 @@ export function TimeSetInputRow({
 
   function startCountdown() {
     if (!canStart || startTarget === null) return;
-    unlockStepCueAudio();
+    unlockStepCues();
     setNow(Date.now());
     startTimer(setKey, startTarget);
   }
