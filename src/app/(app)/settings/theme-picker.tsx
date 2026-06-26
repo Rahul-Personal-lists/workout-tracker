@@ -3,17 +3,7 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const THEMES = [
-  { key: "lime",   label: "Lime",   color: "#a3e635" },
-  { key: "sky",    label: "Sky",    color: "#38bdf8" },
-  { key: "amber",  label: "Amber",  color: "#fbbf24" },
-  { key: "violet", label: "Violet", color: "#a78bfa" },
-  { key: "rose",   label: "Rose",   color: "#fb7185" },
-] as const;
-
-export type ThemeKey = (typeof THEMES)[number]["key"];
-export const THEME_KEYS: ThemeKey[] = THEMES.map((t) => t.key);
+import { THEMES, type ThemeKey } from "@/lib/themes";
 
 // initialTheme comes from the accent-theme cookie, read server-side in the
 // page so SSR and first client render agree (no post-mount setState needed).
