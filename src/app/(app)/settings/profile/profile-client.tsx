@@ -73,6 +73,7 @@ export function ProfileClient({
 
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl);
   const [avatarPath, setAvatarPath] = useState(initialAvatarPath);
+  const [enlarged, setEnlarged] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarPending, startAvatar] = useTransition();
   const [formPending, startForm] = useTransition();
@@ -151,12 +152,23 @@ export function ProfileClient({
     });
   }
 
+  function onAvatarTap() {
+    // With a photo, tapping grows it in place; without one there's nothing to
+    // enlarge, so fall back to the picker (matches the "Tap to add a photo" hint).
+    if (avatarUrl) {
+      setEnlarged((v) => !v);
+    } else {
+      fileInputRef.current?.click();
+    }
+  }
+
   function onRemoveAvatar() {
     startAvatar(async () => {
       try {
         await clearAvatar();
         setAvatarUrl(null);
         setAvatarPath(null);
+        setEnlarged(false);
         router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not remove.");
@@ -237,11 +249,19 @@ export function ProfileClient({
       <div className="flex flex-col items-center gap-3 py-2">
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={onAvatarTap}
           disabled={avatarPending}
-          aria-label="Change avatar"
+          aria-label={
+            avatarUrl
+              ? enlarged
+                ? "Shrink profile photo"
+                : "Enlarge profile photo"
+              : "Add a photo"
+          }
+          aria-expanded={avatarUrl ? enlarged : undefined}
           className={cn(
-            "w-24 h-24 rounded-full border border-border bg-surface-subtle overflow-hidden flex items-center justify-center text-foreground-muted outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
+            "rounded-full border border-border bg-surface-subtle overflow-hidden flex items-center justify-center text-foreground-muted transition-[width,height] duration-300 ease-out outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]",
+            enlarged ? "w-60 h-60" : "w-24 h-24",
             avatarPending && "opacity-60"
           )}
         >
@@ -249,7 +269,7 @@ export function ProfileClient({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarUrl}
-              alt=""
+              alt="Profile photo"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -264,14 +284,27 @@ export function ProfileClient({
           className="hidden"
         />
         {avatarPath ? (
-          <button
-            type="button"
-            onClick={onRemoveAvatar}
-            disabled={avatarPending}
-            className="text-xs text-foreground-muted underline disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
-          >
-            Remove photo
-          </button>
+          <div className="flex items-center gap-3 text-xs text-foreground-muted">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarPending}
+              className="underline disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+            >
+              Change photo
+            </button>
+            <span aria-hidden="true" className="opacity-40">
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={onRemoveAvatar}
+              disabled={avatarPending}
+              className="underline disabled:opacity-50 outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring-color)] focus-visible:outline-offset-[var(--focus-ring-offset)]"
+            >
+              Remove photo
+            </button>
+          </div>
         ) : (
           <span className="text-xs text-foreground-muted">Tap to add a photo</span>
         )}
