@@ -5,6 +5,7 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { TimezoneInit } from "@/components/tz-init";
 import { AppSplash } from "@/components/app-splash";
+import { resolveTheme } from "@/lib/themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,14 +36,11 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const VALID_THEMES = new Set(["lime", "sky", "amber", "violet", "rose"]);
-
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies();
-  const stored = cookieStore.get("accent-theme")?.value;
-  const theme = stored && VALID_THEMES.has(stored) ? stored : "lime";
+  const theme = resolveTheme(cookieStore.get("accent-theme")?.value);
 
   return (
     <html
