@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createClient, requireUser } from "@/lib/supabase/server";
 import { getPreset, type StarterProgram } from "@/lib/starter-program";
 import { mediaSnapshotError } from "@/lib/media-snapshot";
+import { planDayOrder, type DayRow } from "@/lib/day-order";
 
 const MAX_PROGRAMS = 2;
 
@@ -169,6 +170,52 @@ async function renumberExercises(
       .update({ order_index: i })
       .eq("id", orderedIds[i]);
     if (error) throw error;
+  }
+}
+
+// Two-phase day_number rewrite (mirrors renumberExercises): push every row into
+// a temp high range so the final 1..N assignments can't collide with the
+// `unique (program_id, day_number)` index. planDayOrder also syncs auto "Day N"
+// labels to position and parks archived days above the live range. Pass
+// `explicitLiveOrder` to impose a new live order (insert/reorder); omit to
+// normalize the current order in place. No-ops when already normalized.
+async function applyDayOrder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  programId: string,
+  explicitLiveOrder?: string[]
+) {
+  const { data: rows, error } = await supabase
+    .from("program_days")
+    .select("id, day_number, label, archived_at")
+    .eq("program_id", programId);
+  if (error) throw error;
+
+  const current = (rows ?? []) as DayRow[];
+  const targets = planDayOrder(current, explicitLiveOrder);
+
+  const currentById = new Map(
+    current.map((r) => [r.id, { day_number: r.day_number, label: r.label }])
+  );
+  const changed = targets.some((t) => {
+    const c = currentById.get(t.id);
+    return !c || c.day_number !== t.day_number || c.label !== t.label;
+  });
+  if (!changed) return;
+
+  const OFFSET = 1_000_000;
+  for (const t of targets) {
+    const { error: e1 } = await supabase
+      .from("program_days")
+      .update({ day_number: OFFSET + t.day_number })
+      .eq("id", t.id);
+    if (e1) throw e1;
+  }
+  for (const t of targets) {
+    const { error: e2 } = await supabase
+      .from("program_days")
+      .update({ day_number: t.day_number, label: t.label })
+      .eq("id", t.id);
+    if (e2) throw e2;
   }
 }
 
@@ -609,7 +656,7 @@ export async function reorderDay(input: z.infer<typeof ReorderDaySchema>) {
 
   const { data: target, error: tErr } = await supabase
     .from("program_days")
-    .select("id, program_id, day_number")
+    .select("id, program_id")
     .eq("id", dayId)
     .single();
   if (tErr || !target) throw tErr ?? new Error("Day not found");
@@ -622,16 +669,16 @@ export async function reorderDay(input: z.infer<typeof ReorderDaySchema>) {
     .order("day_number", { ascending: true });
   if (sErr) throw sErr;
 
-  const idx = siblings.findIndex((d) => d.id === dayId);
+  const ids = (siblings ?? []).map((d) => d.id);
+  const idx = ids.indexOf(dayId);
   const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
-  if (neighborIdx < 0 || neighborIdx >= siblings.length) return;
+  if (idx === -1 || neighborIdx < 0 || neighborIdx >= ids.length) return;
 
-  const neighbor = siblings[neighborIdx];
-  const { error } = await supabase.rpc("swap_day_order", {
-    p_day_a: dayId,
-    p_day_b: neighbor.id,
-  });
-  if (error) throw error;
+  // Swap the target with its visible neighbor, then renumber + relabel in one
+  // place. Replaces the old swap_day_order RPC (which moved day_number but left
+  // labels stale).
+  [ids[idx], ids[neighborIdx]] = [ids[neighborIdx], ids[idx]];
+  await applyDayOrder(supabase, target.program_id, ids);
 
   revalidatePath("/program");
 }
