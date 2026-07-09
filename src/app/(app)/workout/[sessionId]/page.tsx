@@ -20,11 +20,12 @@ export default async function WorkoutPage({
 }) {
   const { sessionId } = await params;
 
-  const session = await getSession(sessionId);
+  const [session, program] = await Promise.all([
+    getSession(sessionId),
+    getCurrentProgram(),
+  ]);
   if (!session) notFound();
   if (session.ended_at) redirect(`/history/${sessionId}`);
-
-  const program = await getCurrentProgram();
   if (!program) notFound();
 
   const day = program.days.find((d) => d.id === session.program_day_id);
