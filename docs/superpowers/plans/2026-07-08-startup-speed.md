@@ -28,7 +28,7 @@
 
 **Interfaces:** none (config only).
 
-- [ ] **Step 1: Add staleTimes**
+- [x] **Step 1: Add staleTimes**
 
 ```ts
 import type { NextConfig } from "next";
@@ -43,11 +43,11 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
-- [ ] **Step 2: Verify config parses**
+- [x] **Step 2: Verify config parses**
 
 Run: `npm run typecheck` → 0 errors. (Behavioral check happens in Task 11 against `next start` — prefetch/cache are prod-only.)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 `git commit -m "perf: enable 30s client router cache for dynamic pages"`
 
@@ -63,7 +63,7 @@ Run: `npm run typecheck` → 0 errors. (Behavioral check happens in Task 11 agai
 - Produces: `getSignedUrlsCached(opts: { bucket: string; paths: string[]; ttlSeconds: number; sign: SignBatch; now?: () => number }): Promise<(string | null)[]>` where `type SignBatch = (paths: string[], ttlSeconds: number) => Promise<(string | null)[]>`; plus `clearSignedUrlCache(): void` (tests only). Task 3 consumes `getSignedUrlsCached`.
 - **No `import "server-only"`** — signer is injected so the smoke script can run it under plain `tsx` (same pattern as `day-order.ts`).
 
-- [ ] **Step 1: Write the failing smoke test**
+- [x] **Step 1: Write the failing smoke test**
 
 `scripts/smoke-signed-url-cache.ts` — self-contained runner in the house style (numbered cases, non-zero exit on failure):
 
@@ -169,12 +169,12 @@ async function main() {
 main();
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `npx tsx scripts/smoke-signed-url-cache.ts`
 Expected: FAIL — cannot resolve `../src/lib/signed-url-cache`.
 
-- [ ] **Step 3: Implement the cache**
+- [x] **Step 3: Implement the cache**
 
 `src/lib/signed-url-cache.ts`:
 
@@ -245,12 +245,12 @@ export async function getSignedUrlsCached(opts: {
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `npx tsx scripts/smoke-signed-url-cache.ts`
 Expected: `smoke-signed-url-cache: 10/10 passed`, exit 0. Also `npm run typecheck` → 0 errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "perf: signed-url memo cache + smoke test"`
 
@@ -265,7 +265,7 @@ Expected: `smoke-signed-url-cache: 10/10 passed`, exit 0. Also `npm run typechec
 - Consumes: `getSignedUrlsCached`, `SignBatch` from Task 2.
 - Produces: no signature changes — all query helpers keep their existing return types.
 
-- [ ] **Step 1: Add a private adapter near the top of queries.ts (below VIDEO_URL_TTL)**
+- [x] **Step 1: Add a private adapter near the top of queries.ts (below VIDEO_URL_TTL)**
 
 ```ts
 import { getSignedUrlsCached } from "@/lib/signed-url-cache";
@@ -288,7 +288,7 @@ function signCached(
 }
 ```
 
-- [ ] **Step 2: Rewrite `attachMediaUrls` — memoized and posters ∥ videos**
+- [x] **Step 2: Rewrite `attachMediaUrls` — memoized and posters ∥ videos**
 
 ```ts
 async function attachMediaUrls(
@@ -314,18 +314,18 @@ async function attachMediaUrls(
 }
 ```
 
-- [ ] **Step 3: Swap the remaining call sites**
+- [x] **Step 3: Swap the remaining call sites**
 
 - `getCustomExercises`: replace both `supabase.storage.from(VIDEO_BUCKET).createSignedUrls(...)` calls inside the existing `Promise.all` with `signCached(supabase, VIDEO_BUCKET, posterPaths, VIDEO_URL_TTL)` and `signCached(supabase, VIDEO_BUCKET, videoRows.map(...), VIDEO_URL_TTL)`; the null-branch stays. Downstream mapping reads `poster.data?.[i]?.signedUrl` today — change to `poster[i]` / `videoUrlByPath` built from the string array.
 - `getSessionPhotos` / `getBodyPhotos`: replace `createSignedUrls(paths, 60 * 60)` + `signErr` throw with `const signed = await signCached(supabase, "workout-photos", paths, 60 * 60);` and map `signed_url: signed[i] ?? ""`. (Signing failures now degrade to empty URLs instead of throwing — same resilience pattern as `getFavoriteSlugs`.)
 - `getProfile`: replace the avatar `createSignedUrl` block with `avatarSignedUrl = (await signCached(supabase, "workout-photos", [data.avatar_path], 60 * 60))[0] ?? null;`
 - Do **not** touch `signCustomVideoUrl` in `actions/custom-exercise.ts` (fresh-on-demand by design).
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `npm run typecheck` → 0 errors. `npx tsx scripts/smoke-signed-url-cache.ts` → 10/10.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `git commit -m "perf: stable signed media URLs via memo cache"`
 
@@ -339,7 +339,7 @@ Run: `npm run typecheck` → 0 errors. `npx tsx scripts/smoke-signed-url-cache.t
 
 **Interfaces:** no signature changes; `getNextWorkout` decision logic byte-identical after the parallel fetch.
 
-- [ ] **Step 1: Parallelize `getNextWorkout`'s two session reads**
+- [x] **Step 1: Parallelize `getNextWorkout`'s two session reads**
 
 Replace the two sequential `await supabase...maybeSingle()` blocks with:
 
@@ -366,7 +366,7 @@ const [{ data: inProgress }, { data: lastFinished }] = await Promise.all([
 
 Everything below (in-progress wins, today-pinning, cycle advance) is unchanged.
 
-- [ ] **Step 2: Move the reap into `/program`'s first wave**
+- [x] **Step 2: Move the reap into `/program`'s first wave**
 
 In `program/page.tsx`, replace the `if (userId) await reapStaleSession(...)` line and the first `Promise.all` with:
 
@@ -387,7 +387,7 @@ const [, program, allPrograms, units, todayWeight, goalWeight] =
 
 The second wave (`getNextWorkout`, `getCompletedSlots`, `getUndoableSkip`) stays exactly where it is.
 
-- [ ] **Step 3: Verify + commit**
+- [x] **Step 3: Verify + commit**
 
 Run: `npm run typecheck` → 0 errors.
 `git commit -m "perf: collapse /program query waterfall"`
@@ -399,7 +399,7 @@ Run: `npm run typecheck` → 0 errors.
 **Files:**
 - Modify: `src/app/(app)/workout/[sessionId]/page.tsx:23-31`
 
-- [ ] **Step 1: Fetch session and program together**
+- [x] **Step 1: Fetch session and program together**
 
 ```ts
 const [session, program] = await Promise.all([
@@ -416,7 +416,7 @@ if (!day) notFound();
 
 (Guard order preserved: session existence → ended redirect → program. The extra `getCurrentProgram` on the ended-session path costs nothing user-visible — it redirects anyway.)
 
-- [ ] **Step 2: Verify + commit**
+- [x] **Step 2: Verify + commit**
 
 Run: `npm run typecheck` → 0 errors.
 `git commit -m "perf: parallelize /workout session+program reads"`
@@ -428,7 +428,7 @@ Run: `npm run typecheck` → 0 errors.
 **Files:**
 - Modify: `src/app/(app)/progress/page.tsx:44-71`
 
-- [ ] **Step 1: Fold the month grid into the main wave**
+- [x] **Step 1: Fold the month grid into the main wave**
 
 Replace the `Promise.all` and the trailing `monthGridSessions` block with:
 
@@ -450,7 +450,7 @@ const [data, weekStreak, units, monthGridSessions] = await Promise.all([
 
 Keep the earlier `getLatestSessionDateKey` await as-is (the Last tab's window genuinely depends on it). Update the later JSX that referenced the old `let` variables — they are now `const` with the same names.
 
-- [ ] **Step 2: Verify + commit**
+- [x] **Step 2: Verify + commit**
 
 Run: `npm run typecheck` → 0 errors.
 `git commit -m "perf: single query wave on /progress"`
@@ -470,7 +470,7 @@ Run: `npm run typecheck` → 0 errors.
 
 **Interfaces:** none — pure UI. House idiom (from `program/loading.tsx`): root has `aria-busy="true"` + `aria-label`, blocks are `bg-surface-subtle animate-pulse`, cards are `border border-border bg-surface`.
 
-- [ ] **Step 1: history/[sessionId]/loading.tsx** — back link, header (eyebrow, title, 3-col stat grid), 4 exercise cards:
+- [x] **Step 1: history/[sessionId]/loading.tsx** — back link, header (eyebrow, title, 3-col stat grid), 4 exercise cards:
 
 ```tsx
 export default function Loading() {
@@ -503,7 +503,7 @@ export default function Loading() {
 }
 ```
 
-- [ ] **Step 2: history/exercise/[id]/loading.tsx** — back link, header, chart box:
+- [x] **Step 2: history/exercise/[id]/loading.tsx** — back link, header, chart box:
 
 ```tsx
 export default function Loading() {
@@ -523,7 +523,7 @@ export default function Loading() {
 }
 ```
 
-- [ ] **Step 3: program/library/loading.tsx** — header (back circle + two lines) + two "N Days a Week" groups of cards:
+- [x] **Step 3: program/library/loading.tsx** — header (back circle + two lines) + two "N Days a Week" groups of cards:
 
 ```tsx
 export default function Loading() {
@@ -553,7 +553,7 @@ export default function Loading() {
 
 (Eyeball against the real `LibraryList` render during Task 11 live preview and adjust block shapes if the list uses a different card geometry.)
 
-- [ ] **Step 4: program/library/[programId]/loading.tsx** — header, hero, description line, Workouts rows, sticky CTA:
+- [x] **Step 4: program/library/[programId]/loading.tsx** — header, hero, description line, Workouts rows, sticky CTA:
 
 ```tsx
 export default function Loading() {
@@ -587,7 +587,7 @@ export default function Loading() {
 }
 ```
 
-- [ ] **Step 5: program/library/[programId]/[dayId]/loading.tsx** — header, day pills, stat row, exercise rows, sticky CTA:
+- [x] **Step 5: program/library/[programId]/[dayId]/loading.tsx** — header, day pills, stat row, exercise rows, sticky CTA:
 
 ```tsx
 export default function Loading() {
@@ -626,7 +626,7 @@ export default function Loading() {
 }
 ```
 
-- [ ] **Step 6: program/exercises/loading.tsx** — header with Add pill, body-map block, 2-col card grid:
+- [x] **Step 6: program/exercises/loading.tsx** — header with Add pill, body-map block, 2-col card grid:
 
 ```tsx
 export default function Loading() {
@@ -651,7 +651,7 @@ export default function Loading() {
 }
 ```
 
-- [ ] **Step 7: program/exercises/new/loading.tsx** — header + three media-chooser blocks + form lines:
+- [x] **Step 7: program/exercises/new/loading.tsx** — header + three media-chooser blocks + form lines:
 
 ```tsx
 export default function Loading() {
@@ -675,7 +675,7 @@ export default function Loading() {
 }
 ```
 
-- [ ] **Step 8: Verify + commit**
+- [x] **Step 8: Verify + commit**
 
 Run: `npm run typecheck` → 0 errors.
 `git commit -m "perf: loading skeletons for history, library, exercise routes"`
@@ -695,7 +695,7 @@ Run: `npm run typecheck` → 0 errors.
 - Produces: `NavPending({ children, className? })` — client component that must render **inside** a `<Link>` (that's `useLinkStatus`'s contract).
 - `month-grid.tsx` and `range-tabs.tsx` are Server Components — they stay server; only the imported `NavPending` is client.
 
-- [ ] **Step 1: The component**
+- [x] **Step 1: The component**
 
 ```tsx
 "use client";
@@ -724,7 +724,7 @@ export function NavPending({
 }
 ```
 
-- [ ] **Step 2: Keyframes in globals.css (append at the end)**
+- [x] **Step 2: Keyframes in globals.css (append at the end)**
 
 ```css
 @keyframes nav-pending {
@@ -737,7 +737,7 @@ export function NavPending({
 }
 ```
 
-- [ ] **Step 3: Wire the three call sites**
+- [x] **Step 3: Wire the three call sites**
 
 - `day-tabs.tsx`: pill `<Link>` content becomes
   `<NavPending>{isCompleted ? <Check className="w-3 h-3" aria-hidden="true" /> : null}Day {slot.globalNumber}</NavPending>`;
@@ -745,7 +745,7 @@ export function NavPending({
 - `month-grid.tsx`: in the `sessionId` branch, `{content}` becomes `<NavPending>{content}</NavPending>`.
 - `range-tabs.tsx`: `{t.label}` becomes `<NavPending>{t.label}</NavPending>`.
 
-- [ ] **Step 4: Verify + commit**
+- [x] **Step 4: Verify + commit**
 
 Run: `npm run typecheck` → 0 errors.
 `git commit -m "feat: pending feedback on day pills, range tabs, month grid"`
@@ -763,7 +763,7 @@ Run: `npm run typecheck` → 0 errors.
 **Interfaces:**
 - Produces: `ProgressBarChartLazy`, `ExerciseChartLazy`, `MetricChartLazy` — prop-identical to the components they wrap. Type-only imports (`ChartPoint`, `MetricPoint`) keep coming from the original modules (erased at build, no runtime pull).
 
-- [ ] **Step 1: progress-bar-chart-lazy.tsx**
+- [x] **Step 1: progress-bar-chart-lazy.tsx**
 
 ```tsx
 "use client";
@@ -788,7 +788,7 @@ export const ProgressBarChartLazy = dynamic(
 );
 ```
 
-- [ ] **Step 2: exercise-chart-lazy.tsx**
+- [x] **Step 2: exercise-chart-lazy.tsx**
 
 ```tsx
 "use client";
@@ -808,7 +808,7 @@ export const ExerciseChartLazy = dynamic(
 );
 ```
 
-- [ ] **Step 3: body-chart-lazy.tsx**
+- [x] **Step 3: body-chart-lazy.tsx**
 
 ```tsx
 "use client";
@@ -826,13 +826,13 @@ export const MetricChartLazy = dynamic(
 
 (Check `MetricChart`'s real wrapper markup around its `h-56` chart div and mirror it in the fallback if it has a bordered container.)
 
-- [ ] **Step 4: Swap consumers**
+- [x] **Step 4: Swap consumers**
 
 - `progress/page.tsx`: `import { ProgressBarChartLazy } from "./progress-bar-chart-lazy";` → `<ProgressBarChartLazy buckets={data.buckets} />`.
 - `history/exercise/[id]/page.tsx`: keep `import type { ChartPoint } from "./exercise-chart";`, add lazy import, render `<ExerciseChartLazy points={points} isTime={isTime} units={units} />`.
 - `body/metric-detail.tsx`: keep `type MetricPoint` from `"./body-chart"`, swap the component import/usage to `MetricChartLazy`.
 
-- [ ] **Step 5: Verify + commit**
+- [x] **Step 5: Verify + commit**
 
 Run: `npm run typecheck` → 0 errors.
 `git commit -m "perf: code-split recharts behind lazy chart wrappers"`
@@ -844,7 +844,7 @@ Run: `npm run typecheck` → 0 errors.
 **Files:**
 - Modify: `src/app/layout.tsx`
 
-- [ ] **Step 1: Add preconnect links (React 19 hoists them into `<head>`)**
+- [x] **Step 1: Add preconnect links (React 19 hoists them into `<head>`)**
 
 Inside `RootLayout`, before `<TimezoneInit />`:
 
@@ -862,7 +862,7 @@ const supabaseOrigin = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin;
   ...
 ```
 
-- [ ] **Step 2: Verify + commit**
+- [x] **Step 2: Verify + commit**
 
 Run: `npm run typecheck` → 0 errors.
 `git commit -m "perf: preconnect exercise image and media origins"`
@@ -873,11 +873,11 @@ Run: `npm run typecheck` → 0 errors.
 
 **Files:** none (verification only). Uses `claude-test@example.com` (never rahul@satel.ca).
 
-- [ ] **Step 1: Static gate**
+- [x] **Step 1: Static gate**
 
 Run: `npm run typecheck` (0 errors), `npm run lint` (0 errors; 2 pre-existing `progression.ts` warnings OK), `npx tsx scripts/smoke-signed-url-cache.ts` (10/10), `npm run build` (green).
 
-- [ ] **Step 2: Baseline numbers (pre-change build)**
+- [x] **Step 2: Baseline numbers (pre-change build)**
 
 ```powershell
 git worktree add ../wt-baseline origin/main
@@ -887,7 +887,7 @@ cd ../wt-baseline; npm ci; npm run build; npx next start -p 3001
 
 Auth a Playwright session on `http://localhost:3001` (OTP via `npx tsx scripts/test-otp.ts`, cookie flow per CLAUDE.md). Record, on the test account: (a) `/program` cold-load time (navigation start → exercise list visible), (b) day-pill tap → content-swap time, (c) Program→Progress→Program tab round-trip time, (d) month-grid day tap → history content time. Then stop the server and `git worktree remove ../wt-baseline --force`.
 
-- [ ] **Step 3: After numbers (branch build)**
+- [x] **Step 3: After numbers (branch build)**
 
 `npx next start -p 3000` on the branch build; repeat the same four measurements, same account, plus:
 
@@ -897,13 +897,13 @@ Auth a Playwright session on `http://localhost:3001` (OTP via `npx tsx scripts/t
 - library → program → day drill-in shows skeletons on cold taps;
 - charts on `/progress`, `/body` metric detail, `/history/exercise/[id]` render after a brief fallback, no layout jump, zero console errors anywhere.
 
-- [ ] **Step 4: Record the numbers** in the PR body table (before/after per flow). Prod TTFB before/after gets added post-deploy once Deployment Protection is off (before = current prod, after = merged deploy).
+- [x] **Step 4: Record the numbers** in the PR body table (before/after per flow). Prod TTFB before/after gets added post-deploy once Deployment Protection is off (before = current prod, after = merged deploy).
 
 ---
 
 ### Task 12: ship
 
-- [ ] **Step 1:** Push: `git push -u origin feat/startup-speed`.
-- [ ] **Step 2:** PR per house style — title `⚡ Faster startup and screen switches`, body via the pr-description skill (with the before/after table), `--assignee @me`. Watch Vercel checks in the background.
-- [ ] **Step 3:** Update `.claude/sessions.md` (new entry, keep 3) + `NEXT-SESSION.md` (state, decisions incl. rejected PPR/SW/TanStack, next steps: Rahul's dashboard checklist + device test), commit `docs: session log + handoff for startup-speed phase`.
-- [ ] **Step 4:** Report with verifiable numbers + 🟢🟡🔴 status line.
+- [x] **Step 1:** Push: `git push -u origin feat/startup-speed`.
+- [x] **Step 2:** PR per house style — title `⚡ Faster startup and screen switches`, body via the pr-description skill (with the before/after table), `--assignee @me`. Watch Vercel checks in the background.
+- [x] **Step 3:** Update `.claude/sessions.md` (new entry, keep 3) + `NEXT-SESSION.md` (state, decisions incl. rejected PPR/SW/TanStack, next steps: Rahul's dashboard checklist + device test), commit `docs: session log + handoff for startup-speed phase`.
+- [x] **Step 4:** Report with verifiable numbers + 🟢🟡🔴 status line.
