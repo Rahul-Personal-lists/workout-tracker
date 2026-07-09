@@ -4,7 +4,8 @@ import { ArrowLeft, LineChart } from "lucide-react";
 import { getExerciseHistory } from "@/lib/queries";
 import { formatDuration, formatWeight } from "@/lib/format";
 import { getUnitsServer } from "@/lib/units-server";
-import { ExerciseChart, type ChartPoint } from "./exercise-chart";
+import type { ChartPoint } from "./exercise-chart";
+import { ExerciseChartLazy } from "./exercise-chart-lazy";
 
 export const dynamic = "force-dynamic";
 
@@ -111,7 +112,7 @@ export default async function ExerciseHistoryPage({
           </div>
         </div>
       ) : (
-        <ExerciseChart points={points} isTime={isTime} units={units} />
+        <ExerciseChartLazy points={points} isTime={isTime} units={units} />
       )}
     </div>
   );

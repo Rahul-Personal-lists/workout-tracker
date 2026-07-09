@@ -19,7 +19,8 @@ import {
   windowSeries,
   type Range,
 } from "@/lib/body-stats";
-import { MetricChart, type MetricPoint } from "./body-chart";
+import type { MetricPoint } from "./body-chart";
+import { MetricChartLazy } from "./body-chart-lazy";
 import { BodyRangeTabs } from "./range-tabs";
 
 export type MetricSeriesPoint = { date: string; value: number };
@@ -190,7 +191,7 @@ export function MetricDetail({
             </div>
           ) : null}
           <BodyRangeTabs active={range} onChange={setRange} />
-          <MetricChart
+          <MetricChartLazy
             data={windowed}
             toDisplay={(v) => metric.toDisplay(v, units)}
             unitSuffix={metric.unitLabel(units)}

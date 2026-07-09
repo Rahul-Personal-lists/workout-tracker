@@ -17,7 +17,7 @@ import { RangeTabs } from "./range-tabs";
 import { RangeNav } from "./range-nav";
 import { MonthGrid } from "./month-grid";
 import { StatCards } from "./stat-cards";
-import { ProgressBarChart } from "./progress-bar-chart";
+import { ProgressBarChartLazy } from "./progress-bar-chart-lazy";
 import { MuscleMap } from "./muscle-map";
 
 export default async function ProgressPage({
@@ -42,7 +42,15 @@ export default async function ProgressPage({
   }
 
   const win = computeProgressWindow(range, anchor, todayKey);
-  const [data, weekStreak, units] = await Promise.all([
+
+  // Month/Yearly tabs show the calendar grid. For Year, the grid focuses on
+  // the anchor's month so the same month visually carries year-over-year.
+  const needsMonthGrid = range === "month" || range === "year";
+  const [yStr, mStr] = anchor.split("-");
+  const monthGridYear = needsMonthGrid ? Number(yStr) : 0;
+  const monthGridMonth = needsMonthGrid ? Number(mStr) : 0;
+
+  const [data, weekStreak, units, monthGridSessions] = await Promise.all([
     getProgressForRange(
       win.startKey,
       win.endKey,
@@ -52,23 +60,10 @@ export default async function ProgressPage({
     ),
     getWeekStreak(tz),
     getUnitsServer(),
+    needsMonthGrid
+      ? getSessionsByDateForMonth(monthGridYear, monthGridMonth, tz)
+      : Promise.resolve(null),
   ]);
-
-  // Month/Yearly tabs show the calendar grid. For Year, the grid focuses on
-  // the anchor's month so the same month visually carries year-over-year.
-  let monthGridSessions: Map<string, string> | null = null;
-  let monthGridYear = 0;
-  let monthGridMonth = 0;
-  if (range === "month" || range === "year") {
-    const [yStr, mStr] = anchor.split("-");
-    monthGridYear = Number(yStr);
-    monthGridMonth = Number(mStr);
-    monthGridSessions = await getSessionsByDateForMonth(
-      monthGridYear,
-      monthGridMonth,
-      tz
-    );
-  }
 
   // When switching tabs, anchor on `today` if today falls inside the current
   // window — keeps Year→Month from jumping to January when the visible year
@@ -121,7 +116,7 @@ export default async function ProgressPage({
 
       <StatCards totals={data.totals} units={units} />
 
-      <ProgressBarChart buckets={data.buckets} />
+      <ProgressBarChartLazy buckets={data.buckets} />
 
       <MuscleMap muscleSets={data.muscleSets} />
     </div>

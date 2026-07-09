@@ -41,6 +41,7 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies();
   const theme = resolveTheme(cookieStore.get("accent-theme")?.value);
+  const supabaseOrigin = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin;
 
   return (
     <html
@@ -50,6 +51,11 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        {/* React hoists these into <head>. No crossOrigin: exercise images and
+            media load as plain no-CORS <img>/<video>, and preconnect pools are
+            keyed by crossOrigin mode. */}
+        <link rel="preconnect" href="https://raw.githubusercontent.com" />
+        <link rel="preconnect" href={supabaseOrigin} />
         <TimezoneInit />
         {children}
         <ServiceWorkerRegister />

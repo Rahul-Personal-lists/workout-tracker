@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { getSignedUrlsCached } from "@/lib/signed-url-cache";
 import { dateKeyInTz, getUserTimezone } from "@/lib/tz";
 import {
   getMuscleGroupsForExercise,
@@ -12,6 +13,28 @@ import type { ReframeRect, TrimBounds } from "@/lib/video-upload";
 
 const VIDEO_BUCKET = "workout-photos";
 const VIDEO_URL_TTL = 60 * 60 * 6; // 6h — gym sessions can outlive the photo 1h TTL
+
+// Memoized signing: stable URLs across renders so the browser image cache
+// hits. actions/custom-exercise.ts signCustomVideoUrl stays uncached on
+// purpose — its whole job is minting a fresh URL after a 403.
+function signCached(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  bucket: string,
+  paths: string[],
+  ttlSeconds: number
+): Promise<(string | null)[]> {
+  return getSignedUrlsCached({
+    bucket,
+    paths,
+    ttlSeconds,
+    sign: async (missing, ttl) => {
+      const { data } = await supabase.storage
+        .from(bucket)
+        .createSignedUrls(missing, ttl);
+      return missing.map((_, i) => data?.[i]?.signedUrl ?? null);
+    },
+  });
+}
 
 export type ProgramExercise = {
   id: string;
@@ -83,30 +106,31 @@ async function attachMediaUrls(
   exercises: ProgramExercise[]
 ): Promise<void> {
   const withPoster = exercises.filter((e) => e.poster_path);
-  if (withPoster.length > 0) {
-    const posterSigned = await supabase.storage
-      .from(VIDEO_BUCKET)
-      .createSignedUrls(
-        withPoster.map((e) => e.poster_path as string),
-        VIDEO_URL_TTL
-      );
-    withPoster.forEach((e, i) => {
-      e.poster_signed_url = posterSigned.data?.[i]?.signedUrl ?? null;
-    });
-  }
-
   const withVideo = exercises.filter((e) => e.video_path);
-  if (withVideo.length > 0) {
-    const videoSigned = await supabase.storage
-      .from(VIDEO_BUCKET)
-      .createSignedUrls(
-        withVideo.map((e) => e.video_path as string),
-        VIDEO_URL_TTL
-      );
-    withVideo.forEach((e, i) => {
-      e.video_signed_url = videoSigned.data?.[i]?.signedUrl ?? null;
-    });
-  }
+  const [posterUrls, videoUrls] = await Promise.all([
+    withPoster.length
+      ? signCached(
+          supabase,
+          VIDEO_BUCKET,
+          withPoster.map((e) => e.poster_path as string),
+          VIDEO_URL_TTL
+        )
+      : [],
+    withVideo.length
+      ? signCached(
+          supabase,
+          VIDEO_BUCKET,
+          withVideo.map((e) => e.video_path as string),
+          VIDEO_URL_TTL
+        )
+      : [],
+  ]);
+  withPoster.forEach((e, i) => {
+    e.poster_signed_url = posterUrls[i] ?? null;
+  });
+  withVideo.forEach((e, i) => {
+    e.video_signed_url = videoUrls[i] ?? null;
+  });
 }
 
 export type ProgramDay = {
@@ -230,10 +254,10 @@ export async function getProfile(
 
   let avatarSignedUrl: string | null = null;
   if (signAvatar && data?.avatar_path) {
-    const { data: signed } = await supabase.storage
-      .from("workout-photos")
-      .createSignedUrl(data.avatar_path, 60 * 60);
-    avatarSignedUrl = signed?.signedUrl ?? null;
+    avatarSignedUrl =
+      (
+        await signCached(supabase, "workout-photos", [data.avatar_path], 60 * 60)
+      )[0] ?? null;
   }
 
   return {
@@ -306,14 +330,24 @@ export async function getNextWorkout(
   const supabase = await createClient();
   const dayIds = program.days.map((d) => d.id);
 
-  const { data: inProgress } = await supabase
-    .from("workout_sessions")
-    .select("id, week_number, program_day_id")
-    .in("program_day_id", dayIds)
-    .is("ended_at", null)
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [{ data: inProgress }, { data: lastFinished }] = await Promise.all([
+    supabase
+      .from("workout_sessions")
+      .select("id, week_number, program_day_id")
+      .in("program_day_id", dayIds)
+      .is("ended_at", null)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("workout_sessions")
+      .select("week_number, program_day_id, ended_at, is_rest_skip")
+      .in("program_day_id", dayIds)
+      .not("ended_at", "is", null)
+      .order("ended_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (inProgress) {
     const day = program.days.find((d) => d.id === inProgress.program_day_id);
@@ -326,15 +360,6 @@ export async function getNextWorkout(
       };
     }
   }
-
-  const { data: lastFinished } = await supabase
-    .from("workout_sessions")
-    .select("week_number, program_day_id, ended_at, is_rest_skip")
-    .in("program_day_id", dayIds)
-    .not("ended_at", "is", null)
-    .order("ended_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   if (!lastFinished) {
     return { kind: "next", weekNumber: 1, day: program.days[0] };
@@ -743,16 +768,13 @@ export async function getSessionPhotos(sessionId: string): Promise<SessionPhoto[
   if (!data || data.length === 0) return [];
 
   const paths = data.map((p) => p.storage_path);
-  const { data: signed, error: signErr } = await supabase.storage
-    .from("workout-photos")
-    .createSignedUrls(paths, 60 * 60);
-  if (signErr) throw signErr;
+  const signed = await signCached(supabase, "workout-photos", paths, 60 * 60);
 
   return data.map((row, i) => ({
     id: row.id,
     storage_path: row.storage_path,
     created_at: row.created_at,
-    signed_url: signed?.[i]?.signedUrl ?? "",
+    signed_url: signed[i] ?? "",
   }));
 }
 
@@ -854,21 +876,21 @@ export async function getCustomExercises(): Promise<CustomExercise[]> {
   const posterPaths = data.map((r) => r.poster_path);
   const videoRows = data.filter((r) => r.video_path);
   const [poster, video] = await Promise.all([
-    supabase.storage.from(VIDEO_BUCKET).createSignedUrls(posterPaths, VIDEO_URL_TTL),
+    signCached(supabase, VIDEO_BUCKET, posterPaths, VIDEO_URL_TTL),
     // null (not a mixed-shape fallback object) so the tuple types cleanly as
     // `result | null` — Promise.all resolves a non-thenable to itself.
     videoRows.length
-      ? supabase.storage
-          .from(VIDEO_BUCKET)
-          .createSignedUrls(
-            videoRows.map((r) => r.video_path as string),
-            VIDEO_URL_TTL
-          )
+      ? signCached(
+          supabase,
+          VIDEO_BUCKET,
+          videoRows.map((r) => r.video_path as string),
+          VIDEO_URL_TTL
+        )
       : null,
   ]);
   const videoUrlByPath = new Map<string, string>();
   videoRows.forEach((r, i) => {
-    const url = video?.data?.[i]?.signedUrl;
+    const url = video?.[i];
     if (url && r.video_path) videoUrlByPath.set(r.video_path, url);
   });
 
@@ -881,7 +903,7 @@ export async function getCustomExercises(): Promise<CustomExercise[]> {
     video_signed_url: r.video_path
       ? videoUrlByPath.get(r.video_path) ?? null
       : null,
-    poster_signed_url: poster.data?.[i]?.signedUrl ?? null,
+    poster_signed_url: poster[i] ?? null,
     crop_rect: (r.crop_rect as ReframeRect | null) ?? null,
     trim:
       r.trim_start_seconds != null && r.trim_end_seconds != null
@@ -910,17 +932,14 @@ export async function getBodyPhotos(): Promise<BodyPhotoRow[]> {
   if (!data || data.length === 0) return [];
 
   const paths = data.map((p) => p.storage_path);
-  const { data: signed, error: signErr } = await supabase.storage
-    .from("workout-photos")
-    .createSignedUrls(paths, 60 * 60);
-  if (signErr) throw signErr;
+  const signed = await signCached(supabase, "workout-photos", paths, 60 * 60);
 
   return data.map((row, i) => ({
     id: row.id,
     log_date: row.log_date,
     storage_path: row.storage_path,
     created_at: row.created_at,
-    signed_url: signed?.[i]?.signedUrl ?? "",
+    signed_url: signed[i] ?? "",
   }));
 }
 

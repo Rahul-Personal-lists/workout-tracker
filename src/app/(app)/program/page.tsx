@@ -37,17 +37,18 @@ export default async function ProgramPage({
 }) {
   const { week: weekParam, day: dayParam } = await searchParams;
 
-  // Reap any stale (>2h idle) in-progress sessions before reading workout state
-  // — otherwise getNextWorkout treats yesterday's abandoned session as the
-  // current one and the page sticks on the wrong day. Mirrors the call /today
-  // used to make before /today was deleted.
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const userId = auth?.claims.sub;
-  if (userId) await reapStaleSession(supabase, userId);
 
-  const [program, allPrograms, units, todayWeight, goalWeight] =
+  // Reap any stale (>2h idle) in-progress sessions before reading workout state
+  // — otherwise getNextWorkout treats yesterday's abandoned session as the
+  // current one and the page sticks on the wrong day. It runs alongside this
+  // wave (it touches only workout_sessions/set_logs, which nothing here reads),
+  // but the session-reading queries in the wave below MUST stay after it.
+  const [, program, allPrograms, units, todayWeight, goalWeight] =
     await Promise.all([
+      userId ? reapStaleSession(supabase, userId) : Promise.resolve(null),
       getCurrentProgram(),
       getAllPrograms(),
       getUnitsServer(),
