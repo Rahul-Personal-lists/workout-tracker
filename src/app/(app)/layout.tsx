@@ -1,5 +1,6 @@
 import { BottomNav } from "@/components/bottom-nav";
 import { InstallPrompt } from "@/components/install-prompt";
+import { NativeShellBridge } from "@/components/native-shell-bridge";
 import { TutorialOverlay } from "@/components/tutorial-overlay";
 import { OnboardingPicker } from "@/components/onboarding-picker";
 import { OnboardingRedirector } from "@/components/onboarding-redirector";
@@ -19,6 +20,7 @@ export default async function AppLayout({
         Skip to content
       </a>
       <InstallPrompt />
+      <NativeShellBridge />
       <main id="main" className="max-w-md mx-auto pb-24 px-4 pt-6">
         {children}
       </main>
