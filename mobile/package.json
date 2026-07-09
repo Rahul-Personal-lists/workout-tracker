@@ -1,0 +1,19 @@
+{
+  "name": "workout-tracker-shell",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Capacitor Android shell around the deployed workout-tracker web app",
+  "scripts": {
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/local-notifications": "^8.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.4.1"
+  }
+}
