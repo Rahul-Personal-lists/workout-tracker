@@ -17,7 +17,7 @@ import { RangeTabs } from "./range-tabs";
 import { RangeNav } from "./range-nav";
 import { MonthGrid } from "./month-grid";
 import { StatCards } from "./stat-cards";
-import { ProgressBarChart } from "./progress-bar-chart";
+import { ProgressBarChartLazy } from "./progress-bar-chart-lazy";
 import { MuscleMap } from "./muscle-map";
 
 export default async function ProgressPage({
@@ -116,7 +116,7 @@ export default async function ProgressPage({
 
       <StatCards totals={data.totals} units={units} />
 
-      <ProgressBarChart buckets={data.buckets} />
+      <ProgressBarChartLazy buckets={data.buckets} />
 
       <MuscleMap muscleSets={data.muscleSets} />
     </div>
