@@ -330,14 +330,24 @@ export async function getNextWorkout(
   const supabase = await createClient();
   const dayIds = program.days.map((d) => d.id);
 
-  const { data: inProgress } = await supabase
-    .from("workout_sessions")
-    .select("id, week_number, program_day_id")
-    .in("program_day_id", dayIds)
-    .is("ended_at", null)
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [{ data: inProgress }, { data: lastFinished }] = await Promise.all([
+    supabase
+      .from("workout_sessions")
+      .select("id, week_number, program_day_id")
+      .in("program_day_id", dayIds)
+      .is("ended_at", null)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("workout_sessions")
+      .select("week_number, program_day_id, ended_at, is_rest_skip")
+      .in("program_day_id", dayIds)
+      .not("ended_at", "is", null)
+      .order("ended_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (inProgress) {
     const day = program.days.find((d) => d.id === inProgress.program_day_id);
@@ -350,15 +360,6 @@ export async function getNextWorkout(
       };
     }
   }
-
-  const { data: lastFinished } = await supabase
-    .from("workout_sessions")
-    .select("week_number, program_day_id, ended_at, is_rest_skip")
-    .in("program_day_id", dayIds)
-    .not("ended_at", "is", null)
-    .order("ended_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   if (!lastFinished) {
     return { kind: "next", weekNumber: 1, day: program.days[0] };
