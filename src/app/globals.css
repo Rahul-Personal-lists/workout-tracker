@@ -234,3 +234,14 @@ body {
   stroke: var(--color-accent);
   stroke-width: 5;
 }
+
+/* Link-pending pulse (NavPending). The 150ms delay keeps cache-hit
+ * navigations from flashing. */
+@keyframes nav-pending {
+  50% {
+    opacity: 0.4;
+  }
+}
+[data-nav-pending] {
+  animation: nav-pending 1s ease-in-out 0.15s infinite;
+}

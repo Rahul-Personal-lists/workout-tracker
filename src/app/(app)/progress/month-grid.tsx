@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { NavPending } from "@/components/nav-pending";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -107,7 +108,7 @@ export function MonthGrid({
                   isToday && "ring-1 ring-accent"
                 )}
               >
-                {content}
+                <NavPending>{content}</NavPending>
               </Link>
             );
           }

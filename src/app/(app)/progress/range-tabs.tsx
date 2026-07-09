@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { NavPending } from "@/components/nav-pending";
 import type { RangeKind } from "@/lib/progress-range";
 
 const TABS: Array<{ id: RangeKind; label: string }> = [
@@ -40,7 +41,7 @@ export function RangeTabs({
                 : "text-foreground-muted hover:text-foreground"
             )}
           >
-            {t.label}
+            <NavPending>{t.label}</NavPending>
           </Link>
         );
       })}

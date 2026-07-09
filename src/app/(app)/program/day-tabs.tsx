@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addDay } from "@/app/actions/program";
+import { NavPending } from "@/components/nav-pending";
 import { toast } from "@/components/toast";
 
 type Template = { id: string };
@@ -130,7 +131,9 @@ export function DayTabs({
           !prevSlot && "opacity-40 pointer-events-none",
         )}
       >
-        <ChevronLeft className="w-4 h-4" />
+        <NavPending>
+          <ChevronLeft className="w-4 h-4" />
+        </NavPending>
       </Link>
       <div ref={ref} className="flex-1 overflow-x-auto -my-1 py-1">
         <div className="flex items-center gap-2 min-w-max justify-center">
@@ -167,10 +170,12 @@ export function DayTabs({
                   styleClass,
                 )}
               >
-                {isCompleted ? (
-                  <Check className="w-3 h-3" aria-hidden="true" />
-                ) : null}
-                Day {slot.globalNumber}
+                <NavPending>
+                  {isCompleted ? (
+                    <Check className="w-3 h-3" aria-hidden="true" />
+                  ) : null}
+                  Day {slot.globalNumber}
+                </NavPending>
               </Link>
             );
           })}
@@ -191,7 +196,9 @@ export function DayTabs({
           !nextSlot && "opacity-40 pointer-events-none",
         )}
       >
-        <ChevronRight className="w-4 h-4" />
+        <NavPending>
+          <ChevronRight className="w-4 h-4" />
+        </NavPending>
       </Link>
       {/* Add-day control sits OUTSIDE the overflow-x-auto strip: that container
           forces overflow-y to compute to `auto`, which would clip this dropdown. */}
