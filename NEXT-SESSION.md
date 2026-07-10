@@ -1,27 +1,24 @@
-# Next session — workout-tracker (2026-07-08)
+# Next session — workout-tracker (2026-07-10)
 
 ## State
 
-- `feat/capacitor-shell` **merged** (#114). Branch `feat/startup-speed`, PR [#115](https://github.com/Rahul-Personal-lists/workout-tracker/pull/115) open, self-assigned, awaiting Rahul's merge.
-- Shipped: `staleTimes {dynamic:30, static:300}` client router cache; query-waterfall collapse (`/program` ~6→~3 roundtrips, `/workout`, `/progress`); 7 new `loading.tsx` skeletons (history ×2, library ×3, exercises ×2); `NavPending` tap feedback (day pills / range tabs / month grid); signed-URL memo [src/lib/signed-url-cache.ts](src/lib/signed-url-cache.ts) (+ smoke, 10 cases); lazy Recharts ×3; preconnects to image/media origins.
-- Verified: tsc/lint/build green, smokes 10/10 + 6/6 + 9/9, live before/after on local prod servers (test account, Playwright): `/program` load median 950→490 ms, day-pill re-hop within 30 s 544→66–82 ms, history-tap skeleton at 131 ms (was a frozen screen). Zero console errors.
+- #115 (startup/nav speed) **merged** 2026-07-09. Expo rewrite **Phase 1 shipped**: new private repo [trainr-mobile](https://github.com/Rahul-Personal-lists/trainr-mobile), PR [trainr-mobile#1](https://github.com/Rahul-Personal-lists/trainr-mobile/pull/1) open with CI green; companion docs PR [#116](https://github.com/Rahul-Personal-lists/workout-tracker/pull/116) (spec, plan, roadmap status, session log, this file) open.
+- The mobile track hands off in **trainr-mobile/NEXT-SESSION.md** (a `/phase` skill is installed in both repos now); this file covers web-side work only.
+- Web repo changed this session: docs only, plus `.env.local` **restored** (URL + service-role key) so `scripts/test-otp.ts` works again. Keep both files: `.env` (app) and `.env.local` (admin scripts).
 
 ## Decisions this phase (with the why)
 
-- **staleTimes 30 s for dynamic pages** — pill/tab re-visits serve from client cache; the app's own mutations stay fresh (`revalidatePath` busts it). Cross-device staleness ≤30 s accepted (single user). Experimental config, one-line revert.
-- **Reap joined `/program` wave 1** — it touches only `workout_sessions`/`set_logs`; the session-reading wave 2 must stay after it (comment in page.tsx guards this).
-- **`signCustomVideoUrl` stays uncached** — its whole job is a fresh URL after a mid-session 403.
-- **Photo signing failures degrade to empty URLs** instead of throwing (matches `getFavoriteSlugs` resilience).
-- **REJECTED (don't re-pitch):** Cache Components/PPR (modest gain on 100 % per-user data; Expo rewrite supersedes), SW HTML caching (stale-chunk 404 hazard `public/sw.js` documents), TanStack Query (still no use case), theme-cookie restructure (only pays off under PPR).
+- **Mobile code lives in trainr-mobile** — this repo gets touched only if Phase 2's shared-invariants decision picks Postgres RPCs (migration would land here, since this repo owns migration history).
+- **`/phase` formalized as a skill** — the resume prompt below referenced a skill that was defined nowhere; now installed in both repos (structural template, TDD'd in trainr-mobile per writing-skills).
+- **REJECTED (don't re-pitch):** none web-side this session — the mobile list lives in trainr-mobile/NEXT-SESSION.md.
 
 ## Next up
 
-1. **Rahul, Vercel dashboard:** Fluid Compute ON (cold starts); function region = default `iad1` (Supabase is us-east-1); **Deployment Protection OFF** for prod (also still owed for #114's APK).
-2. **Rahul, device:** sideload the `workout-tracker-shell-debug-apk` artifact (#114), rest-timer locked-phone + hardware-back test; after #115 merges, feel the speed difference on the phone.
-3. Merge #115.
-4. Optional cleanup: empty test session `004e295b` (today, claude-test account, created for the history-tap measurement; my delete was permission-blocked) — remove via its /history page if unwanted.
-5. Then: Expo rewrite Phase 1 (new repo scaffold) per [docs/MOBILE_ROADMAP.md](docs/MOBILE_ROADMAP.md).
+1. **Rahul, dashboard (if still owed post-#115):** Fluid Compute ON, function region `iad1`, **Deployment Protection OFF** for prod (also the Capacitor shell's launch blocker). Plus: delete the stray empty `workout-tracker` project in the `sunrgy` Vercel team if unwanted (left by `vercel link --yes` this session; the real project is under `rahulpatidar0191s-projects`, a different Vercel login than this machine's CLI).
+2. Merge [#116](https://github.com/Rahul-Personal-lists/workout-tracker/pull/116) and [trainr-mobile#1](https://github.com/Rahul-Personal-lists/trainr-mobile/pull/1) (after the Expo Go device pass — see trainr-mobile/NEXT-SESSION.md).
+3. Optional cleanup still open from #115: empty test session `004e295b` (claude-test) via its /history page.
+4. Mobile work continues from **trainr-mobile/NEXT-SESSION.md** (Phase 2 — data layer).
 
 ## Resume prompt
 
-/phase — resume workout-tracker from NEXT-SESSION.md: startup-speed PR #115 shipped and awaiting merge + Rahul's Vercel dashboard checklist (Fluid Compute, region, Deployment Protection). If #115 is merged and device-verified, next is Expo rewrite Phase 1 (new repo scaffold) per docs/MOBILE_ROADMAP.md.
+/phase — resume workout-tracker from NEXT-SESSION.md: #115 merged; Expo Phase 1 shipped (trainr-mobile#1 + #116 open, awaiting Rahul's device pass and merges); web repo is quiescent — mobile work continues from trainr-mobile/NEXT-SESSION.md, and Rahul may still owe the Vercel dashboard checklist.
