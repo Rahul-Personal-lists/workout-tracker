@@ -1,6 +1,7 @@
 # Mobile app roadmap — Expo rewrite
 
-**Written:** 2026-07-08 · **Status:** planned, not started
+**Written:** 2026-07-08 · **Status:** in progress — Phase 1 shipped ([trainr-mobile#1](https://github.com/Rahul-Personal-lists/trainr-mobile/pull/1), 2026-07-10)
+**Repo:** https://github.com/Rahul-Personal-lists/trainr-mobile (private)
 **Spec/decision record:** docs/superpowers/specs/2026-07-08-capacitor-shell-design.md
 
 The goal: the workout tracker as a real Android app (iOS later), built with
@@ -54,6 +55,10 @@ apps call. Decide when building the mobile data layer.
 
 Total: ~10–15 PRs, one phase ≈ one session at the usual cadence. The app is
 genuinely usable at the gym after Phase 3.
+
+- [x] Phase 1 — Scaffold ([trainr-mobile#1](https://github.com/Rahul-Personal-lists/trainr-mobile/pull/1), 2026-07-10): expo-router
+      4-tab shell, email-OTP auth, tokens ported. Spec/plan:
+      docs/superpowers/{specs,plans}/2026-07-10-expo-phase1-scaffold*.md
 
 ## v1 de-scopes (decided 2026-07-08)
 
