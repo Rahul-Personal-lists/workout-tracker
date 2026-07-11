@@ -1,8 +1,0 @@
-{
-  "appId": "com.rahul.workouttracker",
-  "appName": "Workout Tracker",
-  "webDir": "www",
-  "server": {
-    "url": "https://workout-tracker-rahulpatidar0191s-projects.vercel.app"
-  }
-}
