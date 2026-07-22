@@ -553,6 +553,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_day_order: {
+        Args: { p_insert?: Json; p_program_id: string; p_targets: Json }
+        Returns: undefined
+      }
       resume_session: { Args: { session_id: string }; Returns: undefined }
       swap_day_order: {
         Args: { p_day_a: string; p_day_b: string }
