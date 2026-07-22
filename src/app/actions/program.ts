@@ -173,16 +173,21 @@ async function renumberExercises(
   }
 }
 
-// Two-phase day_number rewrite (mirrors renumberExercises): push every row into
-// a temp high range so the final 1..N assignments can't collide with the
-// `unique (program_id, day_number)` index. planDayOrder also syncs auto "Day N"
-// labels to position and parks archived days above the live range. Pass
+// Day-order writes go through the apply_day_order RPC. Planning stays client-
+// side (planDayOrder syncs auto "Day N" labels to position and parks archived
+// days above the live range); the apply — park + finals renumbering — runs in
+// ONE transaction server-side, and the DB's deferred
+// program_days_live_contiguous trigger enforces contiguity at commit, so a
+// torn or stale-build write fails loudly instead of scrambling the order
+// (three drift incidents: June 2026, 2026-07-13, 2026-07-21). Pass
 // `explicitLiveOrder` to impose a new live order (insert/reorder); omit to
-// normalize the current order in place. No-ops when already normalized.
+// normalize the current order in place. `insert` adds a new day in the same
+// transaction (addDay). No-ops when already normalized.
 async function applyDayOrder(
   supabase: Awaited<ReturnType<typeof createClient>>,
   programId: string,
-  explicitLiveOrder?: string[]
+  explicitLiveOrder?: string[],
+  insert?: { id: string; label: string; title: string }
 ) {
   const { data: rows, error } = await supabase
     .from("program_days")
@@ -191,32 +196,38 @@ async function applyDayOrder(
   if (error) throw error;
 
   const current = (rows ?? []) as DayRow[];
-  const targets = planDayOrder(current, explicitLiveOrder);
+  // A to-be-inserted row participates in planning as a phantom sorted last;
+  // its real day_number is assigned by the RPC from the computed targets.
+  const planned = insert
+    ? [
+        ...current,
+        {
+          id: insert.id,
+          day_number: Number.MAX_SAFE_INTEGER,
+          label: insert.label,
+          archived_at: null,
+        },
+      ]
+    : current;
+  const targets = planDayOrder(planned, explicitLiveOrder);
 
-  const currentById = new Map(
-    current.map((r) => [r.id, { day_number: r.day_number, label: r.label }])
-  );
-  const changed = targets.some((t) => {
-    const c = currentById.get(t.id);
-    return !c || c.day_number !== t.day_number || c.label !== t.label;
+  if (!insert) {
+    const currentById = new Map(
+      current.map((r) => [r.id, { day_number: r.day_number, label: r.label }])
+    );
+    const changed = targets.some((t) => {
+      const c = currentById.get(t.id);
+      return !c || c.day_number !== t.day_number || c.label !== t.label;
+    });
+    if (!changed) return;
+  }
+
+  const { error: rpcErr } = await supabase.rpc("apply_day_order", {
+    p_program_id: programId,
+    p_targets: targets,
+    p_insert: insert ?? null,
   });
-  if (!changed) return;
-
-  const OFFSET = 1_000_000;
-  for (const t of targets) {
-    const { error: e1 } = await supabase
-      .from("program_days")
-      .update({ day_number: OFFSET + t.day_number })
-      .eq("id", t.id);
-    if (e1) throw e1;
-  }
-  for (const t of targets) {
-    const { error: e2 } = await supabase
-      .from("program_days")
-      .update({ day_number: t.day_number, label: t.label })
-      .eq("id", t.id);
-    if (e2) throw e2;
-  }
+  if (rpcErr) throw rpcErr;
 }
 
 const SetExerciseOrderSchema = z.object({
@@ -600,41 +611,23 @@ export async function addDay(input: z.infer<typeof AddDaySchema>) {
       ? Math.min(Math.max(parsed.position, 1), n + 1)
       : n + 1;
 
-  // Park the new row at a temp day_number above everything (incl. archived) so
-  // it can't trip the unique index before applyDayOrder renumbers it.
-  const { data: maxRow, error: maxErr } = await supabase
-    .from("program_days")
-    .select("day_number")
-    .eq("program_id", parsed.programId)
-    .order("day_number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (maxErr) throw maxErr;
-  const tempNumber = (maxRow?.day_number ?? 0) + 1000;
-
-  const { data: inserted, error } = await supabase
-    .from("program_days")
-    .insert({
-      program_id: parsed.programId,
-      day_number: tempNumber,
-      label: parsed.label,
-      title: parsed.title,
-    })
-    .select("id")
-    .single();
-  if (error) throw error;
-
-  // Splice the new day into the live order at the requested position, then let
-  // applyDayOrder make it contiguous 1..N and sync its "Day N" label.
+  // Mint the id client-side so the new day can be planned into the target
+  // order and inserted by the RPC in the same transaction (no parked temp row
+  // to trip the contiguity guard).
+  const newDayId = crypto.randomUUID();
   const desired = [
     ...liveIds.slice(0, targetPosition - 1),
-    inserted.id,
+    newDayId,
     ...liveIds.slice(targetPosition - 1),
   ];
-  await applyDayOrder(supabase, parsed.programId, desired);
+  await applyDayOrder(supabase, parsed.programId, desired, {
+    id: newDayId,
+    label: parsed.label,
+    title: parsed.title,
+  });
 
   revalidatePath("/program");
-  return { dayId: inserted.id };
+  return { dayId: newDayId };
 }
 
 const ReorderDaySchema = z.object({
